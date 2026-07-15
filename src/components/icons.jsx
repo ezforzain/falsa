@@ -190,6 +190,32 @@ export const IconGrid = (props) => (
   </svg>
 );
 
+export const IconGift = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="3" y="8" width="18" height="4" rx="1" />
+    <path d="M12 8v13" />
+    <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+    <path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5" />
+  </svg>
+);
+
+export const IconStore = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M3 9.5 4.5 4h15L21 9.5" />
+    <path d="M4 9.5V20a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5" />
+    <path d="M9 21v-6h6v6" />
+    <path d="M4 9.5h16" />
+  </svg>
+);
+
+export const IconKey = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="7.5" cy="15.5" r="4.5" />
+    <path d="m21 3-9.6 9.6" />
+    <path d="m15.5 8.5 3 3" />
+  </svg>
+);
+
 export const IconReceipt = (props) => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M4 3h16v18l-3-2-3 2-3-2-3 2-3-2-3 2z" />

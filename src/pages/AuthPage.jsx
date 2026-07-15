@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser } from '../components/icons';
 import OfficialBadge from '../components/OfficialBadge';
@@ -63,6 +63,22 @@ export default function AuthPage() {
   const [forgotError, setForgotError] = useState(null);
 
   const isSeller = role === ROLE_SELLER;
+
+  // Deep links (e.g. the "Become a Partner" / "Create a Seller Account" rows on the account
+  // page) can jump straight to the seller sign-up form via /auth?screen=signup&role=seller,
+  // instead of always landing on the plain sign-in screen.
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const wantsSignup = searchParams.get('screen') === 'signup';
+    const wantsSeller = searchParams.get('role') === 'seller';
+    if (wantsSeller) setRole(ROLE_SELLER);
+    if (wantsSignup) {
+      setScreen('signup');
+      setSignupStep(wantsSeller ? 2 : 1);
+    }
+    // Only ever applies on the initial load of this page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const goSignin = () => {
     setScreen('signin');

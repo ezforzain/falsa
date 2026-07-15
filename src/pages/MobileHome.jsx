@@ -5,7 +5,6 @@ import { catalog } from '../lib/api';
 import useRotatingHints from '../hooks/useRotatingHints';
 import SearchHintOverlay from '../components/SearchHintOverlay';
 import { IconLogo, IconSearch } from '../components/icons';
-import OfficialBadge from '../components/OfficialBadge';
 
 export default function MobileHome() {
   const [categories, setCategories] = useState([]);
@@ -96,11 +95,8 @@ export default function MobileHome() {
         <span className="w-8 h-8 rounded-lg bg-green flex items-center justify-center shrink-0">
           <IconLogo width="16" height="16" />
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="font-display text-lg font-bold text-green tracking-tight">
-            Falsafah<span className="text-orange">Tot</span>
-          </span>
-          <OfficialBadge size={14} tooltipPosition="bottom" />
+        <span className="font-display text-lg font-bold text-green tracking-tight">
+          Falsafah<span className="text-orange">Tot</span>
         </span>
       </div>
 
@@ -150,9 +146,6 @@ export default function MobileHome() {
               className="w-full border-none outline-none bg-transparent text-sm text-ink font-sans relative z-10"
             />
             <SearchHintOverlay hint={currentHint} visible={!searchFocused && !searchQuery} />
-          </span>
-          <span className="text-[10.5px] font-bold text-orange-text bg-orange-tint px-2 py-1 rounded-full whitespace-nowrap shrink-0">
-            SPOTLIGHT
           </span>
           <button
             type="button"
