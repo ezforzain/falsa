@@ -8,11 +8,13 @@ import useIsMobile from '../hooks/useIsMobile';
 export default function MainLayout() {
   const isMobile = useIsMobile();
   const { pathname } = useLocation();
-  // On mobile, these routes get their own full-screen presentation (home) or already have
-  // BottomNavBar as their only navigation chrome (account) — the marketing announcement strip
-  // and desktop-style Header/Footer would just be clutter above the bottom tab bar. Desktop
-  // still gets full chrome everywhere since it has no bottom nav to fall back on.
-  const isMobileBare = isMobile && (pathname === '/' || pathname === '/account');
+  // On mobile, these routes get their own full-screen presentation — Home and Spotlight are
+  // meant to read as endless product feeds (no footer/info block breaking up the scroll), and
+  // Account already has BottomNavBar as its only navigation chrome. The marketing announcement
+  // strip and desktop-style Header/Footer would just be clutter above the bottom tab bar.
+  // Desktop still gets full chrome everywhere since it has no bottom nav to fall back on.
+  const BARE_MOBILE_ROUTES = ['/', '/spotlight', '/account'];
+  const isMobileBare = isMobile && BARE_MOBILE_ROUTES.includes(pathname);
 
   if (isMobileBare) {
     return (

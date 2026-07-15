@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { normalizeQuery, searchHints } from '../data/mockData';
 import { catalog } from '../lib/api';
 import useRotatingHints from '../hooks/useRotatingHints';
+import useInfiniteFeed from '../hooks/useInfiniteFeed';
 import SearchHintOverlay from '../components/SearchHintOverlay';
-import { IconLogo, IconSearch } from '../components/icons';
+import MobileTopBar from '../components/MobileTopBar';
+import { IconSearch } from '../components/icons';
 
 export default function MobileHome() {
   const [categories, setCategories] = useState([]);
@@ -79,6 +81,10 @@ export default function MobileHome() {
   let label = activeCatDef ? activeCatDef.name : 'All categories';
   if (debouncedQuery) label = `Results for "${debouncedQuery}"`;
 
+  // The mock catalog is small and finite — this loops it endlessly (reshuffled each lap) so the
+  // feed behaves like an infinite/YouTube-style feed instead of stopping after ~9 products.
+  const { items: feedProducts, loadingMore, sentinelRef } = useInfiniteFeed(products, { batchSize: 6 });
+
   // Paused the moment the user focuses the search field or has typed anything, and only
   // resumes — with a fresh full dwell time — once it's empty and unfocused again.
   const hintsPaused = searchFocused || searchQuery.trim().length > 0;
@@ -90,15 +96,7 @@ export default function MobileHome() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      {/* App-style top bar */}
-      <div className="flex items-center gap-2 px-4 pt-4 pb-1">
-        <span className="w-8 h-8 rounded-lg bg-green flex items-center justify-center shrink-0">
-          <IconLogo width="16" height="16" />
-        </span>
-        <span className="font-display text-lg font-bold text-green tracking-tight">
-          Falsafah<span className="text-orange">Tot</span>
-        </span>
-      </div>
+      <MobileTopBar />
 
       {/* Top tabs */}
       <div className="flex items-center gap-[22px] px-[18px] pt-3.5 pb-2.5 overflow-x-auto no-scrollbar">
@@ -265,28 +263,38 @@ export default function MobileHome() {
       )}
 
       {!productsLoading && !productsError && products.length > 0 && (
-        <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-8">
-          {products.map((p) => (
-            <div
-              key={p.id}
-              onClick={() => navigate(`/product/${p.id}`)}
-              className="bg-white border border-[#EFEBE2] rounded-[14px] overflow-hidden cursor-pointer"
-            >
-              <div className="h-[130px] overflow-hidden">
-                <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
-              </div>
-              <div className="px-2.5 pt-2.5 pb-3">
-                <div className="text-[12.5px] font-semibold text-ink leading-snug mb-1.5 line-clamp-2">{p.name}</div>
-                <div className="flex items-baseline justify-between">
-                  <span className="font-display font-bold text-[14.5px] text-green">{p.price}</span>
-                  <span className="text-[10px] text-orange-text bg-orange-tint px-1.5 py-1 rounded-md font-semibold">
-                    MOQ {p.moq}
-                  </span>
+        <>
+          <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-3">
+            {feedProducts.map((p) => (
+              <div
+                key={p.feedKey}
+                onClick={() => navigate(`/product/${p.id}`)}
+                className="bg-white border border-[#EFEBE2] rounded-[14px] overflow-hidden cursor-pointer"
+              >
+                <div className="h-[130px] overflow-hidden">
+                  <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
+                </div>
+                <div className="px-2.5 pt-2.5 pb-3">
+                  <div className="text-[12.5px] font-semibold text-ink leading-snug mb-1.5 line-clamp-2">{p.name}</div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="font-display font-bold text-[14.5px] text-green">{p.price}</span>
+                    <span className="text-[10px] text-orange-text bg-orange-tint px-1.5 py-1 rounded-md font-semibold">
+                      MOQ {p.moq}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {/* Infinite-scroll sentinel — the feed loops the catalog endlessly rather than ever
+              showing an "end", so there's a loading spinner here but no end-of-feed message. */}
+          <div ref={sentinelRef} className="flex items-center justify-center py-6">
+            {loadingMore && (
+              <span className="w-6 h-6 rounded-full border-2 border-border-strong border-t-green animate-[spin_0.7s_linear_infinite]" />
+            )}
+          </div>
+        </>
       )}
 
       {!productsLoading && !productsError && products.length === 0 && (

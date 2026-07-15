@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { catalog } from '../lib/api';
 import VerifiedBadge from '../components/VerifiedBadge';
+import MobileTopBar from '../components/MobileTopBar';
+import useIsMobile from '../hooks/useIsMobile';
+import useInfiniteFeed from '../hooks/useInfiniteFeed';
 import { IconPin, IconSparkle, IconTrendingUp, IconTruck } from '../components/icons';
 
 export default function SpotlightPage() {
+  const isMobile = useIsMobile();
   const [spotlightNear, setSpotlightNear] = useState([]);
   const [spotlightTrend, setSpotlightTrend] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +36,85 @@ export default function SpotlightPage() {
       cancelled = true;
     };
   }, []);
+
+  // Mobile is a single endless product feed (near + trending merged into one pool) — the
+  // desktop page below keeps the curated, sectioned layout with its shipping/growth context.
+  const feedPool = useMemo(() => {
+    const byId = new Map();
+    [...spotlightNear, ...spotlightTrend].forEach((entry) => byId.set(entry.product.id, entry.product));
+    return [...byId.values()];
+  }, [spotlightNear, spotlightTrend]);
+  const { items: feedProducts, loadingMore, sentinelRef } = useInfiniteFeed(feedPool, { batchSize: 6 });
+
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-white font-sans">
+        <MobileTopBar />
+
+        <div className="px-[18px] pt-2 pb-3">
+          <div className="flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] uppercase text-orange mb-1">
+            <IconSparkle width="14" height="14" />
+            Spotlight
+          </div>
+          <h1 className="font-display text-xl font-bold text-ink m-0">Curated for Pakistan</h1>
+        </div>
+
+        {loading && (
+          <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-8">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="animate-pulse bg-white border border-[#EFEBE2] rounded-[14px] overflow-hidden">
+                <div className="h-[130px] bg-surface-muted" />
+                <div className="px-2.5 pt-2.5 pb-3 flex flex-col gap-1.5">
+                  <div className="h-3 bg-surface-muted rounded w-full" />
+                  <div className="h-3 bg-surface-muted rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="mx-[18px] mb-8 text-center py-8 px-5 bg-cream rounded-[14px] border border-dashed border-border-strong">
+            <div className="text-[13.5px] text-orange-text">{error}</div>
+          </div>
+        )}
+
+        {!loading && !error && feedPool.length > 0 && (
+          <>
+            <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-3">
+              {feedProducts.map((p) => (
+                <Link
+                  key={p.feedKey}
+                  to={`/product/${p.id}`}
+                  className="block bg-white border border-[#EFEBE2] rounded-[14px] overflow-hidden no-underline text-inherit"
+                >
+                  <div className="h-[130px] overflow-hidden">
+                    <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="px-2.5 pt-2.5 pb-3">
+                    <div className="text-[12.5px] font-semibold text-ink leading-snug mb-1.5 line-clamp-2">{p.name}</div>
+                    <div className="flex items-baseline justify-between">
+                      <span className="font-display font-bold text-[14.5px] text-green">{p.price}</span>
+                      <span className="text-[10px] text-orange-text bg-orange-tint px-1.5 py-1 rounded-md font-semibold">
+                        MOQ {p.moq}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Infinite-scroll sentinel — loops the Spotlight pool endlessly, same as Home. */}
+            <div ref={sentinelRef} className="flex items-center justify-center py-6">
+              {loadingMore && (
+                <span className="w-6 h-6 rounded-full border-2 border-border-strong border-t-green animate-[spin_0.7s_linear_infinite]" />
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <>
