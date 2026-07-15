@@ -1,0 +1,689 @@
+{
+  "info": {
+    "_postman_id": "f1a1a000-0000-4000-8000-000000000000",
+    "name": "Falsafah Tot API",
+    "description": "Backend for the Falsafah Tot B2B marketplace (Express + MongoDB). Import the companion 'Falsafah Tot - Local' environment alongside this collection. Requests are ordered so that running each folder top-to-bottom (or Runner over the whole collection) chains tokens/ids automatically via test scripts into environment variables.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/health", "host": ["{{baseUrl}}"], "path": ["api", "health"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Sign In - request OTP (buyer)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('has pendingToken', () => pm.expect(body.pendingToken).to.be.a('string'));",
+            "pm.environment.set('pendingToken', body.pendingToken);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"identifier\": \"{{buyerIdentifier}}\",\n  \"password\": \"{{demoPassword}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/signin", "host": ["{{baseUrl}}"], "path": ["api", "auth", "signin"] }
+          }
+        },
+        {
+          "name": "Verify OTP - Sign In (buyer)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('has token', () => pm.expect(body.token).to.be.a('string'));",
+            "pm.environment.set('buyerToken', body.token);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pendingToken\": \"{{pendingToken}}\",\n  \"code\": \"{{otp}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/otp/verify", "host": ["{{baseUrl}}"], "path": ["api", "auth", "otp", "verify"] }
+          }
+        },
+        {
+          "name": "Verify OTP - wrong code (expect 400)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pendingToken\": \"{{pendingToken}}\",\n  \"code\": \"000000\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/otp/verify", "host": ["{{baseUrl}}"], "path": ["api", "auth", "otp", "verify"] },
+            "description": "Run this right after 'Sign In - request OTP (buyer)' (before the correct-code verify, since a pendingToken is single-use) to confirm the wrong code is rejected."
+          }
+        },
+        {
+          "name": "Sign In - request OTP (seller)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.environment.set('pendingToken', pm.response.json().pendingToken);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"identifier\": \"{{sellerIdentifier}}\",\n  \"password\": \"{{demoPassword}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/signin", "host": ["{{baseUrl}}"], "path": ["api", "auth", "signin"] }
+          }
+        },
+        {
+          "name": "Verify OTP - Sign In (seller)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.environment.set('sellerToken', pm.response.json().token);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pendingToken\": \"{{pendingToken}}\",\n  \"code\": \"{{otp}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/otp/verify", "host": ["{{baseUrl}}"], "path": ["api", "auth", "otp", "verify"] }
+          }
+        },
+        {
+          "name": "Sign In - request OTP (admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.environment.set('pendingToken', pm.response.json().pendingToken);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"identifier\": \"{{adminIdentifier}}\",\n  \"password\": \"{{demoPassword}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/signin", "host": ["{{baseUrl}}"], "path": ["api", "auth", "signin"] }
+          }
+        },
+        {
+          "name": "Verify OTP - Sign In (admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.environment.set('adminToken', pm.response.json().token);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pendingToken\": \"{{pendingToken}}\",\n  \"code\": \"{{otp}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/otp/verify", "host": ["{{baseUrl}}"], "path": ["api", "auth", "otp", "verify"] }
+          }
+        },
+        {
+          "name": "Sign In - wrong password (expect 401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 401', () => pm.response.to.have.status(401));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"identifier\": \"{{buyerIdentifier}}\",\n  \"password\": \"wrong-password\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/signin", "host": ["{{baseUrl}}"], "path": ["api", "auth", "signin"] }
+          }
+        },
+        {
+          "name": "Sign Up (new buyer)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "pm.environment.set('pendingToken', pm.response.json().pendingToken);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"buyer\",\n  \"companyName\": \"New Buyer Traders\",\n  \"country\": \"Pakistan\",\n  \"phone\": \"{{newSignupPhone}}\",\n  \"email\": \"{{newSignupEmail}}\",\n  \"password\": \"password123\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/signup", "host": ["{{baseUrl}}"], "path": ["api", "auth", "signup"] },
+            "description": "Change newSignupEmail/newSignupPhone in the environment before re-running, otherwise you'll hit the 409 duplicate-account response."
+          }
+        },
+        {
+          "name": "Verify OTP - Sign Up (new buyer)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "pm.environment.set('newBuyerToken', pm.response.json().token);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pendingToken\": \"{{pendingToken}}\",\n  \"code\": \"{{otp}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/otp/verify", "host": ["{{baseUrl}}"], "path": ["api", "auth", "otp", "verify"] }
+          }
+        },
+        {
+          "name": "Sign Up (new buyer, duplicate email, expect 409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 409', () => pm.response.to.have.status(409));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"buyer\",\n  \"companyName\": \"Duplicate Co\",\n  \"country\": \"Pakistan\",\n  \"phone\": \"+92 300 0000001\",\n  \"email\": \"{{buyerIdentifier}}\",\n  \"password\": \"password123\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/signup", "host": ["{{baseUrl}}"], "path": ["api", "auth", "signup"] }
+          }
+        },
+        {
+          "name": "Sign Up (individual seller)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"seller\",\n  \"sellerType\": \"individual\",\n  \"companyName\": \"New Sialkot Sports\",\n  \"country\": \"Pakistan\",\n  \"phone\": \"+92 300 7778899\",\n  \"email\": \"newseller.individual@example.com\",\n  \"password\": \"password123\",\n  \"category\": \"Sports Goods\",\n  \"address\": \"Street 5, Sialkot, Pakistan\",\n  \"cnicNumber\": \"34101-2345678-1\",\n  \"cnicFront\": \"{{uploadedUrl}}\",\n  \"cnicBack\": \"{{uploadedUrl}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/signup", "host": ["{{baseUrl}}"], "path": ["api", "auth", "signup"] },
+            "description": "Run 'Upload a file' in the Uploads folder first to populate {{uploadedUrl}}, or replace with any placeholder URL string."
+          }
+        },
+        {
+          "name": "Sign Up (corporate seller)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"seller\",\n  \"sellerType\": \"corporate\",\n  \"companyName\": \"New Corporate Textiles Ltd\",\n  \"country\": \"Pakistan\",\n  \"phone\": \"+92 300 4445566\",\n  \"email\": \"newseller.corporate@example.com\",\n  \"password\": \"password123\",\n  \"category\": \"Textiles & Fabrics\",\n  \"location\": \"Lahore, Pakistan\",\n  \"businessAddress\": \"Industrial Area, Lahore, Pakistan\",\n  \"businessDocument\": \"{{uploadedUrl}}\",\n  \"legalCompanyName\": \"New Corporate Textiles (Private) Limited\",\n  \"registrationNumber\": \"REG-998877\",\n  \"ntn\": \"1234567-8\",\n  \"companyEmail\": \"contact@newcorporatetextiles.example.com\",\n  \"companyPhone\": \"+92 42 1112233\",\n  \"bankName\": \"Habib Bank Limited\",\n  \"accountTitle\": \"New Corporate Textiles Ltd\",\n  \"accountNumber\": \"01234567890123\",\n  \"iban\": \"PK36HABB0001234567890123\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/signup", "host": ["{{baseUrl}}"], "path": ["api", "auth", "signup"] }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "pm.environment.set('pendingToken', pm.response.json().pendingToken);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"identifier\": \"{{buyerIdentifier}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["api", "auth", "forgot-password"] }
+          }
+        },
+        {
+          "name": "Verify OTP - Reset Password",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "pm.test('purpose is reset', () => pm.expect(pm.response.json().purpose).to.eql('reset'));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pendingToken\": \"{{pendingToken}}\",\n  \"code\": \"{{otp}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/otp/verify", "host": ["{{baseUrl}}"], "path": ["api", "auth", "otp", "verify"] }
+          }
+        },
+        {
+          "name": "Get Session (buyer)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyerToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/session", "host": ["{{baseUrl}}"], "path": ["api", "auth", "session"] }
+          }
+        },
+        {
+          "name": "Get Session - no token (expect 401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 401', () => pm.response.to.have.status(401));"
+          ] } }],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/session", "host": ["{{baseUrl}}"], "path": ["api", "auth", "session"] }
+          }
+        },
+        {
+          "name": "Update Profile (buyer)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{buyerToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"companyName\": \"Al-Karam Traders (Updated)\",\n  \"phone\": \"+92 300 0000000\",\n  \"country\": \"Pakistan\",\n  \"category\": null\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/profile", "host": ["{{baseUrl}}"], "path": ["api", "auth", "profile"] }
+          }
+        },
+        {
+          "name": "Resubmit KYC (seller)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{sellerToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"cnicFront\": \"{{uploadedUrl}}\",\n  \"cnicBack\": \"{{uploadedUrl}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/auth/kyc/resubmit", "host": ["{{baseUrl}}"], "path": ["api", "auth", "kyc", "resubmit"] },
+            "description": "Puts the demo seller's KYC back to 'pending' — re-run 'Sign In (seller)' + Admin > Approve KYC afterwards if you want the seller portal ungated again."
+          }
+        },
+        {
+          "name": "Logout (buyer)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyerToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        {
+          "name": "Get Categories",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/categories", "host": ["{{baseUrl}}"], "path": ["api", "categories"] } }
+        },
+        {
+          "name": "Get Mobile Categories",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/categories/mobile", "host": ["{{baseUrl}}"], "path": ["api", "categories", "mobile"] } }
+        },
+        {
+          "name": "Get Mobile Tabs",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/mobile-tabs", "host": ["{{baseUrl}}"], "path": ["api", "mobile-tabs"] } }
+        },
+        {
+          "name": "Get Products (all)",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/products", "host": ["{{baseUrl}}"], "path": ["api", "products"] } }
+        },
+        {
+          "name": "Get Products (filtered by category)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?category=Textiles & Fabrics",
+              "host": ["{{baseUrl}}"], "path": ["api", "products"],
+              "query": [{ "key": "category", "value": "Textiles & Fabrics" }]
+            }
+          }
+        },
+        {
+          "name": "Search Products (q=cotton)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?q=cotton",
+              "host": ["{{baseUrl}}"], "path": ["api", "products"],
+              "query": [{ "key": "q", "value": "cotton" }]
+            }
+          }
+        },
+        {
+          "name": "Get Trending Products",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/products/trending", "host": ["{{baseUrl}}"], "path": ["api", "products", "trending"] } }
+        },
+        {
+          "name": "Get Product by Id",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "products", "{{productId}}"] } }
+        },
+        {
+          "name": "Get Product by Id - not found (expect 404)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 404', () => pm.response.to.have.status(404));"
+          ] } }],
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/products/does-not-exist", "host": ["{{baseUrl}}"], "path": ["api", "products", "does-not-exist"] } }
+        },
+        {
+          "name": "Get Spotlight Near",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/spotlight/near", "host": ["{{baseUrl}}"], "path": ["api", "spotlight", "near"] } }
+        },
+        {
+          "name": "Get Spotlight Trending",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/spotlight/trending", "host": ["{{baseUrl}}"], "path": ["api", "spotlight", "trending"] } }
+        }
+      ]
+    },
+    {
+      "name": "Cart",
+      "item": [
+        {
+          "name": "Get Cart",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/cart", "host": ["{{baseUrl}}"], "path": ["api", "cart"] } }
+        },
+        {
+          "name": "Add Item to Cart",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"qty\": 2\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/cart/items", "host": ["{{baseUrl}}"], "path": ["api", "cart", "items"] }
+          }
+        },
+        {
+          "name": "Add Item exceeding stock (expect 409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 409', () => pm.response.to.have.status(409));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"qty\": 999999\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/cart/items", "host": ["{{baseUrl}}"], "path": ["api", "cart", "items"] }
+          }
+        },
+        {
+          "name": "Update Cart Item quantity",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"qty\": 5\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/cart/items/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "cart", "items", "{{productId}}"] }
+          }
+        },
+        {
+          "name": "Remove Cart Item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/cart/items/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "cart", "items", "{{productId}}"] }
+          }
+        },
+        {
+          "name": "Add Item again (setup for checkout)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"qty\": 3\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/cart/items", "host": ["{{baseUrl}}"], "path": ["api", "cart", "items"] }
+          }
+        },
+        {
+          "name": "Clear Cart",
+          "request": { "method": "DELETE", "header": [], "url": { "raw": "{{baseUrl}}/api/cart", "host": ["{{baseUrl}}"], "path": ["api", "cart"] } }
+        }
+      ]
+    },
+    {
+      "name": "Checkout",
+      "item": [
+        {
+          "name": "Checkout - empty cart (expect 400)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/api/checkout", "host": ["{{baseUrl}}"], "path": ["api", "checkout"] } }
+        },
+        {
+          "name": "Add item then Checkout",
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+            "pm.sendRequest({ url: pm.environment.get('baseUrl') + '/api/cart/items', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify({ productId: pm.environment.get('productId'), qty: 2 }) } }, () => {});"
+          ] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', () => pm.response.to.have.status(200));",
+            "pm.test('has orderId', () => pm.expect(pm.response.json().orderId).to.be.a('string'));"
+          ] } }],
+          "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/api/checkout", "host": ["{{baseUrl}}"], "path": ["api", "checkout"] } }
+        }
+      ]
+    },
+    {
+      "name": "Sellers Directory",
+      "item": [
+        {
+          "name": "List Sellers",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const sellers = pm.response.json().sellers;",
+            "if (sellers && sellers.length) pm.environment.set('sellerDirectoryId', sellers[0]._id);"
+          ] } }],
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/sellers", "host": ["{{baseUrl}}"], "path": ["api", "sellers"] } }
+        },
+        {
+          "name": "Get Seller by Id",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/sellers/{{sellerDirectoryId}}", "host": ["{{baseUrl}}"], "path": ["api", "sellers", "{{sellerDirectoryId}}"] } }
+        },
+        {
+          "name": "Get Seller by Id - not found (expect 404)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 404', () => pm.response.to.have.status(404));"
+          ] } }],
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/sellers/000000000000000000000000", "host": ["{{baseUrl}}"], "path": ["api", "sellers", "000000000000000000000000"] } }
+        },
+        {
+          "name": "Follow Status",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/sellers/{{sellerDirectoryId}}/follow", "host": ["{{baseUrl}}"], "path": ["api", "sellers", "{{sellerDirectoryId}}", "follow"] } }
+        },
+        {
+          "name": "Follow Seller",
+          "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/api/sellers/{{sellerDirectoryId}}/follow", "host": ["{{baseUrl}}"], "path": ["api", "sellers", "{{sellerDirectoryId}}", "follow"] } }
+        },
+        {
+          "name": "Unfollow Seller",
+          "request": { "method": "DELETE", "header": [], "url": { "raw": "{{baseUrl}}/api/sellers/{{sellerDirectoryId}}/follow", "host": ["{{baseUrl}}"], "path": ["api", "sellers", "{{sellerDirectoryId}}", "follow"] } }
+        }
+      ]
+    },
+    {
+      "name": "Seller Portal",
+      "item": [
+        {
+          "name": "Get Stats",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{sellerToken}}" }], "url": { "raw": "{{baseUrl}}/api/seller/stats", "host": ["{{baseUrl}}"], "path": ["api", "seller", "stats"] } }
+        },
+        {
+          "name": "Get Stats - as buyer (expect 403)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 403', () => pm.response.to.have.status(403));"
+          ] } }],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{buyerToken}}" }], "url": { "raw": "{{baseUrl}}/api/seller/stats", "host": ["{{baseUrl}}"], "path": ["api", "seller", "stats"] } }
+        },
+        {
+          "name": "Get Stats - no token (expect 401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 401', () => pm.response.to.have.status(401));"
+          ] } }],
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/seller/stats", "host": ["{{baseUrl}}"], "path": ["api", "seller", "stats"] } }
+        },
+        {
+          "name": "List My Products",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const products = pm.response.json().products;",
+            "if (products && products.length) pm.environment.set('sellerProductId', products[0]._id);"
+          ] } }],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{sellerToken}}" }], "url": { "raw": "{{baseUrl}}/api/seller/products", "host": ["{{baseUrl}}"], "path": ["api", "seller", "products"] } }
+        },
+        {
+          "name": "Get My Product by Id",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{sellerToken}}" }], "url": { "raw": "{{baseUrl}}/api/seller/products/{{sellerProductId}}", "host": ["{{baseUrl}}"], "path": ["api", "seller", "products", "{{sellerProductId}}"] } }
+        },
+        {
+          "name": "Create Product",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 201', () => pm.response.to.have.status(201));",
+            "pm.environment.set('sellerProductId', pm.response.json().product._id);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{sellerToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman Test Listing\",\n  \"category\": \"Textiles & Fabrics\",\n  \"price\": 500,\n  \"unit\": \"metre\",\n  \"moq\": \"100m\",\n  \"stock\": 1000,\n  \"status\": \"active\",\n  \"description\": \"Created from the Postman collection.\",\n  \"images\": [\"{{uploadedUrl}}\"]\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/seller/products", "host": ["{{baseUrl}}"], "path": ["api", "seller", "products"] },
+            "description": "Overwrites sellerProductId with the new listing's id — this is the listing the next two requests (Update / Delete) act on."
+          }
+        },
+        {
+          "name": "Create Product - invalid price (expect 400)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{sellerToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Bad Listing\",\n  \"category\": \"Textiles & Fabrics\",\n  \"price\": -5,\n  \"unit\": \"metre\",\n  \"moq\": \"100m\",\n  \"stock\": 10\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/seller/products", "host": ["{{baseUrl}}"], "path": ["api", "seller", "products"] }
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{sellerToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"price\": 550,\n  \"stock\": 900,\n  \"status\": \"active\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/seller/products/{{sellerProductId}}", "host": ["{{baseUrl}}"], "path": ["api", "seller", "products", "{{sellerProductId}}"] }
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{sellerToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/seller/products/{{sellerProductId}}", "host": ["{{baseUrl}}"], "path": ["api", "seller", "products", "{{sellerProductId}}"] },
+            "description": "Deletes the Postman-created test listing. Run 'List My Products' again afterward to reset sellerProductId to a real demo listing."
+          }
+        },
+        {
+          "name": "List My Orders",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const orders = pm.response.json().orders;",
+            "if (orders && orders.length) pm.environment.set('sellerOrderId', orders[0]._id);"
+          ] } }],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{sellerToken}}" }], "url": { "raw": "{{baseUrl}}/api/seller/orders", "host": ["{{baseUrl}}"], "path": ["api", "seller", "orders"] } }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{sellerToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"Processing\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/seller/orders/{{sellerOrderId}}", "host": ["{{baseUrl}}"], "path": ["api", "seller", "orders", "{{sellerOrderId}}"] }
+          }
+        },
+        {
+          "name": "Update Order Status - invalid status (expect 404)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 404', () => pm.response.to.have.status(404));"
+          ] } }],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{sellerToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"NotARealStatus\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/seller/orders/{{sellerOrderId}}", "host": ["{{baseUrl}}"], "path": ["api", "seller", "orders", "{{sellerOrderId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Verify Seller (set true)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"verified\": true\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/admin/sellers/{{sellerDirectoryId}}/verify", "host": ["{{baseUrl}}"], "path": ["api", "admin", "sellers", "{{sellerDirectoryId}}", "verify"] },
+            "description": "Run 'List Sellers' in the Sellers Directory folder first to populate sellerDirectoryId."
+          }
+        },
+        {
+          "name": "Verify Seller - as seller (expect 403)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 403', () => pm.response.to.have.status(403));"
+          ] } }],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{sellerToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"verified\": true\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/admin/sellers/{{sellerDirectoryId}}/verify", "host": ["{{baseUrl}}"], "path": ["api", "admin", "sellers", "{{sellerDirectoryId}}", "verify"] }
+          }
+        },
+        {
+          "name": "List KYC submissions",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const sellers = pm.response.json().sellers;",
+            "if (sellers && sellers.length) pm.environment.set('kycUserId', sellers[0]._id);"
+          ] } }],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": { "raw": "{{baseUrl}}/api/admin/kyc", "host": ["{{baseUrl}}"], "path": ["api", "admin", "kyc"] } }
+        },
+        {
+          "name": "Get KYC Detail",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": { "raw": "{{baseUrl}}/api/admin/kyc/{{kycUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "kyc", "{{kycUserId}}"] } }
+        },
+        {
+          "name": "Approve KYC",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"approved\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/admin/kyc/{{kycUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "kyc", "{{kycUserId}}"] }
+          }
+        },
+        {
+          "name": "Reject KYC",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"rejected\",\n  \"rejectionReason\": \"CNIC image is blurry — please resubmit.\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{baseUrl}}/api/admin/kyc/{{kycUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "kyc", "{{kycUserId}}"] },
+            "description": "Demonstrates the reject path. Re-run 'Approve KYC' afterward to leave the demo seller in an approved state."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Uploads",
+      "item": [
+        {
+          "name": "Upload a file (products)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 201', () => pm.response.to.have.status(201));",
+            "pm.environment.set('uploadedUrl', pm.response.json().url);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": { "raw": "{{baseUrl}}/api/uploads/products", "host": ["{{baseUrl}}"], "path": ["api", "uploads", "products"] },
+            "description": "Click the 'file' field's value and select a PNG/JPEG/WEBP/PDF from disk before sending — Postman collections can't embed a binary file, so 'src' starts empty."
+          }
+        },
+        {
+          "name": "Upload a file - invalid type folder (expect 400)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": { "raw": "{{baseUrl}}/api/uploads/bogus-type", "host": ["{{baseUrl}}"], "path": ["api", "uploads", "bogus-type"] }
+          }
+        }
+      ]
+    }
+  ]
+}

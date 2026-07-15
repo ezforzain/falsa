@@ -1,0 +1,20 @@
+import { Router } from 'express';
+import { upload, ALLOWED_TYPES } from '../middleware/upload.js';
+
+const router = Router();
+
+// POST /api/uploads/:type  (multipart, field name "file") -> { url }
+// :type is one of "cnic" | "business-docs" | "products". Public — signup needs to upload CNIC
+// images before an account (and therefore a session) exists.
+router.post('/:type', (req, res, next) => {
+  if (!ALLOWED_TYPES.has(req.params.type)) {
+    return res.status(400).json({ message: 'Invalid upload type.' });
+  }
+  upload.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ message: err.message });
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
+    res.status(201).json({ url: `/uploads/${req.params.type}/${req.file.filename}` });
+  });
+});
+
+export default router;
