@@ -6,6 +6,9 @@ import SearchPage from './pages/SearchPage';
 import ProductPage from './pages/ProductPage';
 import StorePage from './pages/StorePage';
 import CartPage from './pages/CartPage';
+import CategoriesPage from './pages/CategoriesPage';
+import MessengerPage from './pages/MessengerPage';
+import AccountPage from './pages/AccountPage';
 import AuthPage from './pages/AuthPage';
 import SellerLayout from './pages/seller/SellerLayout';
 import SellerDashboard from './pages/seller/SellerDashboard';
@@ -25,6 +28,9 @@ export default function App() {
         <Route path="/product/:id" element={<ProductPage />} />
         <Route path="/store/:id" element={<StorePage />} />
         <Route path="/cart" element={<CartPage />} />
+        <Route path="/categories" element={<CategoriesPage />} />
+        <Route path="/messenger" element={<MessengerPage />} />
+        <Route path="/account" element={<AccountPage />} />
       </Route>
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/seller" element={<SellerLayout />}>
