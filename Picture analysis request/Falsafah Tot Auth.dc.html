@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #F7F5F0; }
+  * { box-sizing: border-box; }
+  ::selection { background: #0E5A46; color: #fff; }
+  input { outline: none; }
+  input:focus { border-color: #0E5A46 !important; box-shadow: 0 0 0 3px rgba(14,90,70,0.12); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</helmet>
+
+<div style="font-family: 'Public Sans', sans-serif; color: #1B1F1D; min-height: 100vh; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));">
+
+  <!-- Brand panel -->
+  <div style="background: #0A3D30; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 40px; padding: clamp(28px, 4vw, 56px); min-height: 340px;">
+    <img src="https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&w=1200&q=80" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.18;">
+    <div style="position: relative; z-index: 2;">
+      <a href="Falsafah Tot v2.dc.html" style="display: inline-flex; align-items: center; gap: 14px; text-decoration: none;">
+        <span style="width: 54px; height: 54px; border-radius: 16px; background: #C97B2D; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 26px rgba(0,0,0,0.25);">
+          <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"></path><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>
+        </span>
+        <span style="display: flex; flex-direction: column;">
+          <span style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.02em; line-height: 1;">falsafah<span style="color: #F5C98A;">tot</span></span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #7FC0A8; letter-spacing: 0.24em; text-transform: uppercase; margin-top: 6px;">B2B Marketplace</span>
+        </span>
+      </a>
+    </div>
+    <div style="position: relative; z-index: 2;">
+      <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(26px, 2.6vw, 36px); font-weight: 700; color: #FFFFFF; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 14px; max-width: 420px; text-wrap: pretty;">Trade worldwide with sellers you can trust.</h2>
+      <p style="font-size: 15px; color: #A8CDBC; line-height: 1.65; margin: 0 0 28px; max-width: 400px; text-wrap: pretty;">One account for buying and selling — free shipping on your first order.</p>
+      <div style="display: flex; flex-direction: column; gap: 13px; font-size: 13.5px; color: #DCEDE5;">
+        <span style="display: flex; align-items: center; gap: 10px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F5C98A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Verified sellers in 190+ countries</span>
+        <span style="display: flex; align-items: center; gap: 10px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F5C98A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Secure escrow payments in PKR</span>
+        <span style="display: flex; align-items: center; gap: 10px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F5C98A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>100% Trusted B2B marketplace</span>
+      </div>
+    </div>
+    <div style="position: relative; z-index: 2; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #7FA795; letter-spacing: 0.1em;">© 2026 FALSAFAH TOT · B2B</div>
+  </div>
+
+  <!-- Form panel -->
+  <div style="display: flex; align-items: center; justify-content: center; padding: clamp(28px, 5vw, 64px) clamp(20px, 4vw, 56px); background: #F7F5F0;">
+    <div style="width: 100%; max-width: 460px;">
+
+      <!-- ===== SIGN IN ===== -->
+      <sc-if value="{{ isSignin }}" hint-placeholder-val="{{ true }}">
+        <div style="animation: fadeUp 0.35s ease;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.02em;">Welcome back</h1>
+          <p style="font-size: 15px; color: #5A564C; margin: 0 0 36px;">Sign in to your buyer or seller account.</p>
+
+          <div style="margin-bottom: 24px;">
+            <label style="display: block; font-size: 13.5px; font-weight: 600; color: #3A362D; margin-bottom: 9px;">Email or phone number</label>
+            <input type="text" placeholder="name@company.com or +92 300 0000000" style="width: 100%; padding: 15px 18px; border: 1.5px solid #E4E0D6; border-radius: 12px; font-size: 15px; font-family: 'Public Sans', sans-serif; background: #FFFFFF; color: #1B1F1D;">
+          </div>
+
+          <div style="margin-bottom: 32px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 9px;">
+              <label style="font-size: 13.5px; font-weight: 600; color: #3A362D;">Password</label>
+              <a onClick="{{ goForgot }}" style="cursor: pointer; font-size: 13px; font-weight: 600; color: #0E5A46;" style-hover="text-decoration: underline;">Forgot password?</a>
+            </div>
+            <div style="position: relative;">
+              <input type="{{ pwType }}" placeholder="Enter your password" style="width: 100%; padding: 15px 52px 15px 18px; border: 1.5px solid #E4E0D6; border-radius: 12px; font-size: 15px; font-family: 'Public Sans', sans-serif; background: #FFFFFF; color: #1B1F1D;">
+              <a onClick="{{ togglePw }}" title="Show / hide password" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #8A857A; display: flex; align-items: center;" style-hover="color: #0E5A46;">
+                <sc-if value="{{ pwHidden }}" hint-placeholder-val="{{ true }}">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </sc-if>
+                <sc-if value="{{ pwShown }}" hint-placeholder-val="{{ false }}">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle><path d="m3 3 18 18"></path></svg>
+                </sc-if>
+              </a>
+            </div>
+          </div>
+
+          <a onClick="{{ submitSignin }}" style="display: flex; align-items: center; justify-content: center; gap: 10px; text-align: center; cursor: pointer; background: #0E5A46; color: #FFFFFF; font-weight: 600; font-size: 15.5px; padding: 16px 0; border-radius: 999px; box-shadow: 0 8px 22px rgba(14,90,70,0.25); transition: all 0.2s ease;" style-hover="background: #0B4A3A; transform: translateY(-1px);">
+            <sc-if value="{{ signinLoading }}" hint-placeholder-val="{{ false }}">
+              <span style="width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,0.35); border-top-color: #FFFFFF; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;"></span>
+            </sc-if>
+            {{ signinBtnLabel }}
+          </a>
+
+          <div style="display: flex; align-items: center; gap: 16px; margin: 30px 0;">
+            <span style="flex: 1; height: 1px; background: #E4E0D6;"></span>
+            <span style="font-size: 12.5px; color: #8A857A;">or continue with</span>
+            <span style="flex: 1; height: 1px; background: #E4E0D6;"></span>
+          </div>
+
+          <a style="display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; background: #FFFFFF; border: 1.5px solid #E4E0D6; color: #3A362D; font-weight: 600; font-size: 14.5px; padding: 15px 0; border-radius: 999px; transition: all 0.15s ease;" style-hover="border-color: #0E5A46; background: #E8F3EE;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg>
+            Phone OTP
+          </a>
+
+          <p style="text-align: center; font-size: 14px; color: #5A564C; margin: 32px 0 0;">New to Falsafah Tot? <a onClick="{{ goSignup }}" style="cursor: pointer; font-weight: 700; color: #0E5A46;" style-hover="text-decoration: underline;">Create an account</a></p>
+        </div>
+      </sc-if>
+
+      <!-- ===== SIGN UP ===== -->
+      <sc-if value="{{ isSignup }}" hint-placeholder-val="{{ false }}">
+        <div style="animation: fadeUp 0.35s ease;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.02em;">Create your account</h1>
+          <p style="font-size: 15px; color: #5A564C; margin: 0 0 30px;">Step {{ signupStep }} of 2 — {{ signupStepLabel }}</p>
+
+          <!-- Step 1: role -->
+          <sc-if value="{{ isSignupRole }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div onClick="{{ pickBuyer }}" style="display: flex; gap: 18px; align-items: flex-start; background: #FFFFFF; border: 2px solid {{ buyerBorder }}; border-radius: 16px; padding: 22px; cursor: pointer; transition: all 0.15s ease;" style-hover="border-color: #0E5A46;">
+                <span style="width: 46px; height: 46px; border-radius: 13px; background: #E8F3EE; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
+                </span>
+                <span style="flex: 1;">
+                  <span style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-weight: 700; font-size: 16px;">I'm a Buyer</span>
+                    <span style="width: 21px; height: 21px; border-radius: 50%; border: 2px solid {{ buyerBorder }}; display: flex; align-items: center; justify-content: center;"><span style="width: 11px; height: 11px; border-radius: 50%; background: {{ buyerDot }};"></span></span>
+                  </span>
+                  <span style="display: block; font-size: 13.5px; color: #5A564C; line-height: 1.6; margin-top: 5px;">Source wholesale products from verified sellers worldwide.</span>
+                </span>
+              </div>
+
+              <div onClick="{{ pickSeller }}" style="display: flex; gap: 18px; align-items: flex-start; background: #FFFFFF; border: 2px solid {{ sellerBorder }}; border-radius: 16px; padding: 22px; cursor: pointer; transition: all 0.15s ease;" style-hover="border-color: #0E5A46;">
+                <span style="width: 46px; height: 46px; border-radius: 13px; background: #FBEEDD; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#A05E17" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"></path><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>
+                </span>
+                <span style="flex: 1;">
+                  <span style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-weight: 700; font-size: 16px;">I'm a Seller</span>
+                    <span style="width: 21px; height: 21px; border-radius: 50%; border: 2px solid {{ sellerBorder }}; display: flex; align-items: center; justify-content: center;"><span style="width: 11px; height: 11px; border-radius: 50%; background: {{ sellerDot }};"></span></span>
+                  </span>
+                  <span style="display: block; font-size: 13.5px; color: #5A564C; line-height: 1.6; margin-top: 5px;">List products, reach buyers in 190+ countries, get verified.</span>
+                </span>
+              </div>
+
+              <a onClick="{{ toDetails }}" style="display: block; text-align: center; cursor: pointer; background: #0E5A46; color: #FFFFFF; font-weight: 600; font-size: 15.5px; padding: 16px 0; border-radius: 999px; margin-top: 14px; box-shadow: 0 8px 22px rgba(14,90,70,0.25); transition: all 0.2s ease;" style-hover="background: #0B4A3A; transform: translateY(-1px);">Continue</a>
+            </div>
+          </sc-if>
+
+          <!-- Step 2: details -->
+          <sc-if value="{{ isSignupDetails }}" hint-placeholder-val="{{ false }}">
+            <div style="animation: fadeUp 0.35s ease;">
+              <div style="display: inline-flex; align-items: center; gap: 8px; background: {{ roleBadgeBg }}; color: {{ roleBadgeColor }}; font-size: 12.5px; font-weight: 700; padding: 7px 16px; border-radius: 999px; margin-bottom: 26px;">{{ roleLabel }} account <a onClick="{{ backToRole }}" style="cursor: pointer; text-decoration: underline; font-weight: 600;">change</a></div>
+
+              <div style="margin-bottom: 22px;">
+                <label style="display: block; font-size: 13.5px; font-weight: 600; color: #3A362D; margin-bottom: 9px;">{{ companyLabel }}</label>
+                <input type="text" placeholder="{{ companyPlaceholder }}" style="width: 100%; padding: 15px 18px; border: 1.5px solid #E4E0D6; border-radius: 12px; font-size: 15px; font-family: 'Public Sans', sans-serif; background: #FFFFFF; color: #1B1F1D;">
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 22px;">
+                <div>
+                  <label style="display: block; font-size: 13.5px; font-weight: 600; color: #3A362D; margin-bottom: 9px;">Country</label>
+                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 15px 18px; border: 1.5px solid #E4E0D6; border-radius: 12px; font-size: 15px; background: #FFFFFF; cursor: pointer;" style-hover="border-color: #0E5A46;"><span>🇵🇰 Pakistan</span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8A857A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></div>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 13.5px; font-weight: 600; color: #3A362D; margin-bottom: 9px;">Phone number</label>
+                  <input type="text" placeholder="+92 300 0000000" style="width: 100%; padding: 15px 18px; border: 1.5px solid #E4E0D6; border-radius: 12px; font-size: 15px; font-family: 'Public Sans', sans-serif; background: #FFFFFF; color: #1B1F1D;">
+                </div>
+              </div>
+
+              <sc-if value="{{ isSeller }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-bottom: 22px;">
+                  <label style="display: block; font-size: 13.5px; font-weight: 600; color: #3A362D; margin-bottom: 9px;">Main product category</label>
+                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 15px 18px; border: 1.5px solid #E4E0D6; border-radius: 12px; font-size: 15px; background: #FFFFFF; cursor: pointer;" style-hover="border-color: #0E5A46;"><span style="color: #8A857A;">Select — Textiles, Surgical, Sports…</span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8A857A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></div>
+                </div>
+              </sc-if>
+
+              <div style="margin-bottom: 22px;">
+                <label style="display: block; font-size: 13.5px; font-weight: 600; color: #3A362D; margin-bottom: 9px;">Business email</label>
+                <input type="text" placeholder="name@company.com" style="width: 100%; padding: 15px 18px; border: 1.5px solid #E4E0D6; border-radius: 12px; font-size: 15px; font-family: 'Public Sans', sans-serif; background: #FFFFFF; color: #1B1F1D;">
+              </div>
+
+              <div style="margin-bottom: 28px;">
+                <label style="display: block; font-size: 13.5px; font-weight: 600; color: #3A362D; margin-bottom: 9px;">Password</label>
+                <div style="position: relative;">
+                  <input type="{{ pwType }}" placeholder="At least 8 characters" style="width: 100%; padding: 15px 52px 15px 18px; border: 1.5px solid #E4E0D6; border-radius: 12px; font-size: 15px; font-family: 'Public Sans', sans-serif; background: #FFFFFF; color: #1B1F1D;">
+                  <a onClick="{{ togglePw }}" title="Show / hide password" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #8A857A; display: flex; align-items: center;" style-hover="color: #0E5A46;">
+                    <sc-if value="{{ pwHidden }}" hint-placeholder-val="{{ true }}">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </sc-if>
+                    <sc-if value="{{ pwShown }}" hint-placeholder-val="{{ false }}">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle><path d="m3 3 18 18"></path></svg>
+                    </sc-if>
+                  </a>
+                </div>
+              </div>
+
+              <sc-if value="{{ isSeller }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: 12px; align-items: flex-start; background: #FBEEDD; border-radius: 12px; padding: 15px 18px; margin-bottom: 28px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A05E17" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>
+                  <span style="font-size: 13px; color: #7A4A14; line-height: 1.6;">Seller accounts go through verification (business documents) before listings go live — usually within 2 working days.</span>
+                </div>
+              </sc-if>
+
+              <a onClick="{{ submitSignup }}" style="display: flex; align-items: center; justify-content: center; gap: 10px; text-align: center; cursor: pointer; background: #0E5A46; color: #FFFFFF; font-weight: 600; font-size: 15.5px; padding: 16px 0; border-radius: 999px; box-shadow: 0 8px 22px rgba(14,90,70,0.25); transition: all 0.2s ease;" style-hover="background: #0B4A3A; transform: translateY(-1px);">
+                <sc-if value="{{ signupLoading }}" hint-placeholder-val="{{ false }}">
+                  <span style="width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,0.35); border-top-color: #FFFFFF; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;"></span>
+                </sc-if>
+                {{ signupBtnLabel }}
+              </a>
+              <p style="font-size: 12px; color: #8A857A; text-align: center; margin: 18px 0 0; line-height: 1.6;">By continuing you agree to our Terms of Service and Privacy Policy.</p>
+            </div>
+          </sc-if>
+
+          <p style="text-align: center; font-size: 14px; color: #5A564C; margin: 32px 0 0;">Already have an account? <a onClick="{{ goSignin }}" style="cursor: pointer; font-weight: 700; color: #0E5A46;" style-hover="text-decoration: underline;">Sign in</a></p>
+        </div>
+      </sc-if>
+
+      <!-- ===== OTP ===== -->
+      <sc-if value="{{ isOtp }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align: center; animation: fadeUp 0.35s ease;">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #E8F3EE; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 26px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg>
+          </span>
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.02em;">Verify your phone</h1>
+          <p style="font-size: 15px; color: #5A564C; margin: 0 0 34px; line-height: 1.6;">We sent a 6-digit code to <strong style="color: #1B1F1D;">+92 300 •••• 421</strong></p>
+
+          <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 32px;">
+            <sc-for list="{{ otpDigits }}" as="d" hint-placeholder-count="6">
+              <input type="text" maxLength="1" value="{{ d }}" style="width: 52px; height: 62px; text-align: center; font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; border: 1.5px solid #E4E0D6; border-radius: 13px; background: #FFFFFF; color: #0E5A46;">
+            </sc-for>
+          </div>
+
+          <a onClick="{{ submitOtp }}" style="display: flex; align-items: center; justify-content: center; gap: 10px; text-align: center; cursor: pointer; background: #0E5A46; color: #FFFFFF; font-weight: 600; font-size: 15.5px; padding: 16px 0; border-radius: 999px; box-shadow: 0 8px 22px rgba(14,90,70,0.25); transition: all 0.2s ease;" style-hover="background: #0B4A3A; transform: translateY(-1px);">
+            <sc-if value="{{ otpLoading }}" hint-placeholder-val="{{ false }}">
+              <span style="width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,0.35); border-top-color: #FFFFFF; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block;"></span>
+            </sc-if>
+            {{ otpBtnLabel }}
+          </a>
+          <p style="font-size: 14px; color: #5A564C; margin: 26px 0 0;">Didn't get the code? <a style="cursor: pointer; font-weight: 700; color: #0E5A46;" style-hover="text-decoration: underline;">Resend in 0:42</a></p>
+          <p style="margin: 22px 0 0;"><a onClick="{{ goSignin }}" style="cursor: pointer; font-size: 13.5px; color: #8A857A;" style-hover="color: #0E5A46;">← Back to sign in</a></p>
+        </div>
+      </sc-if>
+
+      <!-- ===== FORGOT ===== -->
+      <sc-if value="{{ isForgot }}" hint-placeholder-val="{{ false }}">
+        <div style="animation: fadeUp 0.35s ease;">
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.02em;">Reset your password</h1>
+          <p style="font-size: 15px; color: #5A564C; margin: 0 0 32px; line-height: 1.6;">Enter your email or phone and we'll send you a reset code.</p>
+
+          <div style="margin-bottom: 28px;">
+            <label style="display: block; font-size: 13.5px; font-weight: 600; color: #3A362D; margin-bottom: 9px;">Email or phone number</label>
+            <input type="text" placeholder="name@company.com or +92 300 0000000" style="width: 100%; padding: 15px 18px; border: 1.5px solid #E4E0D6; border-radius: 12px; font-size: 15px; font-family: 'Public Sans', sans-serif; background: #FFFFFF; color: #1B1F1D;">
+          </div>
+
+          <a onClick="{{ goOtp }}" style="display: block; text-align: center; cursor: pointer; background: #0E5A46; color: #FFFFFF; font-weight: 600; font-size: 15.5px; padding: 16px 0; border-radius: 999px; box-shadow: 0 8px 22px rgba(14,90,70,0.25); transition: all 0.2s ease;" style-hover="background: #0B4A3A; transform: translateY(-1px);">Send reset code</a>
+          <p style="text-align: center; margin: 26px 0 0;"><a onClick="{{ goSignin }}" style="cursor: pointer; font-size: 13.5px; color: #8A857A;" style-hover="color: #0E5A46;">← Back to sign in</a></p>
+        </div>
+      </sc-if>
+
+      <!-- ===== SUCCESS ===== -->
+      <sc-if value="{{ isSuccess }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align: center; animation: fadeUp 0.35s ease;">
+          <span style="width: 72px; height: 72px; border-radius: 50%; background: #0E5A46; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 26px; box-shadow: 0 12px 30px rgba(14,90,70,0.3);">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+          </span>
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.02em;">You're all set!</h1>
+          <p style="font-size: 15px; color: #5A564C; margin: 0 0 34px; line-height: 1.6;">{{ successMessage }}</p>
+          <a href="Falsafah Tot v2.dc.html" style="display: block; text-align: center; cursor: pointer; background: #C97B2D; color: #FFFFFF; font-weight: 600; font-size: 15.5px; padding: 16px 0; border-radius: 999px; text-decoration: none; box-shadow: 0 8px 22px rgba(201,123,45,0.3); transition: all 0.2s ease;" style-hover="background: #B56A20; transform: translateY(-1px);">Start exploring the marketplace</a>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { screen: 'signin', signupStep: 1, role: 'buyer', showPw: false, signinLoading: false, signupLoading: false, otpLoading: false };
+
+  componentWillUnmount() { clearTimeout(this._timer); }
+
+  _delayed(loadingKey, next) {
+    if (this.state[loadingKey]) return;
+    this.setState({ [loadingKey]: true });
+    this._timer = setTimeout(() => {
+      this.setState({ [loadingKey]: false, ...next });
+    }, 1000);
+  }
+
+  renderVals() {
+    const { screen, signupStep, role, showPw, signinLoading, signupLoading, otpLoading } = this.state;
+    const go = (s) => () => this.setState({ screen: s });
+    const isSeller = role === 'seller';
+    return {
+      isSignin: screen === 'signin',
+      isSignup: screen === 'signup',
+      isOtp: screen === 'otp',
+      isForgot: screen === 'forgot',
+      isSuccess: screen === 'success',
+      goSignin: go('signin'),
+      goSignup: () => this.setState({ screen: 'signup', signupStep: 1 }),
+      goOtp: go('otp'),
+      goForgot: go('forgot'),
+      submitSignin: () => this._delayed('signinLoading', { screen: 'otp' }),
+      submitSignup: () => this._delayed('signupLoading', { screen: 'otp' }),
+      submitOtp: () => this._delayed('otpLoading', { screen: 'success' }),
+      signinLoading: signinLoading,
+      signupLoading: signupLoading,
+      otpLoading: otpLoading,
+      signinBtnLabel: signinLoading ? 'Signing in…' : 'Sign in',
+      signupBtnLabel: signupLoading ? 'Creating account…' : 'Create account',
+      otpBtnLabel: otpLoading ? 'Verifying…' : 'Verify & continue',
+      pwType: showPw ? 'text' : 'password',
+      pwHidden: !showPw,
+      pwShown: showPw,
+      togglePw: () => this.setState(s => ({ showPw: !s.showPw })),
+      signupStep: signupStep,
+      signupStepLabel: signupStep === 1 ? 'choose your account type' : 'your business details',
+      isSignupRole: signupStep === 1,
+      isSignupDetails: signupStep === 2,
+      toDetails: () => this.setState({ signupStep: 2 }),
+      backToRole: () => this.setState({ signupStep: 1 }),
+      pickBuyer: () => this.setState({ role: 'buyer' }),
+      pickSeller: () => this.setState({ role: 'seller' }),
+      isSeller: isSeller,
+      buyerBorder: !isSeller ? '#0E5A46' : '#E4E0D6',
+      buyerDot: !isSeller ? '#0E5A46' : 'transparent',
+      sellerBorder: isSeller ? '#0E5A46' : '#E4E0D6',
+      sellerDot: isSeller ? '#0E5A46' : 'transparent',
+      roleLabel: isSeller ? 'Seller' : 'Buyer',
+      roleBadgeBg: isSeller ? '#FBEEDD' : '#E8F3EE',
+      roleBadgeColor: isSeller ? '#A05E17' : '#0E5A46',
+      companyLabel: isSeller ? 'Business / factory name' : 'Company name',
+      companyPlaceholder: isSeller ? 'e.g. Anwar Textile Mills' : 'e.g. Al-Karam Traders',
+      otpDigits: ['4', '7', '', '', '', ''],
+      successMessage: isSeller
+        ? 'Your seller account is created. We\u2019ll email you once verification is complete — then you can start listing products.'
+        : 'Your buyer account is ready. Enjoy free shipping on your first order.',
+    };
+  }
+}
+</script>
+</body>
+</html>

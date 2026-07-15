@@ -1,0 +1,362 @@
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { normalizeQuery, searchHints } from '../data/mockData';
+import { catalog } from '../lib/api';
+import useRotatingHints from '../hooks/useRotatingHints';
+import SearchHintOverlay from '../components/SearchHintOverlay';
+import { IconLogo, IconSearch } from '../components/icons';
+import OfficialBadge from '../components/OfficialBadge';
+
+export default function MobileHome() {
+  const [categories, setCategories] = useState([]);
+  const [tabs, setTabs] = useState([]);
+  const [metaLoading, setMetaLoading] = useState(true);
+
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeTab, setActiveTab] = useState('spotlight');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState(null);
+
+  const searchInputRef = useRef(null);
+  const navigate = useNavigate();
+
+  // Fetch the tabs + curated category circles once on mount.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([catalog.mobileCategories(), catalog.mobileTabs()])
+      .then(([catRes, tabRes]) => {
+        if (cancelled) return;
+        setCategories(catRes.categories);
+        setTabs(tabRes.tabs);
+      })
+      .catch(() => {
+        /* non-fatal — page still works without the chrome around the product grid */
+      })
+      .finally(() => {
+        if (!cancelled) setMetaLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Debounce the search box so we're not firing a request on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(normalizeQuery(searchQuery)), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  const activeCatDef = categories.find((c) => c.key === activeCategory);
+
+  // Fetch the product grid from the server whenever the category or (debounced) search changes —
+  // filtering by name/category/seller happens in the mock API, not in this component.
+  useEffect(() => {
+    let cancelled = false;
+    setProductsLoading(true);
+    setProductsError(null);
+
+    catalog
+      .products({ category: activeCatDef?.fullName, q: debouncedQuery })
+      .then(({ products: fetched }) => {
+        if (!cancelled) setProducts(fetched);
+      })
+      .catch((err) => {
+        if (!cancelled) setProductsError(err.message || 'Could not load products right now.');
+      })
+      .finally(() => {
+        if (!cancelled) setProductsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCatDef?.fullName, debouncedQuery]);
+
+  let label = activeCatDef ? activeCatDef.name : 'All categories';
+  if (debouncedQuery) label = `Results for "${debouncedQuery}"`;
+
+  // Paused the moment the user focuses the search field or has typed anything, and only
+  // resumes — with a fresh full dwell time — once it's empty and unfocused again.
+  const hintsPaused = searchFocused || searchQuery.trim().length > 0;
+  const currentHint = useRotatingHints(searchHints, 4000, hintsPaused);
+
+  const runSearch = () => searchInputRef.current?.blur();
+
+  const activeTabDef = tabs.find((t) => t.key === activeTab);
+
+  return (
+    <div className="min-h-screen bg-white font-sans">
+      {/* App-style top bar */}
+      <div className="flex items-center gap-2 px-4 pt-4 pb-1">
+        <span className="w-8 h-8 rounded-lg bg-green flex items-center justify-center shrink-0">
+          <IconLogo width="16" height="16" />
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="font-display text-lg font-bold text-green tracking-tight">
+            Falsafah<span className="text-orange">Tot</span>
+          </span>
+          <OfficialBadge size={14} tooltipPosition="bottom" />
+        </span>
+      </div>
+
+      {/* Top tabs */}
+      <div className="flex items-center gap-[22px] px-[18px] pt-3.5 pb-2.5 overflow-x-auto no-scrollbar">
+        {metaLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="animate-pulse h-[18px] w-[60px] shrink-0 rounded bg-surface-muted" />
+            ))
+          : tabs.map((tab) => {
+              const isActive = tab.key === activeTab;
+              return (
+                <span
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className="flex flex-col items-center gap-1.5 whitespace-nowrap cursor-pointer"
+                >
+                  <span className={`${isActive ? 'text-base font-bold text-ink' : 'text-[15px] font-medium text-text-muted'}`}>
+                    {tab.label}
+                  </span>
+                  <span className={`w-[26px] h-[3px] rounded-sm ${isActive ? 'bg-orange' : 'bg-transparent'}`} />
+                </span>
+              );
+            })}
+      </div>
+
+      {/* Tab context banner */}
+      {activeTabDef?.banner && (
+        <div className="mx-[18px] mb-2 bg-green-tint rounded-[10px] px-3.5 py-2.5 text-[12.5px] text-green font-medium">
+          {activeTabDef.banner}
+        </div>
+      )}
+
+      {/* Search bar */}
+      <div className="px-[18px] pt-1.5 pb-3.5">
+        <div className="relative flex items-center gap-2.5 border-[1.5px] border-orange rounded-[14px] py-2.5 pl-3.5 pr-2.5 bg-white">
+          <IconSearch width="19" height="19" className="text-ink-soft shrink-0" strokeWidth="1.8" />
+          <span className="flex-1 relative min-w-0">
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              onKeyDown={(e) => e.key === 'Enter' && runSearch()}
+              className="w-full border-none outline-none bg-transparent text-sm text-ink font-sans relative z-10"
+            />
+            <SearchHintOverlay hint={currentHint} visible={!searchFocused && !searchQuery} />
+          </span>
+          <span className="text-[10.5px] font-bold text-orange-text bg-orange-tint px-2 py-1 rounded-full whitespace-nowrap shrink-0">
+            SPOTLIGHT
+          </span>
+          <button
+            type="button"
+            onClick={runSearch}
+            aria-label="Search"
+            className="w-[38px] h-[38px] rounded-[10px] bg-orange hover:bg-orange-hover active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer"
+          >
+            <IconSearch width="17" height="17" className="text-white" strokeWidth="2.4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Quick actions */}
+      <div className="flex gap-2.5 px-[18px] pb-4">
+        {[
+          { label: 'Start exploring', bg: 'bg-green-tint', icon: <IconGrid /> },
+          { label: 'Request for Quotation', bg: 'bg-orange-tint', icon: <IconTarget /> },
+          { label: 'Top Sellers', bg: 'bg-green-tint', icon: <IconTrophy /> },
+        ].map((a) => (
+          <div key={a.label} className="flex-1 bg-cream rounded-[14px] px-2.5 py-3 flex flex-col items-start gap-2">
+            <span className={`w-[30px] h-[30px] rounded-[9px] ${a.bg} flex items-center justify-center`}>{a.icon}</span>
+            <span className="text-[12.5px] font-semibold text-ink leading-snug">{a.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Trust banner */}
+      <div className="mx-[18px] mb-1 bg-orange-tint rounded-[14px] px-3 py-3.5 flex items-center">
+        <div className="flex-1 flex items-center gap-2.5 min-w-0">
+          <span className="w-8 h-8 rounded-[9px] bg-white flex items-center justify-center shrink-0">
+            <IconShipFast />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[12.5px] font-bold text-ink whitespace-nowrap">FREE shipping</span>
+            <span className="block text-[11px] text-orange-text-dark whitespace-nowrap">on your first order</span>
+          </span>
+        </div>
+        <span className="w-[1.5px] self-stretch bg-[#E9C9A0] mx-3 shrink-0" />
+        <div className="flex-1 flex items-center gap-2.5 min-w-0">
+          <span className="w-8 h-8 rounded-[9px] bg-white flex items-center justify-center shrink-0">
+            <IconMoneyBack />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[12.5px] font-bold text-ink whitespace-nowrap">Money-back protection</span>
+            <span className="block text-[11px] text-orange-text-dark whitespace-nowrap">for up to 60 days</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Category circles */}
+      <div className="flex gap-[18px] px-[18px] pt-4 pb-1.5 overflow-x-auto no-scrollbar">
+        {metaLoading
+          ? Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-2 shrink-0 w-[66px]">
+                <div className="animate-pulse w-[62px] h-[62px] rounded-full bg-surface-muted" />
+              </div>
+            ))
+          : categories.map((cat) => {
+              const isActive = activeCategory === cat.key;
+              return (
+                <div
+                  key={cat.key}
+                  onClick={() => setActiveCategory((c) => (c === cat.key ? 'all' : cat.key))}
+                  className="flex flex-col items-center gap-2 shrink-0 w-[66px] cursor-pointer"
+                >
+                  <span
+                    className="w-[62px] h-[62px] rounded-full overflow-hidden transition-colors"
+                    style={{
+                      border: isActive ? '2.5px solid #0E5A46' : '2px solid #EFEBE2',
+                      boxShadow: isActive ? '0 4px 10px rgba(14,90,70,0.25)' : 'none',
+                    }}
+                  >
+                    <img src={cat.img} alt={cat.name} className="w-full h-full object-cover" />
+                  </span>
+                  <span
+                    className="text-[11.5px] text-center leading-tight"
+                    style={{ fontWeight: isActive ? 700 : 600, color: isActive ? '#0E5A46' : '#3A362D' }}
+                  >
+                    {cat.name}
+                  </span>
+                </div>
+              );
+            })}
+      </div>
+
+      {/* Filter pills */}
+      <div className="flex gap-2 px-[18px] pt-2.5 pb-3.5">
+        <span className="bg-ink text-white text-[12.5px] font-bold px-4 py-1.5 rounded-full">All</span>
+        <span className="bg-surface-muted text-text text-[12.5px] font-semibold px-4 py-1.5 rounded-full">Verified</span>
+        <span className="bg-surface-muted text-text text-[12.5px] font-semibold px-4 py-1.5 rounded-full">Low MOQ</span>
+      </div>
+
+      {/* Active label */}
+      <div className="px-[18px] pb-2.5 text-[13px] text-text">
+        Showing <strong className="text-ink">{label}</strong>
+      </div>
+
+      {/* Product grid */}
+      {productsLoading && (
+        <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="animate-pulse bg-white border border-[#EFEBE2] rounded-[14px] overflow-hidden">
+              <div className="h-[130px] bg-surface-muted" />
+              <div className="px-2.5 pt-2.5 pb-3 flex flex-col gap-1.5">
+                <div className="h-3 bg-surface-muted rounded w-full" />
+                <div className="h-3 bg-surface-muted rounded w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!productsLoading && productsError && (
+        <div className="mx-[18px] mb-8 text-center py-8 px-5 bg-cream rounded-[14px] border border-dashed border-border-strong">
+          <div className="text-[13.5px] text-orange-text">{productsError}</div>
+        </div>
+      )}
+
+      {!productsLoading && !productsError && products.length > 0 && (
+        <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-8">
+          {products.map((p) => (
+            <div
+              key={p.id}
+              onClick={() => navigate(`/product/${p.id}`)}
+              className="bg-white border border-[#EFEBE2] rounded-[14px] overflow-hidden cursor-pointer"
+            >
+              <div className="h-[130px] overflow-hidden">
+                <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
+              </div>
+              <div className="px-2.5 pt-2.5 pb-3">
+                <div className="text-[12.5px] font-semibold text-ink leading-snug mb-1.5 line-clamp-2">{p.name}</div>
+                <div className="flex items-baseline justify-between">
+                  <span className="font-display font-bold text-[14.5px] text-green">{p.price}</span>
+                  <span className="text-[10px] text-orange-text bg-orange-tint px-1.5 py-1 rounded-md font-semibold">
+                    MOQ {p.moq}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!productsLoading && !productsError && products.length === 0 && (
+        <div className="mx-[18px] mb-8 text-center py-8 px-5 bg-cream rounded-[14px] border border-dashed border-border-strong">
+          <div className="text-[13.5px] font-semibold text-ink mb-1">No results found</div>
+          <div className="text-[13.5px] text-text mb-2.5">Nothing matched "{debouncedQuery}". Try a different keyword or category.</div>
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            className="cursor-pointer inline-block bg-green text-white text-[12.5px] font-semibold px-[18px] py-2 rounded-full"
+          >
+            Clear search
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IconGrid() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  );
+}
+function IconTarget() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A05E17" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="4.5" />
+      <circle cx="12" cy="12" r="0.8" fill="#A05E17" />
+    </svg>
+  );
+}
+function IconTrophy() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 21h8" />
+      <path d="M12 17v4" />
+      <path d="M7 4h10v5a5 5 0 0 1-10 0z" />
+      <path d="M17 6h2a2 2 0 0 1 0 4h-1M7 6H5a2 2 0 0 0 0 4h1" />
+    </svg>
+  );
+}
+function IconShipFast() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#C97B2D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 17h4V5H2v12h3" />
+      <path d="M14 9h4l3 3v5h-3" />
+      <circle cx="7.5" cy="17.5" r="1.8" />
+      <circle cx="17.5" cy="17.5" r="1.8" />
+    </svg>
+  );
+}
+function IconMoneyBack() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2D6FC9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  );
+}

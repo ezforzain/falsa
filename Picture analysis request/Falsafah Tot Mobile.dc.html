@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #EDEAE2; }
+  * { box-sizing: border-box; }
+  *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  * { scrollbar-width: none; }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+</style>
+</helmet>
+
+<div style="display: flex; align-items: flex-start; justify-content: center; padding: 40px 20px; background: #EDEAE2; min-height: 100vh; font-family: 'Public Sans', sans-serif;">
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="390,844"
+
+    <div style="display: flex; flex-direction: column; height: 100%; background: #FFFFFF; overflow-y: auto;">
+
+      <!-- Status-bar spacer (IOSDevice draws its own status bar/dynamic island absolutely; no nav bar since title is omitted) -->
+      <div style="height: 54px; flex-shrink: 0;"></div>
+
+      <!-- Top tabs -->
+      <div style="display: flex; align-items: center; gap: 22px; padding: 14px 18px 10px; overflow-x: auto;">
+        <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="4">
+          <span onClick="{{ tab.select }}" style="display: flex; flex-direction: column; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer;">
+            <span style="font-size: {{ tab.size }}; color: {{ tab.color }}; font-weight: {{ tab.weight }};">{{ tab.label }}</span>
+            <span style="width: 26px; height: 3px; border-radius: 2px; background: {{ tab.underline }};"></span>
+          </span>
+        </sc-for>
+      </div>
+
+      <!-- Tab context banner -->
+      <sc-if value="{{ showTabBanner }}" hint-placeholder-val="{{ false }}">
+        <div style="margin: 0 18px 8px; background: #E8F3EE; border-radius: 10px; padding: 9px 14px; font-size: 12.5px; color: #0E5A46; font-weight: 500;">{{ tabBannerText }}</div>
+      </sc-if>
+
+      <!-- Search bar -->
+      <div style="padding: 6px 18px 14px;">
+        <div style="position: relative; display: flex; align-items: center; gap: 10px; border: 1.5px solid #C97B2D; border-radius: 14px; padding: 10px 10px 10px 14px; background: #FFFFFF;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#3A362D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"></rect><circle cx="12" cy="13" r="3.5"></circle><path d="M7 6l1.5-2.5h7L17 6"></path></svg>
+          <span style="flex: 1; position: relative; min-width: 0;">
+            <input type="text" value="{{ searchQuery }}" onChange="{{ onSearchChange }}" onFocus="{{ onSearchFocus }}" onBlur="{{ onSearchBlur }}" onKeyDown="{{ onSearchKeyDown }}" style="width: 100%; border: none; outline: none; background: transparent; font-size: 14px; color: #1B1F1D; font-family: 'Public Sans', sans-serif; position: relative; z-index: 2;">
+            <sc-if value="{{ showMarquee }}" hint-placeholder-val="{{ true }}">
+              <span style="position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: #FFFFFF; mask-image: linear-gradient(90deg, transparent 0, #000 4px, #000 85%, transparent 100%);">
+                <span style="display: inline-flex; white-space: nowrap; animation: marquee 9s linear infinite;">
+                  <span style="font-size: 14px; color: #8A857A; padding-right: 36px;">Search “cotton twill fabric”, “surgical instruments”, “leather gloves”…</span>
+                  <span style="font-size: 14px; color: #8A857A; padding-right: 36px;" aria-hidden="true">Search “cotton twill fabric”, “surgical instruments”, “leather gloves”…</span>
+                </span>
+              </span>
+            </sc-if>
+          </span>
+          <span style="font-size: 10.5px; font-weight: 700; color: #A05E17; background: #FBEEDD; padding: 4px 8px; border-radius: 999px; white-space: nowrap; flex-shrink: 0;">SPOTLIGHT</span>
+          <svg onClick="{{ onCameraClick }}" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A857A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer; flex-shrink: 0;"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v1a7 7 0 0 1-14 0v-1"></path><path d="M12 18v4"></path></svg>
+          <span onClick="{{ onSearchSubmit }}" style="width: 38px; height: 38px; border-radius: 10px; background: #C97B2D; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+          </span>
+
+          <sc-if value="{{ showCameraToast }}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; top: calc(100% + 8px); right: 0; background: #1B1F1D; color: #FFFFFF; font-size: 12px; font-weight: 500; padding: 9px 14px; border-radius: 10px; white-space: nowrap; z-index: 5; box-shadow: 0 8px 20px rgba(0,0,0,0.25);">📷 Point your camera at a product to search</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div style="display: flex; gap: 10px; padding: 0 18px 16px;">
+        <div style="flex: 1; background: #F7F5F0; border-radius: 14px; padding: 12px 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+          <span style="width: 30px; height: 30px; border-radius: 9px; background: #E8F3EE; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg></span>
+          <span style="font-size: 12.5px; font-weight: 600; color: #1B1F1D; line-height: 1.35;">Start exploring</span>
+        </div>
+        <div style="flex: 1; background: #F7F5F0; border-radius: 14px; padding: 12px 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+          <span style="width: 30px; height: 30px; border-radius: 9px; background: #FBEEDD; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A05E17" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.5"></circle><circle cx="12" cy="12" r="0.8" fill="#A05E17"></circle></svg></span>
+          <span style="font-size: 12.5px; font-weight: 600; color: #1B1F1D; line-height: 1.35;">Request for Quotation</span>
+        </div>
+        <div style="flex: 1; background: #F7F5F0; border-radius: 14px; padding: 12px 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+          <span style="width: 30px; height: 30px; border-radius: 9px; background: #E8F3EE; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10v5a5 5 0 0 1-10 0z"></path><path d="M17 6h2a2 2 0 0 1 0 4h-1M7 6H5a2 2 0 0 0 0 4h1"></path></svg></span>
+          <span style="font-size: 12.5px; font-weight: 600; color: #1B1F1D; line-height: 1.35;">Top Sellers</span>
+        </div>
+      </div>
+
+      <!-- Free shipping / money-back trust banner -->
+      <div style="margin: 4px 18px 4px; background: #FBEEDD; border-radius: 14px; padding: 14px 12px; display: flex; align-items: center;">
+        <div style="flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0;">
+          <span style="width: 32px; height: 32px; border-radius: 9px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#C97B2D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"></path><path d="M14 9h4l3 3v5h-3"></path><circle cx="7.5" cy="17.5" r="1.8"></circle><circle cx="17.5" cy="17.5" r="1.8"></circle></svg>
+          </span>
+          <span style="min-width: 0;">
+            <span style="display: block; font-size: 12.5px; font-weight: 700; color: #1B1F1D; white-space: nowrap;">FREE shipping</span>
+            <span style="display: block; font-size: 11px; color: #7A4A14; white-space: nowrap;">on your first order</span>
+          </span>
+        </div>
+        <span style="width: 1.5px; align-self: stretch; background: #E9C9A0; margin: 0 12px; flex-shrink: 0;"></span>
+        <div style="flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0;">
+          <span style="width: 32px; height: 32px; border-radius: 9px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2D6FC9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"></path><path d="m9 12 2 2 4-4"></path></svg>
+          </span>
+          <span style="min-width: 0;">
+            <span style="display: block; font-size: 12.5px; font-weight: 700; color: #1B1F1D; white-space: nowrap;">Money-back protection</span>
+            <span style="display: block; font-size: 11px; color: #7A4A14; white-space: nowrap;">for up to 60 days</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Category circles -->
+      <div style="display: flex; gap: 18px; padding: 16px 18px 6px; overflow-x: auto;">
+        <sc-for list="{{ categories }}" as="cat" hint-placeholder-count="6">
+          <div onClick="{{ cat.select }}" style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; width: 66px; cursor: pointer;">
+            <span style="width: 62px; height: 62px; border-radius: 50%; overflow: hidden; border: {{ cat.border }}; transition: border-color 0.15s ease; box-shadow: {{ cat.shadow }};">
+              <img src="{{ cat.img }}" alt="{{ cat.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+            </span>
+            <span style="font-size: 11.5px; font-weight: {{ cat.weight }}; color: {{ cat.color }}; text-align: center; line-height: 1.3;">{{ cat.name }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- Filter pill row -->
+      <div style="display: flex; gap: 8px; padding: 10px 18px 14px;">
+        <span style="background: #1B1F1D; color: #FFFFFF; font-size: 12.5px; font-weight: 700; padding: 7px 16px; border-radius: 999px;">All</span>
+        <span style="background: #F2EFE8; color: #5A564C; font-size: 12.5px; font-weight: 600; padding: 7px 16px; border-radius: 999px;">Verified</span>
+        <span style="background: #F2EFE8; color: #5A564C; font-size: 12.5px; font-weight: 600; padding: 7px 16px; border-radius: 999px;">Low MOQ</span>
+      </div>
+
+      <!-- Active category / search label -->
+      <div style="padding: 0 18px 10px; font-size: 13px; color: #5A564C;">Showing <strong style="color: #1B1F1D;">{{ activeCategoryName }}</strong></div>
+
+      <!-- Product grid -->
+      <sc-if value="{{ hasProducts }}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 18px 28px;">
+          <sc-for list="{{ products }}" as="p" hint-placeholder-count="6">
+            <div style="background: #FFFFFF; border: 1px solid #EFEBE2; border-radius: 14px; overflow: hidden;">
+              <div style="height: 130px; overflow: hidden;">
+                <img src="{{ p.img }}" alt="{{ p.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+              </div>
+              <div style="padding: 10px 11px 12px;">
+                <div style="font-size: 12.5px; font-weight: 600; color: #1B1F1D; line-height: 1.35; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{ p.name }}</div>
+                <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                  <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14.5px; color: #0E5A46;">{{ p.price }}</span>
+                  <span style="font-size: 10px; color: #A05E17; background: #FBEEDD; padding: 3px 7px; border-radius: 6px; font-weight: 600;">MOQ {{ p.moq }}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ hasNoProducts }}" hint-placeholder-val="{{ false }}">
+        <div style="margin: 4px 18px 28px; text-align: center; padding: 32px 20px; background: #F7F5F0; border-radius: 14px; border: 1px dashed #C9C3B5;">
+          <div style="font-size: 13.5px; color: #5A564C; margin-bottom: 10px;">No products match “{{ searchQuery }}”.</div>
+          <span onClick="{{ clearSearch }}" style="cursor: pointer; display: inline-block; background: #0E5A46; color: #FFFFFF; font-size: 12.5px; font-weight: 600; padding: 8px 18px; border-radius: 999px;">Clear search</span>
+        </div>
+      </sc-if>
+    </div>
+
+  </x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { activeCategory: 'all', activeTab: 'spotlight', searchQuery: '', searchFocused: false, showCameraToast: false };
+
+  componentWillUnmount() { clearTimeout(this._cameraTimer); }
+
+  allProducts() {
+    return [
+      { key: 'textiles', name: 'Cotton Twill Fabric 280 GSM', price: 'Rs 670', moq: '500m', img: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80' },
+      { key: 'surgical', name: 'Stainless Surgical Instrument Set', price: 'Rs 2,480', moq: '100pc', img: 'https://images.unsplash.com/photo-1583911860205-72f8ac8ddcbe?auto=format&fit=crop&w=400&q=80' },
+      { key: 'leather', name: 'Full-Grain Leather Work Gloves', price: 'Rs 865', moq: '300pr', img: 'https://images.unsplash.com/photo-1473188588951-666fce8e7c68?auto=format&fit=crop&w=400&q=80' },
+      { key: 'sports', name: 'Match-Grade Footballs', price: 'Rs 1,560', moq: '200pc', img: 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?auto=format&fit=crop&w=400&q=80' },
+      { key: 'rice', name: 'Basmati Rice 25kg Bags', price: 'Rs 3,200', moq: '50bag', img: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80' },
+      { key: 'hardware', name: 'Hand Tools & Hardware Set', price: 'Rs 1,120', moq: '150pc', img: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=400&q=80' },
+    ];
+  }
+
+  renderVals() {
+    const active = this.state.activeCategory;
+    const defs = [
+      { key: 'textiles', name: 'Textiles', img: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=200&q=80' },
+      { key: 'surgical', name: 'Surgical', img: 'https://images.unsplash.com/photo-1583911860205-72f8ac8ddcbe?auto=format&fit=crop&w=200&q=80' },
+      { key: 'leather', name: 'Leather', img: 'https://images.unsplash.com/photo-1473188588951-666fce8e7c68?auto=format&fit=crop&w=200&q=80' },
+      { key: 'sports', name: 'Sports', img: 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?auto=format&fit=crop&w=200&q=80' },
+      { key: 'rice', name: 'Rice & Grains', img: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=200&q=80' },
+      { key: 'hardware', name: 'Hardware', img: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=200&q=80' },
+    ];
+    const categories = defs.map(c => {
+      const isActive = active === c.key;
+      return {
+        ...c,
+        select: () => this.setState(s => ({ activeCategory: s.activeCategory === c.key ? 'all' : c.key })),
+        border: isActive ? '2.5px solid #0E5A46' : '2px solid #EFEBE2',
+        shadow: isActive ? '0 4px 10px rgba(14,90,70,0.25)' : 'none',
+        weight: isActive ? 700 : 600,
+        color: isActive ? '#0E5A46' : '#3A362D',
+      };
+    });
+    const pool = this.allProducts();
+    const q = this.state.searchQuery.trim().toLowerCase();
+    let products = active === 'all' ? pool : pool.filter(p => p.key === active);
+    if (q) products = products.filter(p => p.name.toLowerCase().includes(q));
+    const activeDef = defs.find(c => c.key === active);
+
+    const tabDefs = [
+      { key: 'aimode', label: 'AI Mode', banner: 'AI Mode: describe what you need in plain words and we\u2019ll match suppliers for you.' },
+      { key: 'spotlight', label: 'Spotlight', banner: null },
+      { key: 'worldwide', label: 'Worldwide', banner: 'Worldwide: browsing verified sellers across all 190+ countries.' },
+      { key: 'freeshipping', label: 'Free Shipping', banner: 'Free Shipping: showing products eligible for free shipping on your first order.' },
+    ];
+    const activeTabKey = this.state.activeTab;
+    const tabs = tabDefs.map(t => {
+      const isActive = t.key === activeTabKey;
+      return {
+        label: t.label,
+        select: () => this.setState({ activeTab: t.key }),
+        size: isActive ? '16px' : '15px',
+        weight: isActive ? 700 : 500,
+        color: isActive ? '#1B1F1D' : '#8A857A',
+        underline: isActive ? '#C97B2D' : 'transparent',
+      };
+    });
+    const activeTabDef = tabDefs.find(t => t.key === activeTabKey);
+
+    let label = activeDef ? activeDef.name : 'All categories';
+    if (q) label = `Results for “${this.state.searchQuery}”`;
+
+    return {
+      categories,
+      products,
+      hasProducts: products.length > 0,
+      hasNoProducts: products.length === 0,
+      activeCategoryName: label,
+      tabs,
+      showTabBanner: !!activeTabDef.banner,
+      tabBannerText: activeTabDef.banner || '',
+      toggleReturnInfo: () => {},
+      searchQuery: this.state.searchQuery,
+      showMarquee: !this.state.searchFocused && !this.state.searchQuery,
+      onSearchChange: (e) => this.setState({ searchQuery: e.target.value }),
+      onSearchFocus: () => this.setState({ searchFocused: true }),
+      onSearchBlur: () => this.setState({ searchFocused: false }),
+      onSearchKeyDown: (e) => { if (e.key === 'Enter') e.target.blur(); },
+      onSearchSubmit: () => {},
+      clearSearch: () => this.setState({ searchQuery: '' }),
+      showCameraToast: this.state.showCameraToast,
+      onCameraClick: () => {
+        clearTimeout(this._cameraTimer);
+        this.setState({ showCameraToast: true });
+        this._cameraTimer = setTimeout(() => this.setState({ showCameraToast: false }), 2200);
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>
