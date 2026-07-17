@@ -96,6 +96,21 @@ body {
   animation: slideUp 0.32s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+@keyframes rippleEffect {
+  from {
+    opacity: 0.35;
+    transform: scale(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+.animate-ripple {
+  animation: rippleEffect 0.55s ease-out;
+}
+
 @keyframes badgePop {
   from {
     opacity: 0;

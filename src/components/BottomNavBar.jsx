@@ -1,20 +1,25 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useProfileDrawer } from '../context/ProfileDrawerContext';
 import { IconHome, IconGrid, IconMessageCircle, IconCart, IconUser } from './icons';
 
 const ACTIVE_COLOR = '#FF6A00';
 
+// "account" has no `to` — tapping it opens the profile drawer instead of navigating (see
+// useProfileDrawer), Facebook-app style. It still reads as "active" whenever the drawer is
+// open or the user has drilled into /account itself via the drawer's "View Profile" link.
 const TABS = [
   { key: 'home', label: 'Home', to: '/', icon: IconHome, match: (path) => path === '/' },
   { key: 'categories', label: 'Categories', to: '/categories', icon: IconGrid, match: (path) => path.startsWith('/categories') },
   { key: 'messenger', label: 'Messenger', to: '/messenger', icon: IconMessageCircle, match: (path) => path.startsWith('/messenger'), badge: 1 },
   { key: 'cart', label: 'Cart', to: '/cart', icon: IconCart, match: (path) => path.startsWith('/cart') },
-  { key: 'account', label: 'My Account', to: '/account', icon: IconUser, match: (path) => path.startsWith('/account') },
+  { key: 'account', label: 'My Account', icon: IconUser, match: (path) => path.startsWith('/account') },
 ];
 
 // Fixed mobile tab bar for the buyer storefront — hidden at the md breakpoint, where the
 // desktop Header/Footer take over primary navigation instead.
 export default function BottomNavBar() {
   const { pathname } = useLocation();
+  const { isOpen: drawerOpen, open: openDrawer } = useProfileDrawer();
 
   return (
     <nav
@@ -24,14 +29,11 @@ export default function BottomNavBar() {
     >
       <div className="grid grid-cols-5 h-[72px]">
         {TABS.map(({ key, label, to, icon: Icon, match, badge }) => {
-          const active = match(pathname);
-          return (
-            <Link
-              key={key}
-              to={to}
-              aria-current={active ? 'page' : undefined}
-              className="group flex flex-col items-center justify-center gap-1 mx-1 my-1.5 rounded-2xl outline-none transition-transform duration-150 active:scale-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#FF6A00]"
-            >
+          const active = match(pathname) || (key === 'account' && drawerOpen);
+          const itemClassName =
+            'group flex flex-col items-center justify-center gap-1 mx-1 my-1.5 rounded-2xl outline-none transition-transform duration-150 active:scale-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#FF6A00]';
+          const inner = (
+            <>
               <span className="relative flex items-center justify-center">
                 <Icon
                   className="transition-all duration-200 ease-out"
@@ -53,6 +55,28 @@ export default function BottomNavBar() {
               >
                 {label}
               </span>
+            </>
+          );
+
+          if (!to) {
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={openDrawer}
+                aria-haspopup="dialog"
+                aria-expanded={drawerOpen}
+                aria-current={active ? 'page' : undefined}
+                className={itemClassName}
+              >
+                {inner}
+              </button>
+            );
+          }
+
+          return (
+            <Link key={key} to={to} aria-current={active ? 'page' : undefined} className={itemClassName}>
+              {inner}
             </Link>
           );
         })}

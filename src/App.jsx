@@ -9,6 +9,13 @@ import CartPage from './pages/CartPage';
 import CategoriesPage from './pages/CategoriesPage';
 import MessengerPage from './pages/MessengerPage';
 import AccountPage from './pages/AccountPage';
+import WishlistPage from './pages/WishlistPage';
+import NotificationsPage from './pages/NotificationsPage';
+import SettingsPage from './pages/SettingsPage';
+import AccountCenterPage from './pages/AccountCenterPage';
+import HelpSupportPage from './pages/HelpSupportPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsPage from './pages/TermsPage';
 import AuthPage from './pages/AuthPage';
 import SellerLayout from './pages/seller/SellerLayout';
 import SellerDashboard from './pages/seller/SellerDashboard';
@@ -31,6 +38,13 @@ export default function App() {
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/messenger" element={<MessengerPage />} />
         <Route path="/account" element={<AccountPage />} />
+        <Route path="/wishlist" element={<WishlistPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/account-center" element={<AccountCenterPage />} />
+        <Route path="/help" element={<HelpSupportPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
       </Route>
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/seller" element={<SellerLayout />}>
