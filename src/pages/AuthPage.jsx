@@ -785,7 +785,7 @@ function Otp({ contact, loading, error, onSubmit, goSignin }) {
       </span>
       <h1 className="font-display text-2xl font-bold m-0 mb-2.5 tracking-tight">Verify your account</h1>
       <p className="text-sm text-text mb-6 leading-relaxed">
-        Enter any 6-digit demo code to continue{contact ? (
+        Enter the demo code <strong className="text-ink">123456</strong> to continue{contact ? (
           <>
             {' '}
             for <strong className="text-ink">{contact}</strong>

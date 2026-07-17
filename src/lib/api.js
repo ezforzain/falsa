@@ -1,4 +1,6 @@
-// Thin fetch client for the mocked REST API (see src/mocks/handlers.js).
+// Thin fetch client for the backend API (see /server). Requests use relative paths like
+// '/api/auth/signin', proxied to the backend by Vite in dev (see vite.config.js) so cookies
+// (the guest cart id) and CORS just work as if it were same-origin.
 // Every network call in the app goes through here so there's one place that
 // attaches the auth token and turns non-2xx responses into thrown errors.
 
@@ -41,11 +43,10 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
   const data = isJson ? await res.json().catch(() => null) : null;
 
   if (!res.ok) {
-    // A non-JSON response from our own /api/* path means the request hit the real dev
-    // server instead of being intercepted by the mock backend (MSW) — most commonly
-    // right after a hard/force reload. Surface that clearly instead of a bare status code.
+    // A non-JSON response from our own /api/* path usually means the backend (or its proxy)
+    // isn't reachable rather than a normal API error, which always comes back as JSON.
     if (!isJson && path.startsWith('/api/')) {
-      throw new ApiError('Mock API unavailable — please refresh the page (a normal refresh, not a hard reload) and try again.', res.status);
+      throw new ApiError('Could not reach the server — please check it is running and try again.', res.status);
     }
     throw new ApiError(data?.message || `Request failed (${res.status}).`, res.status);
   }

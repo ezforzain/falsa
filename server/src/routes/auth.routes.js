@@ -6,6 +6,7 @@ import { PendingAuth } from '../models/PendingAuth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { makePendingToken, signAuthToken, DEV_OTP_CODE } from '../utils/token.js';
 import { requireAuth } from '../middleware/auth.js';
+import { serializeUser } from '../utils/serializeUser.js';
 
 const router = Router();
 
@@ -197,7 +198,7 @@ router.post(
     }
     const user = await User.findById(pending.userId);
     const token = signAuthToken(user);
-    res.json({ purpose: pending.purpose, token, user: user.toPublicJSON() });
+    res.json({ purpose: pending.purpose, token, user: await serializeUser(user) });
   })
 );
 
@@ -221,9 +222,13 @@ router.post('/logout', (_req, res) => {
 });
 
 // ---------- GET /api/auth/session ----------
-router.get('/session', requireAuth, (req, res) => {
-  res.json({ user: req.user.toPublicJSON() });
-});
+router.get(
+  '/session',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    res.json({ user: await serializeUser(req.user) });
+  })
+);
 
 // ---------- PATCH /api/auth/profile ----------
 router.patch(
@@ -234,7 +239,7 @@ router.patch(
     if (!companyName) return res.status(400).json({ message: 'Company name is required.' });
     req.user.set({ companyName, phone, country, category });
     await req.user.save();
-    res.json({ user: req.user.toPublicJSON() });
+    res.json({ user: await serializeUser(req.user) });
   })
 );
 
@@ -259,7 +264,7 @@ router.post(
       reviewedAt: null,
     });
     await req.user.save();
-    res.json({ user: req.user.toPublicJSON() });
+    res.json({ user: await serializeUser(req.user) });
   })
 );
 

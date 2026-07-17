@@ -23,7 +23,11 @@ export function createApp() {
       credentials: true,
     })
   );
-  app.use(express.json({ limit: '2mb' }));
+  // The signup form still sends CNIC/business-document images as base64 JSON strings (up to
+  // 4-5MB raw each per the frontend's validateImageFile/validateDocumentFile limits) rather
+  // than multipart uploads — base64 inflates that by ~33%, so the body limit needs real
+  // headroom above the raw file size, not just above the JSON metadata.
+  app.use(express.json({ limit: '15mb' }));
   app.use(cookieParser());
   app.use(morgan('dev'));
   app.use('/uploads', express.static(path.resolve('uploads')));
