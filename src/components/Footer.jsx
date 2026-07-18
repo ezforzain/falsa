@@ -40,9 +40,6 @@ export default function Footer() {
               </span>
               <OfficialBadge size={16} />
             </span>
-            <p className="text-[13.5px] leading-relaxed mt-3.5 max-w-[280px]">
-              The trusted B2B marketplace — worldwide free shipping, verified sellers, secure trade.
-            </p>
           </div>
           {columns.map((col) => (
             <div key={col.title}>

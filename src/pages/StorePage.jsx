@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { sellers } from '../lib/api';
 import ProductCard from '../components/ProductCard';
 import VerifiedBadge from '../components/VerifiedBadge';
-import { IconBox, IconShield } from '../components/icons';
+import { IconBox, IconShield, IconStar, IconPin } from '../components/icons';
 
 export default function StorePage() {
   const { id } = useParams();
@@ -66,6 +66,16 @@ export default function StorePage() {
 
   if (!store) return null;
 
+  // The compact StoreCard (Product Detail page) only shows rating + followers — this full
+  // profile page is where every other store detail lives, per the "show more on the full
+  // profile" design. Rating and location aren't stored on the seller record itself, so they're
+  // derived here from the store's own listings (same proxy the compact card's rating uses).
+  const ratedProducts = storeProducts.filter((p) => p.rating);
+  const avgRating = ratedProducts.length
+    ? (ratedProducts.reduce((sum, p) => sum + parseFloat(p.rating), 0) / ratedProducts.length).toFixed(1)
+    : null;
+  const location = storeProducts.find((p) => p.location)?.location;
+
   return (
     <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20 animate-fade-up">
       <div className="bg-white border border-border rounded-2xl p-6 sm:p-8 mb-8 flex items-center gap-5 flex-wrap">
@@ -84,6 +94,24 @@ export default function StorePage() {
           >
             <IconShield width="13" height="13" strokeWidth="2.2" />
             {store.verified ? 'Verified Store' : 'Not yet verified'}
+          </div>
+
+          <div className="flex items-center gap-x-4 gap-y-1.5 text-[13px] text-text-muted mt-3 flex-wrap">
+            {avgRating && (
+              <span className="flex items-center gap-1 font-semibold text-ink-soft">
+                <IconStar width="13" height="13" />
+                {avgRating} rating
+              </span>
+            )}
+            <span className="font-semibold text-ink-soft">{(store.followerCount ?? 0).toLocaleString()} followers</span>
+            {location && (
+              <span className="flex items-center gap-1">
+                <IconPin width="13" height="13" />
+                {location}
+              </span>
+            )}
+            <span>{storeProducts.length} products</span>
+            {typeof store.responseRate === 'number' && <span>{store.responseRate}% response rate</span>}
           </div>
         </div>
       </div>

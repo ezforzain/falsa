@@ -4,11 +4,12 @@ import VerifiedBadge from './VerifiedBadge';
 import FollowButton from './FollowButton';
 import { IconStar } from './icons';
 
-// Store summary card shown on the Product Detail page — logo, name, verified badge, rating,
-// and store stats, plus the Follow/Following control. `seller` is the sellers-directory record
-// returned by GET /api/sellers/:id (see src/mocks/handlers.js), extended with `productCount`
-// and `following` by the caller.
-export default function StoreCard({ rating, location, seller }) {
+// Compact store summary shown on the Product Detail page — logo, name, verified badge, plus
+// only the two numbers that matter for a quick trust check: rating and follower count.
+// Location, listing count, and response rate live on the full Seller Profile page instead (see
+// StorePage) — open the store to see those. `seller` is the sellers-directory record returned
+// by GET /api/sellers/:id, extended with `following` by the caller.
+export default function StoreCard({ rating, seller }) {
   const [followerCount, setFollowerCount] = useState(seller?.followerCount ?? 0);
 
   if (!seller) return null;
@@ -38,11 +39,11 @@ export default function StoreCard({ rating, location, seller }) {
               {rating}
             </span>
           )}
-          {location && <span>{location}</span>}
-          {typeof seller.productCount === 'number' && <span>{seller.productCount} products</span>}
-          {typeof seller.responseRate === 'number' && <span>{seller.responseRate}% response rate</span>}
           <span>{followerCount.toLocaleString()} followers</span>
         </div>
+        <Link to={`/store/${seller.id}`} className="text-[12px] font-semibold text-green no-underline hover:underline mt-1 inline-block">
+          View full profile
+        </Link>
       </div>
 
       <FollowButton

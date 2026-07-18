@@ -64,7 +64,7 @@ export const mobileCategories = [
 ];
 
 export const mobileTabs = [
-  { key: 'aimode', label: 'AI Mode', banner: 'AI Mode: describe what you need in plain words and we’ll match suppliers for you.' },
+  { key: 'aimode', label: 'B2B', banner: 'B2B: describe what you need in plain words and we’ll match suppliers for you.' },
   { key: 'spotlight', label: 'Spotlight', banner: null },
   { key: 'worldwide', label: 'Worldwide', banner: 'Worldwide: browsing verified sellers across all 190+ countries.' },
   { key: 'freeshipping', label: 'Free Shipping', banner: 'Free Shipping: showing products eligible for free shipping on your first order.' },

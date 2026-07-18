@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { normalizeQuery, searchHints } from '../data/mockData';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { useProfileDrawer } from '../context/ProfileDrawerContext';
 import useRotatingHints from '../hooks/useRotatingHints';
 import SearchHintOverlay from './SearchHintOverlay';
 import ProfileDropdown from './ProfileDropdown';
@@ -17,7 +16,6 @@ export default function Header() {
   const location = useLocation();
   const { count: cartCount } = useCart();
   const { user, status, isAuthenticated, logout } = useAuth();
-  const { open: openAccountMenu } = useProfileDrawer();
 
   const handleLogout = async () => {
     setMenuOpen(false);
@@ -41,6 +39,7 @@ export default function Header() {
 
   const isHome = location.pathname === '/';
   const isSpotlight = location.pathname === '/spotlight';
+  const isMyProfile = location.pathname === '/account';
 
   const navLinkClass = (active) =>
     `cursor-pointer px-3.5 py-2 rounded-lg text-sm transition-colors hover:bg-surface-muted ${
@@ -125,9 +124,12 @@ export default function Header() {
             <span className="w-[92px] h-9 rounded-lg bg-surface-muted animate-pulse ml-1" />
           ) : isAuthenticated ? (
             <div className="flex items-center gap-1">
-              <span className="px-3 py-2 text-sm font-semibold text-ink-soft max-w-[140px] truncate hidden lg:inline">
+              <Link
+                to="/account"
+                className="px-3 py-2 text-sm font-semibold text-ink-soft max-w-[140px] truncate hidden lg:inline no-underline hover:text-green transition-colors"
+              >
                 {accountLabel}
-              </span>
+              </Link>
               <button
                 type="button"
                 onClick={handleLogout}
@@ -147,32 +149,22 @@ export default function Header() {
             </Link>
           )}
 
-          {/* Facebook-style account menu — hamburger in the header's top-right corner,
-              opening a dropdown here on desktop (see ProfileDropdown) and the same full-height
-              drawer mobile gets elsewhere (see ProfileDrawer / useProfileDrawer). */}
-          <ProfileDropdown />
+          {/* Facebook-style account menu — the hamburger only appears here on the My Profile
+              page itself (see ProfileDropdown), not on every page. Mobile's equivalent trigger
+              is the bottom nav's "My Account" tab, which works from anywhere. */}
+          {isMyProfile && <ProfileDropdown />}
         </nav>
 
-        {/* Mobile: account menu + existing nav/search toggle, top-right */}
-        <div className="md:hidden ml-auto flex items-center gap-1">
-          <button
-            type="button"
-            aria-label="Account menu"
-            aria-haspopup="dialog"
-            className="cursor-pointer text-ink p-1.5 rounded-lg hover:bg-surface-muted transition-colors"
-            onClick={openAccountMenu}
-          >
-            <IconMenu />
-          </button>
-          <button
-            type="button"
-            aria-label="Toggle search and navigation"
-            className="cursor-pointer text-ink p-1.5 rounded-lg hover:bg-surface-muted transition-colors"
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            {menuOpen ? <IconClose /> : <IconSearch />}
-          </button>
-        </div>
+        {/* Mobile: existing nav/search toggle, top-right (account menu lives on the bottom
+            nav's "My Account" tab instead — see BottomNavBar) */}
+        <button
+          type="button"
+          aria-label="Toggle search and navigation"
+          className="md:hidden ml-auto text-ink p-1.5 rounded-lg hover:bg-surface-muted transition-colors"
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          {menuOpen ? <IconClose /> : <IconMenu />}
+        </button>
       </div>
 
       {/* Mobile panel */}

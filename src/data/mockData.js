@@ -339,9 +339,9 @@ export const mobileCategories = [
 export const mobileTabs = [
   {
     key: "aimode",
-    label: "AI Mode",
+    label: "B2B",
     banner:
-      "AI Mode: describe what you need in plain words and we’ll match suppliers for you.",
+      "B2B: describe what you need in plain words and we’ll match suppliers for you.",
   },
   { key: "spotlight", label: "Spotlight", banner: null },
   {

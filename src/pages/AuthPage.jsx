@@ -64,17 +64,19 @@ export default function AuthPage() {
 
   const isSeller = role === ROLE_SELLER;
 
-  // Deep links (e.g. the "Become a Partner" / "Create a Seller Account" rows on the account
-  // page) can jump straight to the seller sign-up form via /auth?screen=signup&role=seller,
-  // instead of always landing on the plain sign-in screen.
+  // Deep links (e.g. the "Become a Partner" / "Customer Sign Up" rows in the account menu) can
+  // jump straight to the seller or buyer sign-up form via /auth?screen=signup&role=seller (or
+  // role=buyer), instead of always landing on the plain sign-in screen.
   const [searchParams] = useSearchParams();
   useEffect(() => {
     const wantsSignup = searchParams.get('screen') === 'signup';
     const wantsSeller = searchParams.get('role') === 'seller';
+    const wantsBuyer = searchParams.get('role') === 'buyer';
     if (wantsSeller) setRole(ROLE_SELLER);
+    if (wantsBuyer) setRole(ROLE_BUYER);
     if (wantsSignup) {
       setScreen('signup');
-      setSignupStep(wantsSeller ? 2 : 1);
+      setSignupStep(wantsSeller || wantsBuyer ? 2 : 1);
     }
     // Only ever applies on the initial load of this page.
     // eslint-disable-next-line react-hooks/exhaustive-deps

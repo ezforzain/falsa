@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { catalog } from '../lib/api';
 import VerifiedBadge from '../components/VerifiedBadge';
 import MobileTopBar from '../components/MobileTopBar';
+import ChatButton from '../components/ChatButton';
 import useIsMobile from '../hooks/useIsMobile';
 import useInfiniteFeed from '../hooks/useInfiniteFeed';
-import { IconPin, IconSparkle, IconTrendingUp, IconTruck } from '../components/icons';
+import { IconPin, IconSparkle, IconTrendingUp, IconTruck, IconMessageCircle } from '../components/icons';
 
 export default function SpotlightPage() {
   const isMobile = useIsMobile();
@@ -46,6 +47,22 @@ export default function SpotlightPage() {
   }, [spotlightNear, spotlightTrend]);
   const { items: feedProducts, loadingMore, sentinelRef } = useInfiniteFeed(feedPool, { batchSize: 6 });
 
+  // Desktop leads with a single Daraz-style featured product (the #1 nearest match, or the top
+  // trending item if there's no near data yet) instead of a grid — everything else still gets a
+  // lighter secondary strip below it so the page isn't just one lone card.
+  const featuredEntry = spotlightNear[0] ? { kind: 'near', ...spotlightNear[0] } : spotlightTrend[0] ? { kind: 'trend', ...spotlightTrend[0] } : null;
+  const restEntries = useMemo(() => {
+    const seen = new Set(featuredEntry ? [featuredEntry.product.id] : []);
+    const rest = [];
+    [...spotlightNear, ...spotlightTrend].forEach((entry) => {
+      if (seen.has(entry.product.id)) return;
+      seen.add(entry.product.id);
+      rest.push(entry);
+    });
+    return rest;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spotlightNear, spotlightTrend]);
+
   if (isMobile) {
     return (
       <div className="min-h-screen bg-white font-sans">
@@ -83,24 +100,25 @@ export default function SpotlightPage() {
           <>
             <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-3">
               {feedProducts.map((p) => (
-                <Link
-                  key={p.feedKey}
-                  to={`/product/${p.id}`}
-                  className="block bg-white border border-[#EFEBE2] rounded-[14px] overflow-hidden no-underline text-inherit"
-                >
-                  <div className="h-[130px] overflow-hidden">
-                    <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="px-2.5 pt-2.5 pb-3">
-                    <div className="text-[12.5px] font-semibold text-ink leading-snug mb-1.5 line-clamp-2">{p.name}</div>
-                    <div className="flex items-baseline justify-between">
-                      <span className="font-display font-bold text-[14.5px] text-green">{p.price}</span>
-                      <span className="text-[10px] text-orange-text bg-orange-tint px-1.5 py-1 rounded-md font-semibold">
-                        MOQ {p.moq}
-                      </span>
+                <div key={p.feedKey} className="bg-white border border-[#EFEBE2] rounded-[14px] overflow-hidden">
+                  <Link to={`/product/${p.id}`} className="block no-underline text-inherit">
+                    <div className="h-[130px] overflow-hidden">
+                      <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
                     </div>
+                    <div className="px-2.5 pt-2.5 pb-2">
+                      <div className="text-[12.5px] font-semibold text-ink leading-snug mb-1.5 line-clamp-2">{p.name}</div>
+                      <div className="flex items-baseline justify-between">
+                        <span className="font-display font-bold text-[14.5px] text-green">{p.price}</span>
+                        <span className="text-[10px] text-orange-text bg-orange-tint px-1.5 py-1 rounded-md font-semibold">
+                          MOQ {p.moq}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                  <div className="px-2.5 pb-2.5 pt-1">
+                    <ChatButton className="w-full" />
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
 
@@ -176,69 +194,100 @@ export default function SpotlightPage() {
         </div>
       )}
 
-      {!loading && !error && (
-      <>
-      {/* Nearest sellers */}
-      <section className="pt-8">
-        <h2 className="font-display text-[22px] font-bold m-0 mb-1.5">Nearest sellers, lowest shipping</h2>
-        <p className="text-[13.5px] text-text-muted mb-5">Ranked by shipping charges to your address</p>
-        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-          {spotlightNear.map((s) => (
-            <Link
-              key={s.product.id}
-              to={`/product/${s.product.id}`}
-              className="group block bg-white border border-border rounded-2xl overflow-hidden no-underline text-inherit transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(20,40,32,0.12)]"
-            >
-              <div className="h-40 relative overflow-hidden">
-                <img src={s.product.img} alt={s.product.name} className="w-full h-full object-cover" />
-                <span className="absolute top-3 left-3 bg-green text-white text-[11px] font-bold px-2.5 py-1.5 rounded-full">
-                  #{s.rank} nearest
-                </span>
-              </div>
-              <div className="px-[18px] pt-4 pb-[18px]">
-                <div className="text-[15px] font-semibold mb-1">{s.product.name}</div>
-                <div className="flex items-center gap-1.5 text-[12.5px] text-text-muted mb-3.5 flex-wrap">
-                  <IconPin width="12" height="12" />
-                  {s.product.seller}
-                  {s.product.verified && <VerifiedBadge size={13} />}
-                  <span>· {s.distance}</span>
-                </div>
-                <div className="inline-flex items-center gap-1.5 bg-green-tint text-green text-[12.5px] font-bold px-3 py-1.5 rounded-full">
-                  <IconTruck width="13" height="13" strokeWidth="2.2" />
-                  Shipping {s.shipping}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* Featured product — Daraz-style single hero card instead of a grid: one large image,
+          full details, and a clear CTA, rather than competing for attention with a dozen tiles. */}
+      {!loading && !error && featuredEntry && (
+        <section className="pt-8">
+          <div className="grid lg:grid-cols-2 bg-white border border-border rounded-[24px] overflow-hidden">
+            <div className="relative h-[300px] lg:h-full min-h-[380px] bg-surface-muted order-1">
+              <img
+                src={featuredEntry.product.img}
+                alt={featuredEntry.product.name}
+                className="w-full h-full object-cover"
+              />
+              <span className="absolute top-4 left-4 bg-green text-white text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                <IconSparkle width="12" height="12" />
+                Featured
+              </span>
+            </div>
 
-      {/* Trending in country */}
-      <section className="pt-12">
-        <h2 className="font-display text-[22px] font-bold m-0 mb-1.5">Trending in Pakistan</h2>
-        <p className="text-[13.5px] text-text-muted mb-5">What buyers in your country are ordering this week</p>
-        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
-          {spotlightTrend.map((t) => (
-            <Link
-              key={t.product.id}
-              to={`/product/${t.product.id}`}
-              className="group block bg-white border border-border rounded-2xl overflow-hidden no-underline text-inherit transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(20,40,32,0.12)]"
-            >
-              <div className="h-[140px] overflow-hidden">
-                <img src={t.product.img} alt={t.product.name} className="w-full h-full object-cover" />
+            <div className="p-7 lg:p-10 flex flex-col justify-center order-2">
+              <div className="font-mono text-[11px] tracking-[0.14em] uppercase text-orange mb-3">
+                {featuredEntry.kind === 'near' ? 'Nearest seller · lowest shipping' : 'Trending this week'}
               </div>
-              <div className="px-4 pt-3.5 pb-4">
-                <div className="text-sm font-semibold mb-1.5">{t.product.name}</div>
-                <div className="flex items-center gap-1.5 text-xs text-orange-text font-bold">
-                  <IconTrendingUp />
-                  {t.growth} this week
+              <h2 className="font-display text-2xl sm:text-[32px] font-bold text-ink m-0 mb-3 tracking-tight text-balance">
+                {featuredEntry.product.name}
+              </h2>
+              <div className="flex items-center gap-1.5 text-[13.5px] text-text-muted mb-4 flex-wrap">
+                <IconPin width="13" height="13" />
+                {featuredEntry.product.seller}
+                {featuredEntry.product.verified && <VerifiedBadge size={14} />}
+                {featuredEntry.kind === 'near' && <span>· {featuredEntry.distance}</span>}
+              </div>
+              <div className="font-display font-bold text-[28px] text-green mb-1">{featuredEntry.product.price}</div>
+              <div className="text-[13px] text-text-muted mb-5">
+                MOQ {featuredEntry.product.moq} / {featuredEntry.product.unit}
+              </div>
+
+              {featuredEntry.kind === 'near' ? (
+                <div className="inline-flex items-center gap-1.5 self-start bg-green-tint text-green text-[12.5px] font-bold px-3 py-1.5 rounded-full mb-6">
+                  <IconTruck width="13" height="13" strokeWidth="2.2" />
+                  Shipping {featuredEntry.shipping} · #{featuredEntry.rank} nearest
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 self-start bg-orange-tint text-orange-text text-[12.5px] font-bold px-3 py-1.5 rounded-full mb-6">
+                  <IconTrendingUp width="13" height="13" />
+                  {featuredEntry.growth} growth this week
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <Link
+                  to={`/product/${featuredEntry.product.id}`}
+                  className="flex-1 text-center cursor-pointer bg-orange hover:bg-orange-hover text-white font-semibold text-[15px] py-3.5 rounded-full no-underline shadow-[0_8px_22px_rgba(201,123,45,0.3)] transition-all hover:-translate-y-0.5"
+                >
+                  View Product
+                </Link>
+                <Link
+                  to="/messenger"
+                  className="flex-1 flex items-center justify-center gap-2 text-center cursor-pointer bg-white border-[1.5px] border-green text-green hover:bg-green-tint font-semibold text-[15px] py-3.5 rounded-full no-underline transition-all"
+                >
+                  <IconMessageCircle width="16" height="16" />
+                  Chat
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Everything else Spotlight has to offer, as a lighter secondary strip beneath the
+          featured product rather than a second competing grid. */}
+      {!loading && !error && restEntries.length > 0 && (
+        <section className="pt-12">
+          <h2 className="font-display text-[20px] font-bold m-0 mb-5">More from Spotlight</h2>
+          <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+            {restEntries.map((entry) => (
+              <div
+                key={entry.product.id}
+                className="bg-white border border-border rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(20,40,32,0.12)]"
+              >
+                <Link to={`/product/${entry.product.id}`} className="block no-underline text-inherit">
+                  <div className="h-36 overflow-hidden">
+                    <img src={entry.product.img} alt={entry.product.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="px-4 pt-3.5 pb-2">
+                    <div className="text-sm font-semibold mb-1.5 line-clamp-1">{entry.product.name}</div>
+                    <div className="font-display font-bold text-green text-[15px]">{entry.product.price}</div>
+                  </div>
+                </Link>
+                <div className="px-4 pb-3.5 pt-1">
+                  <ChatButton className="w-full" />
                 </div>
               </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-      </>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Similar products fallback */}

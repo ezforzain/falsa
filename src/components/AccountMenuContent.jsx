@@ -46,8 +46,14 @@ function growthItems(role) {
     return [{ label: 'Admin Panel', to: '/admin', icon: IconShield, tint: 'orange' }];
   }
   return [
-    { label: 'Become a Partner', to: '/auth?screen=signup&role=seller', icon: IconGift, tint: 'orange' },
-    { label: 'Create Seller Account', to: '/auth?screen=signup&role=seller', icon: IconStore, tint: 'orange' },
+    {
+      label: 'Become a Partner',
+      subtitle: 'Earn money by becoming our partner.',
+      to: '/auth?screen=signup&role=seller',
+      icon: IconGift,
+      tint: 'orange',
+    },
+    { label: 'Customer Sign Up', to: '/auth?screen=signup&role=buyer', icon: IconUser, tint: 'green' },
   ];
 }
 
@@ -77,7 +83,7 @@ function spawnRipple(e) {
   span.addEventListener('animationend', () => span.remove());
 }
 
-function MenuRow({ icon: Icon, label, to, onClick, onNavigate, tint = 'green', danger = false }) {
+function MenuRow({ icon: Icon, label, subtitle, to, onClick, onNavigate, tint = 'green', danger = false }) {
   const className = `relative overflow-hidden flex items-center gap-3.5 px-3 py-2.5 rounded-xl no-underline cursor-pointer transition-colors duration-150 hover:bg-surface-muted active:bg-cream-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green ${danger ? 'text-red-600' : 'text-ink'}`;
 
   const content = (
@@ -85,7 +91,10 @@ function MenuRow({ icon: Icon, label, to, onClick, onNavigate, tint = 'green', d
       <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${TINTS[tint] || TINTS.green}`}>
         <Icon width="18" height="18" />
       </span>
-      <span className="text-[14.5px] font-semibold">{label}</span>
+      <span className="min-w-0">
+        <span className="block text-[14.5px] font-semibold">{label}</span>
+        {subtitle && <span className="block text-[12px] font-normal text-text-muted mt-0.5 leading-snug">{subtitle}</span>}
+      </span>
     </>
   );
 

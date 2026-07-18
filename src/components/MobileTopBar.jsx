@@ -1,15 +1,13 @@
 import { useState } from 'react';
-import { useProfileDrawer } from '../context/ProfileDrawerContext';
-import { IconLogo, IconMenu, IconUser } from './icons';
+import { IconLogo, IconMenu } from './icons';
 import InformationDrawer from './InformationDrawer';
 
 // Lightweight top bar for the "bare" mobile screens (Home, Spotlight) that skip the desktop
-// Header/Footer chrome — wordmark, a profile icon into the left-slide profile drawer, and a
-// hamburger into the Information sheet. Real navigation on these screens otherwise lives in the
-// bottom tab bar.
+// Header/Footer chrome — just the wordmark and a hamburger into the Information sheet. The
+// account menu lives only on the bottom nav's "My Account" tab and the My Profile page itself,
+// not here — real navigation otherwise lives in the bottom tab bar.
 export default function MobileTopBar() {
   const [infoOpen, setInfoOpen] = useState(false);
-  const { open: openProfileDrawer } = useProfileDrawer();
 
   return (
     <>
@@ -20,15 +18,6 @@ export default function MobileTopBar() {
         <span className="font-display text-lg font-bold text-green tracking-tight flex-1">
           Falsafah<span className="text-orange">Tot</span>
         </span>
-        <button
-          type="button"
-          onClick={openProfileDrawer}
-          aria-label="Open profile menu"
-          aria-haspopup="dialog"
-          className="cursor-pointer w-9 h-9 rounded-full flex items-center justify-center bg-green-tint text-green hover:bg-green/15 active:scale-95 transition-all shrink-0"
-        >
-          <IconUser width="18" height="18" />
-        </button>
         <button
           type="button"
           onClick={() => setInfoOpen(true)}

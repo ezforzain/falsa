@@ -9,6 +9,7 @@ import Toast from '../components/Toast';
 import ImageGallery from '../components/ImageGallery';
 import StoreCard from '../components/StoreCard';
 import VariantBottomSheet from '../components/VariantBottomSheet';
+import FirstVisitSignupPrompt from '../components/FirstVisitSignupPrompt';
 import { IconChevronRight, IconShield, IconCheck, IconTruck, IconTrendingUp } from '../components/icons';
 
 export default function ProductPage() {
@@ -216,7 +217,7 @@ export default function ProductPage() {
             {product.name}
           </h1>
           {storeSeller ? (
-            <StoreCard rating={product.rating} location={product.location} seller={storeSeller} />
+            <StoreCard rating={product.rating} seller={storeSeller} />
           ) : (
             <div className="animate-pulse h-[78px] bg-surface-muted rounded-2xl mb-[22px]" />
           )}
@@ -317,6 +318,7 @@ export default function ProductPage() {
         onClose={() => setSheetOpen(false)}
         onBuyNow={handleSheetBuyNow}
       />
+      <FirstVisitSignupPrompt />
     </main>
   );
 }
