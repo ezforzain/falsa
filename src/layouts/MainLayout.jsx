@@ -16,9 +16,17 @@ export default function MainLayout() {
   const BARE_MOBILE_ROUTES = ['/', '/spotlight', '/account'];
   const isMobileBare = isMobile && BARE_MOBILE_ROUTES.includes(pathname);
 
+  // Matches BottomNavBar's actual footprint (72px grid + its own `max(inset, 12px)` bottom
+  // padding) so page content always clears it, on platforms that report a real safe-area
+  // inset (iPhone home indicator) and ones that don't (Android's gesture bar reports 0).
+  const bottomNavClearance = 'calc(72px + max(env(safe-area-inset-bottom), 12px))';
+
   if (isMobileBare) {
     return (
-      <div className="font-sans text-ink bg-white min-h-screen pb-[76px]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div
+        className="font-sans text-ink bg-white min-h-screen"
+        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: bottomNavClearance }}
+      >
         <Outlet />
         <BottomNavBar />
       </div>
@@ -26,7 +34,10 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="font-sans text-ink bg-cream min-h-screen flex flex-col pb-[76px] md:pb-0">
+    <div
+      className="font-sans text-ink bg-cream min-h-screen flex flex-col"
+      style={{ paddingBottom: isMobile ? bottomNavClearance : undefined }}
+    >
       <AnnouncementStrip />
       <Header />
       <div className="flex-1">

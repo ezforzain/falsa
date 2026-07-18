@@ -6,6 +6,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    // Listen on all network interfaces (not just localhost) so other devices on the same
+    // Wi-Fi — a phone, another laptop — can reach the dev server via this machine's LAN IP.
+    host: true,
     proxy: {
       // Forwards to the real backend (see /server) as if it were same-origin — this is what
       // lets the guest-cart cookie and CORS work in dev without any extra config, and keeps

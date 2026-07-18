@@ -192,7 +192,11 @@ export default function ProfileDrawer({ open, onClose }) {
         </div>
 
         {/* Menu */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Profile">
+        <nav
+          className="flex-1 overflow-y-auto px-3 pt-4"
+          aria-label="Profile"
+          style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
+        >
           <DrawerSection items={PRIMARY_ITEMS} onNavigate={onClose} />
           <div className="border-t border-border my-4" />
           <DrawerSection items={GROWTH_ITEMS} onNavigate={onClose} />

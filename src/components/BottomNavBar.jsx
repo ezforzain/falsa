@@ -25,7 +25,11 @@ export default function BottomNavBar() {
     <nav
       aria-label="Primary"
       className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-white border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      // `env(safe-area-inset-bottom)` alone isn't enough — Android Chrome commonly reports 0
+      // for it even with 3-button/gesture navigation showing (unlike iOS Safari), which was
+      // clipping the label text under the system nav bar. `max()` guarantees real clearance
+      // on every platform regardless of what the inset resolves to.
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}
     >
       <div className="grid grid-cols-5 h-[72px]">
         {TABS.map(({ key, label, to, icon: Icon, match, badge }) => {
