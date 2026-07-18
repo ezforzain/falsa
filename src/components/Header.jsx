@@ -3,8 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { normalizeQuery, searchHints } from '../data/mockData';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useProfileDrawer } from '../context/ProfileDrawerContext';
 import useRotatingHints from '../hooks/useRotatingHints';
 import SearchHintOverlay from './SearchHintOverlay';
+import ProfileDropdown from './ProfileDropdown';
 import { IconSearch, IconCart, IconUser, IconLogout, IconSparkle, IconLogo, IconMenu, IconClose, IconBox, IconShield } from './icons';
 
 export default function Header() {
@@ -15,6 +17,7 @@ export default function Header() {
   const location = useLocation();
   const { count: cartCount } = useCart();
   const { user, status, isAuthenticated, logout } = useAuth();
+  const { open: openAccountMenu } = useProfileDrawer();
 
   const handleLogout = async () => {
     setMenuOpen(false);
@@ -143,17 +146,33 @@ export default function Header() {
               Sign in
             </Link>
           )}
+
+          {/* Facebook-style account menu — hamburger in the header's top-right corner,
+              opening a dropdown here on desktop (see ProfileDropdown) and the same full-height
+              drawer mobile gets elsewhere (see ProfileDrawer / useProfileDrawer). */}
+          <ProfileDropdown />
         </nav>
 
-        {/* Mobile menu toggle */}
-        <button
-          type="button"
-          aria-label="Toggle menu"
-          className="md:hidden ml-auto text-ink p-1.5"
-          onClick={() => setMenuOpen((v) => !v)}
-        >
-          {menuOpen ? <IconClose /> : <IconMenu />}
-        </button>
+        {/* Mobile: account menu + existing nav/search toggle, top-right */}
+        <div className="md:hidden ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            aria-label="Account menu"
+            aria-haspopup="dialog"
+            className="cursor-pointer text-ink p-1.5 rounded-lg hover:bg-surface-muted transition-colors"
+            onClick={openAccountMenu}
+          >
+            <IconMenu />
+          </button>
+          <button
+            type="button"
+            aria-label="Toggle search and navigation"
+            className="cursor-pointer text-ink p-1.5 rounded-lg hover:bg-surface-muted transition-colors"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            {menuOpen ? <IconClose /> : <IconSearch />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile panel */}
