@@ -1,18 +1,37 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useProfileDrawer } from '../context/ProfileDrawerContext';
 import { IconUser, IconMenu } from '../components/icons';
 
 // "My Profile" — just the profile itself now. Orders, seller tools, settings, support, and
-// sign-out all moved into the Facebook-style account menu (the hamburger in Header's top-right
-// corner, or the bottom nav's "My Account" tab on mobile) — see AccountMenuContent.
+// sign-out all moved into the Facebook-style account menu — see AccountMenuContent. The
+// trigger for it only ever appears here: Header's hamburger only renders while viewing this
+// page (desktop), and this page renders bare on mobile (no Header at all — see MainLayout's
+// bare-route list), so it needs its own trigger too, rather than relying on the bottom nav.
 export default function AccountPage() {
   const { user, isAuthenticated } = useAuth();
+  const { open: openAccountMenu } = useProfileDrawer();
+
+  const TopBar = (
+    <div className="flex items-center justify-between gap-3 mb-1.5">
+      <h1 className="font-display text-[28px] font-bold m-0 tracking-tight">My Profile</h1>
+      <button
+        type="button"
+        onClick={openAccountMenu}
+        aria-label="Account menu"
+        aria-haspopup="dialog"
+        className="md:hidden cursor-pointer w-10 h-10 rounded-lg flex items-center justify-center text-text hover:bg-surface-muted transition-colors shrink-0"
+      >
+        <IconMenu />
+      </button>
+    </div>
+  );
 
   if (!isAuthenticated) {
     return (
       <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20 animate-fade-up">
         <div className="max-w-[640px] mx-auto">
-          <h1 className="font-display text-[28px] font-bold m-0 mb-1.5 tracking-tight">My Profile</h1>
+          {TopBar}
           <div className="text-center py-[60px] px-5 bg-white border border-dashed border-border-strong rounded-2xl">
             <span className="w-14 h-14 rounded-full bg-surface-muted inline-flex items-center justify-center mb-5">
               <IconUser width="22" height="22" className="text-text-muted" />
@@ -34,11 +53,11 @@ export default function AccountPage() {
   return (
     <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20 animate-fade-up">
       <div className="max-w-[640px] mx-auto">
-        <h1 className="font-display text-[28px] font-bold m-0 mb-1.5 tracking-tight">My Profile</h1>
+        {TopBar}
         <p className="text-sm text-text-muted mb-7 flex items-center gap-1.5 flex-wrap">
           Orders, settings, and more now live in the account menu
           <IconMenu width="14" height="14" className="text-text-muted" />
-          in the top-right corner.
+          — tap it above.
         </p>
 
         <div className="bg-white border border-border rounded-2xl p-6 flex items-center gap-4">

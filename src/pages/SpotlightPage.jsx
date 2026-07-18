@@ -76,6 +76,47 @@ export default function SpotlightPage() {
           <h1 className="font-display text-xl font-bold text-ink m-0">Curated for Pakistan</h1>
         </div>
 
+        {/* Same Daraz-style featured product as desktop, just stacked for a phone screen — the
+            endless feed below is unaffected, so this is additive rather than a replacement. */}
+        {!loading && !error && featuredEntry && (
+          <div className="mx-[18px] mb-5 bg-white border border-border rounded-[18px] overflow-hidden">
+            <div className="relative h-[190px]">
+              <img
+                src={featuredEntry.product.img}
+                alt={featuredEntry.product.name}
+                className="w-full h-full object-cover"
+              />
+              <span className="absolute top-3 left-3 bg-green text-white text-[11px] font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5">
+                <IconSparkle width="11" height="11" />
+                Featured
+              </span>
+            </div>
+            <div className="p-4">
+              <div className="font-mono text-[10px] tracking-[0.12em] uppercase text-orange mb-1.5">
+                {featuredEntry.kind === 'near' ? 'Nearest seller · lowest shipping' : 'Trending this week'}
+              </div>
+              <div className="text-[15px] font-semibold text-ink leading-snug mb-1.5 line-clamp-2">
+                {featuredEntry.product.name}
+              </div>
+              <div className="flex items-center gap-1.5 text-[12px] text-text-muted mb-3 flex-wrap">
+                <IconPin width="11" height="11" />
+                {featuredEntry.product.seller}
+                {featuredEntry.product.verified && <VerifiedBadge size={12} />}
+              </div>
+              <div className="font-display font-bold text-[19px] text-green mb-3">{featuredEntry.product.price}</div>
+              <div className="flex gap-2">
+                <Link
+                  to={`/product/${featuredEntry.product.id}`}
+                  className="flex-1 text-center cursor-pointer bg-orange hover:bg-orange-hover text-white font-semibold text-[13.5px] py-2.5 rounded-full no-underline transition-colors"
+                >
+                  View Product
+                </Link>
+                <ChatButton className="flex-1 !py-2.5" />
+              </div>
+            </div>
+          </div>
+        )}
+
         {loading && (
           <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-8">
             {Array.from({ length: 4 }).map((_, i) => (
