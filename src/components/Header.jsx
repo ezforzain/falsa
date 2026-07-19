@@ -6,19 +6,17 @@ import { useAuth } from '../context/AuthContext';
 import useRotatingHints from '../hooks/useRotatingHints';
 import SearchHintOverlay from './SearchHintOverlay';
 import ProfileDropdown from './ProfileDropdown';
-import { IconSearch, IconCart, IconUser, IconLogout, IconSparkle, IconLogo, IconMenu, IconClose, IconBox, IconShield } from './icons';
+import { IconSearch, IconCart, IconUser, IconLogout, IconSparkle, IconLogo, IconBox, IconShield } from './icons';
 
 export default function Header() {
   const [searchValue, setSearchValue] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { count: cartCount } = useCart();
   const { user, status, isAuthenticated, logout } = useAuth();
 
   const handleLogout = async () => {
-    setMenuOpen(false);
     await logout();
     navigate('/');
   };
@@ -34,7 +32,6 @@ export default function Header() {
     const q = normalizeQuery(searchValue);
     if (!q) return;
     navigate(`/search?q=${encodeURIComponent(q)}`);
-    setMenuOpen(false);
   };
 
   const isHome = location.pathname === '/';
@@ -49,7 +46,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-border">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5 px-4 sm:px-6 lg:px-10 py-2.5">
-        <Link to="/" className="flex items-center gap-2.5 no-underline shrink-0" onClick={() => setMenuOpen(false)}>
+        <Link to="/" className="flex items-center gap-2.5 no-underline shrink-0">
           <span className="w-[42px] h-[42px] rounded-xl bg-green flex items-center justify-center shadow-[0_4px_12px_rgba(14,90,70,0.25)]">
             <IconLogo />
           </span>
@@ -155,96 +152,19 @@ export default function Header() {
           {isMyProfile && <ProfileDropdown />}
         </nav>
 
-        {/* Mobile: existing nav/search toggle, top-right (account menu lives on the bottom
-            nav's "My Account" tab instead — see BottomNavBar) */}
-        <button
-          type="button"
-          aria-label="Toggle search and navigation"
-          className="md:hidden ml-auto text-ink p-1.5 rounded-lg hover:bg-surface-muted transition-colors"
-          onClick={() => setMenuOpen((v) => !v)}
+        {/* Mobile: plain search shortcut, top-right. Everything the old hamburger panel used
+            to duplicate is already reachable elsewhere on mobile: Home/Cart/Account via
+            BottomNavBar, Spotlight as Home's own default tab, and sign-in/out/Seller
+            Portal/Admin Panel via the account menu on the "My Account" tab (see AccountPage) —
+            so nothing here needs a second copy of that navigation. */}
+        <Link
+          to="/search"
+          aria-label="Search"
+          className="md:hidden ml-auto text-ink p-2 rounded-lg hover:bg-surface-muted transition-colors"
         >
-          {menuOpen ? <IconClose /> : <IconMenu />}
-        </button>
+          <IconSearch width="20" height="20" />
+        </Link>
       </div>
-
-      {/* Mobile panel */}
-      {menuOpen && (
-        <div className="md:hidden border-t border-border px-4 py-4 flex flex-col gap-3 bg-white">
-          <div className="flex items-center gap-2.5 bg-surface-muted border border-border rounded-full py-2.5 px-4">
-            <IconSearch className="text-text-muted shrink-0" />
-            <span className="relative flex-1 min-w-0">
-              <input
-                type="text"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                onKeyDown={(e) => e.key === 'Enter' && submitSearch()}
-                className="relative z-10 w-full border-none bg-transparent outline-none text-ink text-sm font-sans"
-              />
-              <SearchHintOverlay hint={currentHint} visible={!searchFocused && !searchValue} />
-            </span>
-          </div>
-          <Link to="/" className={navLinkClass(isHome)} onClick={() => setMenuOpen(false)}>
-            Home
-          </Link>
-          <Link
-            to="/spotlight"
-            className={`${navLinkClass(isSpotlight)} flex items-center gap-1.5`}
-            onClick={() => setMenuOpen(false)}
-          >
-            <IconSparkle />
-            Spotlight
-          </Link>
-          <Link
-            to="/cart"
-            className="px-3.5 py-2 rounded-lg text-text flex items-center gap-2 no-underline hover:bg-surface-muted transition-colors"
-            onClick={() => setMenuOpen(false)}
-          >
-            <IconCart /> Cart {cartCount > 0 && <span className="text-orange font-bold">({cartCount})</span>}
-          </Link>
-          {isAuthenticated && user?.role === 'seller' && (
-            <Link
-              to="/seller"
-              className="px-3.5 py-2 rounded-lg text-text flex items-center gap-2 no-underline font-semibold hover:bg-surface-muted transition-colors"
-              onClick={() => setMenuOpen(false)}
-            >
-              <IconBox width="18" height="18" /> Seller Portal
-            </Link>
-          )}
-          {isAuthenticated && user?.role === 'admin' && (
-            <Link
-              to="/admin"
-              className="px-3.5 py-2 rounded-lg text-text flex items-center gap-2 no-underline font-semibold hover:bg-surface-muted transition-colors"
-              onClick={() => setMenuOpen(false)}
-            >
-              <IconShield width="18" height="18" /> Admin Panel
-            </Link>
-          )}
-          {status === 'loading' ? (
-            <span className="h-9 rounded-lg bg-surface-muted animate-pulse" />
-          ) : isAuthenticated ? (
-            <>
-              <div className="px-3.5 py-2 text-sm font-semibold text-ink-soft truncate">Signed in as {accountLabel}</div>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="px-3.5 py-2 rounded-lg text-text flex items-center gap-2 font-semibold hover:bg-surface-muted transition-colors text-left"
-              >
-                <IconLogout /> Logout
-              </button>
-            </>
-          ) : (
-            <Link
-              to="/auth"
-              className="px-3.5 py-2 rounded-lg text-text flex items-center gap-2 no-underline font-semibold"
-              onClick={() => setMenuOpen(false)}
-            >
-              <IconUser /> Sign in
-            </Link>
-          )}
-        </div>
-      )}
     </header>
   );
 }
