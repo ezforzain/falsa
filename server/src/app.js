@@ -14,12 +14,44 @@ import sellerPortalRoutes from './routes/seller.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 
+// True for any private-network address on the Vite dev port — covers a phone or another
+// machine reaching this API via the same LAN IP the dev-server QR code points them to,
+// whatever that IP happens to be (192.168.x.x, 10.x.x.x, or 172.16-31.x.x), without needing
+// CLIENT_ORIGIN updated by hand every time this machine's IP changes.
+function isPrivateLanOrigin(origin) {
+  try {
+    const { hostname, port } = new URL(origin);
+    if (port !== '5173') return false;
+    return (
+      hostname === 'localhost' ||
+      /^127\./.test(hostname) ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function createApp() {
   const app = express();
 
   app.use(
     cors({
-      origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+      origin(origin, callback) {
+        // No Origin header (same-origin requests, curl, server-to-server) — always fine.
+        if (!origin) return callback(null, true);
+        const configured = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+        if (origin === configured) return callback(null, true);
+        // Outside production, also accept LAN-local origins so a phone/other device reaching
+        // this API directly (not just through the Vite proxy) isn't blocked. Production keeps
+        // the strict single-origin check above.
+        if (process.env.NODE_ENV !== 'production' && isPrivateLanOrigin(origin)) {
+          return callback(null, true);
+        }
+        callback(new Error('Not allowed by CORS'));
+      },
       credentials: true,
     })
   );
