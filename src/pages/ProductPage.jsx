@@ -8,6 +8,7 @@ import QuantityModal from '../components/QuantityModal';
 import Toast from '../components/Toast';
 import ImageGallery from '../components/ImageGallery';
 import StoreCard from '../components/StoreCard';
+import ShareButton from '../components/ShareButton';
 import VariantBottomSheet from '../components/VariantBottomSheet';
 import FirstVisitSignupPrompt from '../components/FirstVisitSignupPrompt';
 import { IconChevronRight, IconShield, IconCheck, IconTruck, IconTrendingUp } from '../components/icons';
@@ -281,6 +282,7 @@ export default function ProductPage() {
             >
               {outOfStock ? 'Out of stock' : 'Add to Cart'}
             </button>
+            <ShareButton title={product.name} />
           </div>
 
           <div className="flex gap-[22px] mt-[22px] text-[12.5px] text-text flex-wrap">

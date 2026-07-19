@@ -1,19 +1,7 @@
 import 'dotenv/config';
-import os from 'node:os';
 import { createApp } from './app.js';
 import { connectDB } from './config/db.js';
-
-// The first non-internal IPv4 address — same address the Vite dev server's QR code points
-// phones at, so both halves of the stack agree on how a device on the LAN reaches this machine.
-function lanAddress() {
-  const nets = os.networkInterfaces();
-  for (const iface of Object.values(nets)) {
-    for (const net of iface ?? []) {
-      if (net.family === 'IPv4' && !net.internal) return net.address;
-    }
-  }
-  return null;
-}
+import { getLanAddress } from './utils/network.js';
 
 async function main() {
   await connectDB();
@@ -24,7 +12,7 @@ async function main() {
   // and, more importantly, for Vite's dev proxy on another device to relay requests here at all.
   app.listen(port, '0.0.0.0', () => {
     console.log(`Falsafah Tot API listening on http://localhost:${port}`);
-    const lan = lanAddress();
+    const lan = getLanAddress();
     if (lan) console.log(`  Also reachable on your network at: http://${lan}:${port}`);
   });
 }

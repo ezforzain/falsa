@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import path from 'node:path';
 
 import { attachUser } from './middleware/auth.js';
+import { getLanAddress } from './utils/network.js';
 import authRoutes from './routes/auth.routes.js';
 import catalogRoutes from './routes/catalog.routes.js';
 import cartRoutes from './routes/cart.routes.js';
@@ -67,6 +68,17 @@ export function createApp() {
   app.use(attachUser);
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+  // Dev-only: lets the frontend's Share button build a link that works for OTHER devices even
+  // if the person sharing it happened to load the page via `localhost` themselves — see
+  // ShareButton.jsx. Not exposed in production, where window.location.origin is already a real
+  // public domain and needs no help.
+  if (process.env.NODE_ENV !== 'production') {
+    app.get('/api/dev/network-info', (_req, res) => {
+      const lan = getLanAddress();
+      res.json({ lanUrl: lan ? `http://${lan}:5173` : null });
+    });
+  }
 
   app.use('/api/auth', authRoutes);
   app.use('/api', catalogRoutes);

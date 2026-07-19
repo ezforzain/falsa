@@ -140,4 +140,14 @@ export const kyc = {
     request(`/api/admin/kyc/${encodeURIComponent(userId)}`, { method: 'PATCH', body: { status: 'rejected', rejectionReason }, auth: true }),
 };
 
+// ---------- Dev helpers ----------
+
+// Only exists on the backend outside production (see server/src/app.js) — callers must treat a
+// failed/missing response as "unavailable", not an error. Used by ShareButton to build a link
+// that's actually reachable from another device even when the current page itself was loaded
+// via localhost.
+export const devInfo = {
+  networkInfo: () => request('/api/dev/network-info'),
+};
+
 export { ApiError };
