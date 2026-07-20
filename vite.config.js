@@ -36,6 +36,12 @@ export default defineConfig({
     // Listen on all network interfaces (not just localhost) so other devices on the same
     // Wi-Fi — a phone, another laptop — can reach the dev server via this machine's LAN IP.
     host: true,
+    // Vite rejects requests with an unrecognized Host header by default (DNS-rebinding
+    // protection) — necessary to allow-list when tunneling through a public URL (e.g.
+    // localtunnel, for testing on mobile data instead of the same Wi-Fi), since the tunnel's
+    // hostname isn't this machine's own. Scoped to loca.lt's subdomains rather than `true`
+    // (allow everything) to keep this no broader than it needs to be.
+    allowedHosts: ['.loca.lt'],
     proxy: {
       // Forwards to the real backend (see /server) as if it were same-origin — this is what
       // lets the guest-cart cookie and CORS work in dev without any extra config, and keeps

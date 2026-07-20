@@ -1,0 +1,22 @@
+# Render Blueprint — deploys /server as a web service with most config pre-filled.
+# In Render: New -> Blueprint -> pick this repo -> Apply. You'll only be prompted for the
+# values below marked "sync: false" (things I can't know on your behalf).
+services:
+  - type: web
+    name: falsafahtot-api
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_EXPIRES_IN
+        value: 30d
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false # paste your MongoDB Atlas connection string here
+      - key: CLIENT_ORIGIN
+        sync: false # paste your exact Vercel URL here, e.g. https://sa.vercel.app

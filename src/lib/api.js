@@ -1,8 +1,13 @@
-// Thin fetch client for the backend API (see /server). Requests use relative paths like
-// '/api/auth/signin', proxied to the backend by Vite in dev (see vite.config.js) so cookies
-// (the guest cart id) and CORS just work as if it were same-origin.
+// Thin fetch client for the backend API (see /server). In dev, requests use relative paths
+// like '/api/auth/signin', proxied to the backend by Vite (see vite.config.js) so cookies (the
+// guest cart id) and CORS just work as if it were same-origin. A production static build (e.g.
+// Vercel) has no such proxy, so VITE_API_URL — set at build time — points requests at wherever
+// the backend is actually deployed instead; unset, it falls back to the old relative-path
+// behavior so nothing changes for local dev. See .env.example.
 // Every network call in the app goes through here so there's one place that
 // attaches the auth token and turns non-2xx responses into thrown errors.
+
+const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '';
 
 const TOKEN_KEY = 'falsafahtot_token';
 
@@ -30,10 +35,14 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
 
   let res;
   try {
-    res = await fetch(path, {
+    res = await fetch(`${API_BASE}${path}`, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      // Needed the moment frontend and backend are on different origins (API_BASE set) — the
+      // guest-cart cookie won't be sent/stored cross-origin without this. A no-op for the
+      // relative-path/same-origin dev case.
+      credentials: API_BASE ? 'include' : 'same-origin',
     });
   } catch {
     throw new ApiError('Network error — please check your connection and try again.', 0);
