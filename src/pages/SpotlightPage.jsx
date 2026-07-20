@@ -3,10 +3,9 @@ import { Link } from 'react-router-dom';
 import { catalog } from '../lib/api';
 import VerifiedBadge from '../components/VerifiedBadge';
 import MobileTopBar from '../components/MobileTopBar';
-import ChatButton from '../components/ChatButton';
 import useIsMobile from '../hooks/useIsMobile';
 import useInfiniteFeed from '../hooks/useInfiniteFeed';
-import { IconPin, IconSparkle, IconTrendingUp, IconTruck, IconMessageCircle } from '../components/icons';
+import { IconPin, IconSparkle, IconTrendingUp, IconTruck } from '../components/icons';
 
 export default function SpotlightPage() {
   const isMobile = useIsMobile();
@@ -104,15 +103,12 @@ export default function SpotlightPage() {
                 {featuredEntry.product.verified && <VerifiedBadge size={12} />}
               </div>
               <div className="font-display font-bold text-[19px] text-green mb-3">{featuredEntry.product.price}</div>
-              <div className="flex gap-2">
-                <Link
-                  to={`/product/${featuredEntry.product.id}`}
-                  className="flex-1 text-center cursor-pointer bg-orange hover:bg-orange-hover text-white font-semibold text-[13.5px] py-2.5 rounded-full no-underline transition-colors"
-                >
-                  View Product
-                </Link>
-                <ChatButton className="flex-1 !py-2.5" />
-              </div>
+              <Link
+                to={`/product/${featuredEntry.product.id}`}
+                className="block text-center cursor-pointer bg-orange hover:bg-orange-hover text-white font-semibold text-[13.5px] py-2.5 rounded-full no-underline transition-colors"
+              >
+                View Product
+              </Link>
             </div>
           </div>
         )}
@@ -146,7 +142,7 @@ export default function SpotlightPage() {
                     <div className="h-[130px] overflow-hidden">
                       <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
                     </div>
-                    <div className="px-2.5 pt-2.5 pb-2">
+                    <div className="px-2.5 pt-2.5 pb-2.5">
                       <div className="text-[12.5px] font-semibold text-ink leading-snug mb-1.5 line-clamp-2">{p.name}</div>
                       <div className="flex items-baseline justify-between">
                         <span className="font-display font-bold text-[14.5px] text-green">{p.price}</span>
@@ -156,9 +152,6 @@ export default function SpotlightPage() {
                       </div>
                     </div>
                   </Link>
-                  <div className="px-2.5 pb-2.5 pt-1">
-                    <ChatButton className="w-full" />
-                  </div>
                 </div>
               ))}
             </div>
@@ -282,21 +275,12 @@ export default function SpotlightPage() {
                 </div>
               )}
 
-              <div className="flex gap-3">
-                <Link
-                  to={`/product/${featuredEntry.product.id}`}
-                  className="flex-1 text-center cursor-pointer bg-orange hover:bg-orange-hover text-white font-semibold text-[15px] py-3.5 rounded-full no-underline shadow-[0_8px_22px_rgba(201,123,45,0.3)] transition-all hover:-translate-y-0.5"
-                >
-                  View Product
-                </Link>
-                <Link
-                  to="/messenger"
-                  className="flex-1 flex items-center justify-center gap-2 text-center cursor-pointer bg-white border-[1.5px] border-green text-green hover:bg-green-tint font-semibold text-[15px] py-3.5 rounded-full no-underline transition-all"
-                >
-                  <IconMessageCircle width="16" height="16" />
-                  Chat
-                </Link>
-              </div>
+              <Link
+                to={`/product/${featuredEntry.product.id}`}
+                className="block text-center cursor-pointer bg-orange hover:bg-orange-hover text-white font-semibold text-[15px] py-3.5 rounded-full no-underline shadow-[0_8px_22px_rgba(201,123,45,0.3)] transition-all hover:-translate-y-0.5"
+              >
+                View Product
+              </Link>
             </div>
           </div>
         </section>
@@ -309,23 +293,19 @@ export default function SpotlightPage() {
           <h2 className="font-display text-[20px] font-bold m-0 mb-5">More from Spotlight</h2>
           <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
             {restEntries.map((entry) => (
-              <div
+              <Link
                 key={entry.product.id}
-                className="bg-white border border-border rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(20,40,32,0.12)]"
+                to={`/product/${entry.product.id}`}
+                className="block bg-white border border-border rounded-2xl overflow-hidden no-underline text-inherit transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(20,40,32,0.12)]"
               >
-                <Link to={`/product/${entry.product.id}`} className="block no-underline text-inherit">
-                  <div className="h-36 overflow-hidden">
-                    <img src={entry.product.img} alt={entry.product.name} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="px-4 pt-3.5 pb-2">
-                    <div className="text-sm font-semibold mb-1.5 line-clamp-1">{entry.product.name}</div>
-                    <div className="font-display font-bold text-green text-[15px]">{entry.product.price}</div>
-                  </div>
-                </Link>
-                <div className="px-4 pb-3.5 pt-1">
-                  <ChatButton className="w-full" />
+                <div className="h-36 overflow-hidden">
+                  <img src={entry.product.img} alt={entry.product.name} className="w-full h-full object-cover" />
                 </div>
-              </div>
+                <div className="px-4 pt-3.5 pb-3.5">
+                  <div className="text-sm font-semibold mb-1.5 line-clamp-1">{entry.product.name}</div>
+                  <div className="font-display font-bold text-green text-[15px]">{entry.product.price}</div>
+                </div>
+              </Link>
             ))}
           </div>
         </section>

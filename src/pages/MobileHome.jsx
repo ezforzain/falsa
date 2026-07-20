@@ -6,7 +6,6 @@ import useRotatingHints from '../hooks/useRotatingHints';
 import useInfiniteFeed from '../hooks/useInfiniteFeed';
 import SearchHintOverlay from '../components/SearchHintOverlay';
 import MobileTopBar from '../components/MobileTopBar';
-import ChatButton from '../components/ChatButton';
 import { IconSearch } from '../components/icons';
 
 export default function MobileHome() {
@@ -275,7 +274,7 @@ export default function MobileHome() {
                 <div className="h-[130px] overflow-hidden">
                   <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
                 </div>
-                <div className="px-2.5 pt-2.5 pb-2">
+                <div className="px-2.5 pt-2.5 pb-2.5">
                   <div className="text-[12.5px] font-semibold text-ink leading-snug mb-1.5 line-clamp-2">{p.name}</div>
                   <div className="flex items-baseline justify-between">
                     <span className="font-display font-bold text-[14.5px] text-green">{p.price}</span>
@@ -283,9 +282,6 @@ export default function MobileHome() {
                       MOQ {p.moq}
                     </span>
                   </div>
-                </div>
-                <div className="px-2.5 pb-2.5 pt-1">
-                  <ChatButton className="w-full" />
                 </div>
               </div>
             ))}

@@ -1,17 +1,19 @@
 import { Link } from 'react-router-dom';
 import { IconMessageCircle } from './icons';
 
-// Small "Chat" action shown under every product card — links into Messenger. Stops the click
-// from bubbling so it works even when nested inside a card that's itself a <Link>.
+// "Chat" action on the Product Detail page — links into Messenger. Sized to match the other
+// pill buttons in that page's primary action row (Order Now / Add to Cart / Share): icon-only
+// on mobile, icon + label from the sm breakpoint up, same as ShareButton.
 export default function ChatButton({ className = '' }) {
   return (
     <Link
       to="/messenger"
-      onClick={(e) => e.stopPropagation()}
-      className={`inline-flex items-center justify-center gap-1.5 text-[12.5px] font-semibold text-green bg-green-tint hover:bg-green/15 rounded-lg py-2 no-underline transition-colors ${className}`}
+      aria-label="Chat with seller"
+      title="Chat with seller"
+      className={`shrink-0 flex items-center justify-center gap-1.5 cursor-pointer text-green bg-green-tint hover:bg-green/15 rounded-full w-[52px] sm:w-auto h-[52px] sm:px-4 sm:py-[13px] text-sm font-semibold no-underline transition-colors ${className}`}
     >
-      <IconMessageCircle width="14" height="14" />
-      Chat
+      <IconMessageCircle width="16" height="16" />
+      <span className="hidden sm:inline">Chat</span>
     </Link>
   );
 }
