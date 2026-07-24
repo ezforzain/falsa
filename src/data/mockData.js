@@ -336,6 +336,166 @@ export const mobileCategories = [
   },
 ];
 
+// ---------- Product Detail page: derived display content ----------
+// The catalog has real per-product `description`/`specifications`/`reviews` — used directly
+// when present. Everything else below (features, packaging, FAQ, certifications, company
+// profile) has no backing data at all, so it's computed deterministically from the product/
+// seller id instead, same pattern as `priceTiers` and the per-product `discountPercent`/
+// `variants` above — the same listing always renders the same content across reloads, it's
+// just not sourced from the database.
+const hashString = (str) => {
+  let h = 0;
+  const s = String(str ?? "");
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+};
+
+export const productDescription = (product) =>
+  (product.description && product.description.trim()) ||
+  `${product.name} is supplied directly from ${product.seller}'s production facility${
+    product.location ? ` in ${product.location}` : ""
+  }. Manufactured to consistent quality standards for bulk B2B orders, this listing is backed by verified production capacity, flexible minimum order quantities, and dependable lead times — built for importers, distributors, and retail buyers sourcing at scale.`;
+
+export const productSpecifications = (product) => {
+  if (Array.isArray(product.specifications) && product.specifications.length > 0) {
+    return product.specifications.map((s) => [s.label, s.value]);
+  }
+  return [
+    ["Category", product.category],
+    ["Minimum Order Quantity", product.moq],
+    ["Unit", product.unit],
+    ["Place of Origin", product.location || "Pakistan"],
+    ["Supply Ability", "10,000+ units / month"],
+    ["Packaging Details", "Export-standard carton / pallet packaging"],
+    ["Port", "Karachi, Pakistan"],
+    ["Payment Terms", "T/T, L/C, Trade Assurance"],
+    ["Sample Available", "Yes"],
+  ];
+};
+
+export const productFeatures = (product) => [
+  `Consistent quality across every ${product.unit || "unit"} of ${(product.category || "product").toLowerCase()}`,
+  "Flexible order sizes from sample to full container load",
+  "Dedicated quality-control checks before dispatch",
+  "Custom branding and private labeling available on request",
+  "Responsive seller support for order tracking and documentation",
+  "Competitive tiered pricing for bulk buyers",
+];
+
+export const packagingShipping = (product) => {
+  const h = hashString(product.id);
+  return {
+    packaging: "Export-grade carton / pallet packaging, moisture-protected",
+    weight: `${(2 + (h % 18)).toFixed(1)} kg approx. per unit carton`,
+    leadTime: "10–14 days after order confirmation",
+    ports: "Karachi, Lahore (dry port)",
+    methods: "Sea freight, air freight, or express courier for samples",
+  };
+};
+
+const REVIEW_NAMES = ["Ahmed R.", "Fatima K.", "Global Trade LLC", "Nordic Sourcing Co.", "M. Bilal", "Al-Karam Traders", "S. Aisha", "Redwood Imports"];
+const REVIEW_COUNTRIES = ["Pakistan", "UAE", "United States", "United Kingdom", "Sweden", "Germany", "Saudi Arabia", "Turkey"];
+const REVIEW_COMMENTS = [
+  "Great quality and exactly as described. Will order again.",
+  "Communication was smooth and delivery was on time.",
+  "Good value for bulk orders, packaging was solid.",
+  "Product matched the samples we received. Recommended supplier.",
+  "Minor delay in shipping but the seller kept us updated throughout.",
+  "Consistent quality across repeat orders — a reliable supplier.",
+];
+
+export const productReviewSummary = (product) => {
+  const real = Array.isArray(product.reviews) && product.reviews.length > 0 ? product.reviews : null;
+  if (real) {
+    const total = real.length;
+    const rating = real.reduce((sum, r) => sum + (r.rating || 0), 0) / total;
+    const counts = [0, 0, 0, 0, 0]; // counts[0] = 1-star ... counts[4] = 5-star
+    real.forEach((r) => {
+      const star = Math.min(5, Math.max(1, Math.round(r.rating || 0)));
+      counts[star - 1]++;
+    });
+    const breakdown = [5, 4, 3, 2, 1].map((star) => ({ star, pct: Math.round((counts[star - 1] / total) * 100) }));
+    return { rating, total, breakdown };
+  }
+
+  const h = hashString(product.id);
+  const rating = parseFloat(product.rating) || 4.6;
+  const total = 60 + (h % 480);
+  const weights = [0.62, 0.24, 0.08, 0.04, 0.02];
+  const breakdown = [5, 4, 3, 2, 1].map((star, i) => ({ star, pct: Math.round(weights[i] * 100) }));
+  return { rating, total, breakdown };
+};
+
+export const productReviews = (product) => {
+  const real = Array.isArray(product.reviews) && product.reviews.length > 0 ? product.reviews : null;
+  if (real) {
+    return real.map((r, i) => ({
+      id: `${product.id}-review-${i}`,
+      name: r.author,
+      rating: r.rating,
+      comment: r.comment,
+      date: r.date,
+    }));
+  }
+
+  const h = hashString(product.id);
+  return Array.from({ length: 5 }).map((_, i) => {
+    const daysAgo = 3 + ((h + i * 11) % 90);
+    return {
+      id: `${product.id}-review-${i}`,
+      name: REVIEW_NAMES[(h + i * 7) % REVIEW_NAMES.length],
+      country: REVIEW_COUNTRIES[(h + i * 3) % REVIEW_COUNTRIES.length],
+      rating: 5 - ((h + i) % 2),
+      comment: REVIEW_COMMENTS[(h + i * 5) % REVIEW_COMMENTS.length],
+      date: new Date(Date.now() - daysAgo * 86400000).toISOString(),
+    };
+  });
+};
+
+export const productFaqs = (product) => [
+  {
+    q: "What is the minimum order quantity?",
+    a: `The minimum order quantity for ${product.name} is ${product.moq}. Contact the seller to discuss smaller trial orders.`,
+  },
+  {
+    q: "Can I get a sample before placing a bulk order?",
+    a: "Yes, samples are available. Sample cost and shipping are usually paid by the buyer unless negotiated otherwise.",
+  },
+  {
+    q: "What payment methods are accepted?",
+    a: "This seller accepts bank transfer (T/T), letter of credit (L/C), and orders placed through Trade Assurance for buyer protection.",
+  },
+  {
+    q: "How long does production and shipping take?",
+    a: "Typical lead time is 10–14 days for production, plus shipping time depending on your destination and chosen freight method.",
+  },
+  {
+    q: "Do you offer custom branding or packaging?",
+    a: "Custom branding, private labeling, and packaging customization are available for qualifying order volumes — message the seller for details.",
+  },
+];
+
+export const certifications = [
+  { name: "ISO 9001", desc: "Quality management certified" },
+  { name: "BSCI", desc: "Social compliance audited" },
+  { name: "SGS Verified", desc: "Third-party inspected" },
+  { name: "Trade Assurance", desc: "Order protection guaranteed" },
+];
+
+const ALL_MARKETS = ["Middle East", "Europe", "North America", "South Asia", "East Asia", "Africa"];
+
+export const companyProfile = (seller) => {
+  const h = hashString(seller?.id || seller?.name);
+  const markets = ALL_MARKETS.filter((_, i) => ((h >> i) & 1) === 0);
+  return {
+    foundedYear: 2001 + (h % 20),
+    staffCount: ["10–50", "50–100", "100–200", "200–500"][h % 4],
+    businessType: ["Manufacturer", "Manufacturer & Trading Company", "Trading Company"][h % 3],
+    mainMarkets: (markets.length >= 2 ? markets : ALL_MARKETS).slice(0, 3),
+    annualRevenue: ["US$1M – 2.5M", "US$2.5M – 5M", "US$5M – 10M", "US$10M – 50M"][h % 4],
+  };
+};
+
 export const mobileTabs = [
   {
     key: "aimode",

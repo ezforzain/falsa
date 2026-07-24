@@ -70,6 +70,219 @@ export const mobileTabs = [
   { key: 'freeshipping', label: 'Free Shipping', banner: 'Free Shipping: showing products eligible for free shipping on your first order.' },
 ];
 
+// Per-product detail content for the Product Detail page — description, spec sheet, and a
+// handful of seeded reviews. Keyed by product id and merged onto the base product records
+// below, so the two stay easy to scan independently (identity/pricing vs. long-form content).
+const PRODUCT_DETAILS = {
+  'cotton-twill-fabric': {
+    description:
+      'Heavyweight 280 GSM cotton twill woven for workwear, uniforms, and heavy-use apparel. ' +
+      'Sanforized and pre-shrunk for dimensional stability after washing, with a tight diagonal ' +
+      'weave that resists abrasion and holds a crisp finish through repeated industrial laundering. ' +
+      'Supplied in bulk rolls with consistent dye lots across the full order — critical for buyers ' +
+      'running large cut-and-sew production runs where shade matching across rolls matters.',
+    specifications: [
+      { label: 'Material', value: '100% cotton twill' },
+      { label: 'Weight', value: '280 GSM' },
+      { label: 'Width', value: '58 in / 147 cm' },
+      { label: 'Weave', value: '2/1 twill' },
+      { label: 'Shrinkage', value: 'Under 3% (sanforized)' },
+      { label: 'Color options', value: '4 (see variants)' },
+      { label: 'Packaging', value: 'Rolled, poly-wrapped, 50m per roll' },
+      { label: 'Origin', value: 'Faisalabad, Pakistan' },
+    ],
+    reviews: [
+      { author: 'Gulistan Sourcing Co.', rating: 5, comment: 'Consistent GSM across every roll in a 2,200m order — exactly what we needed for a uniform contract. Reordering.', daysAgo: 12 },
+      { author: 'Redwood Imports LLC', rating: 5, comment: 'Color held up after 40+ industrial washes in our testing. Sanforizing claim checks out.', daysAgo: 28 },
+      { author: 'Nordic Trade House', rating: 4, comment: 'Good quality twill, lead time ran about 3 days over the quoted window during peak season.', daysAgo: 45 },
+    ],
+  },
+  'surgical-instrument-set': {
+    description:
+      'Precision-forged stainless steel surgical instrument set covering the core tools needed for ' +
+      'general procedures — scissors, forceps, needle holders, and scalpel handles finished to a ' +
+      'mirror or satin grade depending on tool. Manufactured in Sialkot’s surgical cluster and ' +
+      'validated for repeated autoclave sterilization without pitting or joint stiffness, with each ' +
+      'set batch-tested for hinge tension before packing.',
+    specifications: [
+      { label: 'Material', value: 'German-grade stainless steel (DIN 58298)' },
+      { label: 'Finish', value: 'Mirror / satin (tool-dependent)' },
+      { label: 'Sterilization', value: 'Autoclave safe, up to 134°C' },
+      { label: 'Set contents', value: '32 pieces per set' },
+      { label: 'Certification', value: 'CE marked, ISO 13485 facility' },
+      { label: 'Packaging', value: 'Instrument tray + sterilization pouch' },
+      { label: 'Origin', value: 'Sialkot, Pakistan' },
+    ],
+    reviews: [
+      { author: 'Meridian Health Supply', rating: 5, comment: 'Hinge tension is even across the whole set — no loose scissors like we’ve had from other suppliers.', daysAgo: 9 },
+      { author: 'Al-Karam Traders', rating: 5, comment: 'Passed our sterilization validation on the first batch. Documentation was thorough.', daysAgo: 33 },
+      { author: 'Redwood Imports LLC', rating: 5, comment: 'Top-rated for a reason. Consistent finish quality across a 100-set order.', daysAgo: 51 },
+    ],
+  },
+  'leather-work-gloves': {
+    description:
+      'Full-grain leather work gloves built for warehouse, construction, and light industrial handling. ' +
+      'The palm and reinforced fingers are cut from single-hide sections rather than split leather, so ' +
+      'they break in without delaminating, and the double-stitched seams hold up under repeated flexing. ' +
+      'A reinforced thumb crotch and elastic wrist keep debris out during long shifts.',
+    specifications: [
+      { label: 'Material', value: 'Full-grain cowhide leather' },
+      { label: 'Lining', value: 'Unlined (breathable)' },
+      { label: 'Cuff', value: 'Elastic knit wrist' },
+      { label: 'Sizes available', value: 'S / M / L / XL' },
+      { label: 'Stitching', value: 'Double-stitched palm and seams' },
+      { label: 'Packaging', value: '12 pairs per polybag, 25 bags per carton' },
+      { label: 'Origin', value: 'Karachi, Pakistan' },
+    ],
+    reviews: [
+      { author: 'Nordic Trade House', rating: 5, comment: 'Held up through a full quarter on our warehouse floor before the first pair needed replacing.', daysAgo: 15 },
+      { author: 'Gulistan Sourcing Co.', rating: 4, comment: 'Good full-grain quality, sizing runs slightly large versus our usual supplier.', daysAgo: 40 },
+      { author: 'Meridian Health Supply', rating: 5, comment: 'Stitching hasn’t come loose on a single pair from a 300-pair order. Reliable verified seller.', daysAgo: 60 },
+    ],
+  },
+  'match-grade-footballs': {
+    description:
+      'Hand-stitched, match-grade footballs built to FIFA Quality Pro size and weight tolerances. ' +
+      'The 32-panel PU casing is thermally bonded at the seams for water resistance and shape retention ' +
+      'over a full match, with a butyl bladder that holds air pressure significantly longer than latex ' +
+      'alternatives — a common pain point buyers flag with cheaper imports.',
+    specifications: [
+      { label: 'Size', value: '5 (official match size)' },
+      { label: 'Casing', value: '32-panel PU, hand-stitched' },
+      { label: 'Bladder', value: 'Butyl (extended air retention)' },
+      { label: 'Weight', value: '410–450g' },
+      { label: 'Water absorption', value: 'Under 10% (FIFA Quality Pro)' },
+      { label: 'Packaging', value: 'Individually boxed, 24 per carton' },
+      { label: 'Origin', value: 'Sialkot, Pakistan' },
+    ],
+    reviews: [
+      { author: 'Redwood Imports LLC', rating: 5, comment: 'Air retention is noticeably better than the latex-bladder balls we used before. Shape holds after months of use.', daysAgo: 7 },
+      { author: 'Al-Karam Traders', rating: 4, comment: 'Great stitching quality. A couple of units in the first carton had minor panel misalignment.', daysAgo: 22 },
+      { author: 'Nordic Trade House', rating: 5, comment: 'Our club-level buyers confirmed these meet match-grade feel. Reordering for next season.', daysAgo: 38 },
+    ],
+  },
+  'corrugated-shipping-boxes': {
+    description:
+      'Double-wall corrugated shipping boxes built for e-commerce and freight handling, with a ' +
+      'burst strength rated for stacked pallet storage. The flute profile is tuned for cushioning ' +
+      'without adding unnecessary bulk, and boxes ship flat-packed to keep freight costs down on ' +
+      'large orders — assembly takes seconds with the pre-scored fold lines.',
+    specifications: [
+      { label: 'Construction', value: 'Double-wall corrugated (BC flute)' },
+      { label: 'Burst strength', value: '275 psi (Mullen test)' },
+      { label: 'Standard size', value: '12 x 12 x 12 in (custom sizes available)' },
+      { label: 'Load rating', value: 'Up to 65 kg stacked' },
+      { label: 'Print', value: 'Plain kraft or custom 1-color print' },
+      { label: 'Packaging', value: 'Flat-packed, 25 per bundle' },
+      { label: 'Origin', value: 'Lahore, Pakistan' },
+    ],
+    reviews: [
+      { author: 'Gulistan Sourcing Co.', rating: 5, comment: 'No crushed boxes on arrival even after a long-haul freight leg. Good burst strength for the price.', daysAgo: 11 },
+      { author: 'Meridian Health Supply', rating: 4, comment: 'Solid boxes, custom print took a bit longer than the standard lead time quoted.', daysAgo: 26 },
+      { author: 'Al-Karam Traders', rating: 5, comment: 'Verified seller, consistent quality across a 5,000-unit reorder.', daysAgo: 50 },
+    ],
+  },
+  'hand-tools-hardware-set': {
+    description:
+      'A general-purpose hand tool and hardware set covering wrenches, pliers, screwdrivers, and ' +
+      'a socket assortment, forged from chrome vanadium steel for everyday industrial and maintenance ' +
+      'use. Each tool is drop-forged rather than cast, so the working ends resist rounding and cracking ' +
+      'under sustained torque, and the whole set ships in a reusable blow-molded case.',
+    specifications: [
+      { label: 'Material', value: 'Chrome vanadium steel, drop-forged' },
+      { label: 'Set contents', value: '150 pieces' },
+      { label: 'Finish', value: 'Chrome-plated, corrosion resistant' },
+      { label: 'Case', value: 'Blow-molded, reusable' },
+      { label: 'Warranty', value: 'Manufacturer defect coverage, 12 months' },
+      { label: 'Packaging', value: '1 set per case, 20 cases per carton' },
+      { label: 'Origin', value: 'Gujranwala, Pakistan' },
+    ],
+    reviews: [
+      { author: 'Nordic Trade House', rating: 4, comment: 'Good value set for the price point. A couple of sockets had visible tool marks from finishing.', daysAgo: 18 },
+      { author: 'Redwood Imports LLC', rating: 5, comment: 'Chrome vanadium claim checks out — no rounding on the hex bits after months of shop use.', daysAgo: 42 },
+      { author: 'Gulistan Sourcing Co.', rating: 5, comment: 'Reliable supplier, case latches survived freight without cracking.', daysAgo: 65 },
+    ],
+  },
+  'basmati-rice-25kg': {
+    description:
+      'Aged extra-long-grain basmati rice, sourced and milled in Sheikhupura and packed in 25kg bags ' +
+      'for wholesale and food-service buyers. Aged a minimum of 12 months before milling to develop ' +
+      'the characteristic aroma and reduce breakage on cooking, with each lot tested for moisture ' +
+      'content before packing to protect against spoilage in transit.',
+    specifications: [
+      { label: 'Grain type', value: 'Extra-long-grain basmati' },
+      { label: 'Aging', value: 'Minimum 12 months' },
+      { label: 'Moisture content', value: 'Under 14%' },
+      { label: 'Broken grains', value: 'Under 5%' },
+      { label: 'Bag size', value: '25 kg, PP woven with liner' },
+      { label: 'Shelf life', value: '24 months from packing' },
+      { label: 'Origin', value: 'Sheikhupura, Pakistan' },
+    ],
+    reviews: [
+      { author: 'Meridian Health Supply', rating: 5, comment: 'Aroma and grain length are noticeably better than the last supplier we used. Low breakage on cooking.', daysAgo: 14 },
+      { author: 'Al-Karam Traders', rating: 4, comment: 'Good consistent quality lot to lot. Moisture content matched the spec sheet on independent testing.', daysAgo: 29 },
+      { author: 'Nordic Trade House', rating: 5, comment: 'Trending for a reason — reordered twice this quarter for our food-service accounts.', daysAgo: 47 },
+    ],
+  },
+  'denim-fabric-rolls': {
+    description:
+      'Mid-weight denim fabric rolls suitable for jeans, jackets, and workwear cut-and-sew production. ' +
+      'Ring-spun yarn gives the fabric a soft hand-feel while keeping tensile strength high for garment ' +
+      'durability, and the indigo dye is rope-dyed rather than slasher-dyed for the classic fading ' +
+      'pattern buyers expect from premium denim goods.',
+    specifications: [
+      { label: 'Material', value: '98% cotton, 2% elastane' },
+      { label: 'Weight', value: '12 oz' },
+      { label: 'Width', value: '60 in / 152 cm' },
+      { label: 'Dye process', value: 'Rope-dyed indigo' },
+      { label: 'Stretch', value: '2-way stretch' },
+      { label: 'Packaging', value: 'Rolled, poly-wrapped, 40m per roll' },
+      { label: 'Origin', value: 'Faisalabad, Pakistan' },
+    ],
+    reviews: [
+      { author: 'Redwood Imports LLC', rating: 5, comment: 'Rope-dyed indigo fades beautifully in wash testing — matches premium denim we’ve sourced elsewhere for more.', daysAgo: 20 },
+      { author: 'Gulistan Sourcing Co.', rating: 4, comment: 'Good hand-feel and stretch recovery. One roll in our last order ran slightly under width spec.', daysAgo: 35 },
+      { author: 'Meridian Health Supply', rating: 5, comment: 'Trending fabric for our line right now — quality matches the samples exactly.', daysAgo: 58 },
+    ],
+  },
+  'warehouse-racking-systems': {
+    description:
+      'Heavy-duty adjustable pallet racking engineered for warehouse and distribution center storage, ' +
+      'rated for both hand-loaded shelving and forklift pallet loads depending on beam configuration. ' +
+      'Powder-coated steel uprights resist corrosion in humid storage environments, and the ' +
+      'bolt-together design allows reconfiguration without welding on-site.',
+    specifications: [
+      { label: 'Material', value: 'Powder-coated structural steel' },
+      { label: 'Load capacity', value: 'Up to 2,500 kg per level' },
+      { label: 'Height', value: 'Adjustable, 2–6m uprights' },
+      { label: 'Beam levels', value: '4 (configurable)' },
+      { label: 'Assembly', value: 'Bolt-together, no welding required' },
+      { label: 'Packaging', value: 'Flat-packed on pallets' },
+      { label: 'Origin', value: 'Lahore, Pakistan' },
+    ],
+    reviews: [
+      { author: 'Nordic Trade House', rating: 5, comment: 'Assembly was straightforward with the included hardware. Rated load capacity checks out under our forklift loads.', daysAgo: 25 },
+      { author: 'Al-Karam Traders', rating: 4, comment: 'Solid racking, powder coat had minor scuffing from freight but nothing structural.', daysAgo: 44 },
+      { author: 'Redwood Imports LLC', rating: 5, comment: 'Verified seller, reconfigured our whole warehouse layout with these without any welding on-site.', daysAgo: 70 },
+    ],
+  },
+};
+
+function withDetails(product) {
+  const details = PRODUCT_DETAILS[product.id];
+  return {
+    ...product,
+    description: details.description,
+    specifications: details.specifications,
+    reviews: details.reviews.map((r) => ({
+      author: r.author,
+      rating: r.rating,
+      comment: r.comment,
+      date: new Date(Date.now() - r.daysAgo * 86400000),
+    })),
+  };
+}
+
 export const products = [
   { id: 'cotton-twill-fabric', name: 'Cotton Twill Fabric 280 GSM', seller: 'Anwar Textile Mills', location: 'Faisalabad, Pakistan', category: 'Textiles & Fabrics', rating: '4.8', price: 'Rs 670', moq: '500m', unit: 'metre', badge: 'Best seller', stock: 2400, img: unsplash('photo-1523381210434-271e8be1f52b') },
   { id: 'surgical-instrument-set', name: 'Stainless Surgical Instrument Set', seller: 'Sialkot Surgical Co.', location: 'Sialkot, Pakistan', category: 'Surgical Instruments', rating: '4.9', price: 'Rs 2,480', moq: '100pc', unit: 'set', badge: 'Top rated', stock: 340, img: unsplash('photo-1583911860205-72f8ac8ddcbe') },
@@ -80,7 +293,7 @@ export const products = [
   { id: 'basmati-rice-25kg', name: 'Basmati Rice 25kg Bags', seller: 'Al-Barkat Rice Mills', location: 'Sheikhupura, Pakistan', category: 'Rice & Grains', rating: '4.7', price: 'Rs 3,200', moq: '50bag', unit: 'bag', badge: 'Trending', stock: 240, img: unsplash('photo-1586201375761-83865001e31c') },
   { id: 'denim-fabric-rolls', name: 'Denim Fabric Rolls', seller: 'Faisalabad Denim Co.', location: 'Faisalabad, Pakistan', category: 'Textiles & Fabrics', rating: '4.5', price: 'Rs 590', moq: '400m', unit: 'metre', badge: 'Trending', stock: 0, img: unsplash('photo-1565084888279-aca607ecce0c') },
   { id: 'warehouse-racking-systems', name: 'Warehouse Racking Systems', seller: 'PakPack Industries', location: 'Lahore, Pakistan', category: 'Hardware & Tools', rating: '4.6', price: 'Rs 8,400', moq: '10set', unit: 'set', badge: 'Verified', stock: 42, img: unsplash('photo-1553413077-190dd305871c') },
-];
+].map(withDetails);
 
 const VARIANT_IMAGE_IDS = [
   'photo-1523381210434-271e8be1f52b',

@@ -5,6 +5,13 @@ const variantSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const specSchema = new mongoose.Schema({ label: String, value: String }, { _id: false });
+
+const reviewSchema = new mongoose.Schema(
+  { author: String, rating: Number, comment: String, date: Date },
+  { _id: false }
+);
+
 // Public read-only catalog, seeded from the design mock data. `_id` is the human-readable slug
 // (e.g. "cotton-twill-fabric") so product routes can look products up directly by :id.
 const productSchema = new mongoose.Schema(
@@ -25,6 +32,9 @@ const productSchema = new mongoose.Schema(
     discountPercent: Number,
     variants: [variantSchema],
     trendingOrder: { type: Number, default: null }, // set for products in the "trending" rail
+    description: String,
+    specifications: [specSchema],
+    reviews: [reviewSchema],
   },
   { timestamps: true }
 );

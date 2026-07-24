@@ -43,6 +43,10 @@ export default function ImageGallery({
   radiusClassName = 'rounded-2xl',
   thumbHeightClassName = 'h-[64px]',
   badge = null,
+  // 'cover' (default, fills the frame and crops) or 'contain' (shows the whole image, letterboxed
+  // if its aspect ratio doesn't match the frame) — product detail pages want 'contain' so a seller's
+  // photo is never cropped, while dense grids/cards elsewhere keep the 'cover' look.
+  fit = 'cover',
 }) {
   const safeImages = images && images.length > 0 ? images : [];
   const multi = safeImages.length > 1;
@@ -112,11 +116,11 @@ export default function ImageGallery({
         <div className="h-full overflow-hidden" ref={multi ? emblaRef : undefined}>
           <div className="flex h-full">
             {safeImages.map((src, i) => (
-              <div key={i} className="relative flex-[0_0_100%] h-full">
+              <div key={i} className="relative flex-[0_0_100%] h-full overflow-hidden">
                 <SafeImage
                   src={src}
                   alt={`${alt} — photo ${i + 1} of ${safeImages.length}`}
-                  className="w-full h-full object-cover cursor-zoom-in select-none"
+                  className={`w-full h-full ${fit === 'contain' ? 'object-contain' : 'object-cover'} cursor-zoom-in select-none transition-transform duration-300 ease-out ${fit === 'contain' ? '' : 'group-hover:scale-[1.06]'}`}
                   onPointerDown={onImagePointerDown}
                   onPointerUp={onImagePointerUp}
                   draggable={false}

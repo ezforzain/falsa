@@ -72,6 +72,9 @@ async function seed() {
       discountPercent: p.discountPercent,
       variants: p.variants,
       trendingOrder: trendingProductIds.includes(p.id) ? trendingProductIds.indexOf(p.id) : null,
+      description: p.description,
+      specifications: p.specifications,
+      reviews: p.reviews,
     });
     productDocs[p.id] = doc;
   }
