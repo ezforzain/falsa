@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches the web app's brand tokens in src/index.css (color-green / color-cream). -->
+    <color name="brand_green">#0E5A46</color>
+    <color name="brand_cream">#F7F5F0</color>
+    <color name="brand_gold">#F5C98A</color>
+
+    <color name="ic_launcher_background">#0E5A46</color>
+</resources>

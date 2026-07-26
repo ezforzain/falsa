@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lets Chrome (inside the Trusted Web Activity) hand a captured photo back to the web page's
+     <input type="file" capture> flow via a content:// URI instead of a raw file:// path. -->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-cache-path name="twa_external_cache" path="." />
+    <cache-path name="twa_cache" path="." />
+</paths>

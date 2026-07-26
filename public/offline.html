@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>You're offline — FalsafahTot</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #f7f5f0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #1b1f1d;
+      }
+      .wrap {
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 32px 24px;
+        box-sizing: border-box;
+      }
+      .logo {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+        background: #0e5a46;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 24px rgba(14, 90, 70, 0.25);
+      }
+      h1 {
+        font-size: 22px;
+        font-weight: 700;
+        margin: 0 0 10px;
+        letter-spacing: -0.01em;
+      }
+      p {
+        font-size: 15px;
+        color: #5a564c;
+        margin: 0 0 28px;
+        max-width: 320px;
+        line-height: 1.5;
+      }
+      button {
+        appearance: none;
+        border: none;
+        cursor: pointer;
+        background: #c97b2d;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 600;
+        padding: 14px 32px;
+        border-radius: 999px;
+        box-shadow: 0 8px 20px rgba(201, 123, 45, 0.35);
+        transition: transform 0.15s ease;
+      }
+      button:active {
+        transform: scale(0.97);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="logo">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#F5C98A" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m7.5 4.27 9 5.15" />
+          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+          <path d="m3.3 7 8.7 5 8.7-5" />
+          <path d="M12 22V12" />
+        </svg>
+      </div>
+      <h1>You're offline</h1>
+      <p>Check your internet connection and try again. Anything already in your cart is safe.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </div>
+    <script>
+      // Auto-retry the moment connectivity actually comes back, so the buyer doesn't have to
+      // notice and tap the button themselves.
+      window.addEventListener('online', () => location.reload());
+    </script>
+  </body>
+</html>

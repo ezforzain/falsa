@@ -7,22 +7,32 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import { CartProvider } from './context/CartContext.jsx'
 import { ProfileDrawerProvider } from './context/ProfileDrawerContext.jsx'
 
-// One-time cleanup: earlier builds of this app registered a mock service worker (MSW) to
-// intercept /api/* calls in-browser. The app now talks to the real backend directly (see
-// vite.config.js), but a service worker installed by an earlier visit keeps running — and
-// keeps serving stale mock responses — until it's explicitly unregistered; new code alone
-// doesn't remove it. This clears any leftover registration and reloads once so the real
-// network requests take over immediately instead of on the next hard refresh.
+// Clears out any leftover service worker that isn't our own (e.g. the mock API worker earlier
+// builds registered, back when the app talked to a mocked backend in-browser instead of the
+// real one — see vite.config.js) before registering the current one, so a stale worker from an
+// old visit never keeps serving outdated responses or blocks the real one from taking over.
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then((registrations) => {
-    if (registrations.length === 0) return;
-    Promise.all(registrations.map((r) => r.unregister())).then(() => {
+    const stale = registrations.filter((r) => !r.active?.scriptURL.endsWith('/sw.js'));
+    if (stale.length === 0) return;
+    Promise.all(stale.map((r) => r.unregister())).then(() => {
       if (!sessionStorage.getItem('falsafahtot_sw_cleanup_reload')) {
         sessionStorage.setItem('falsafahtot_sw_cleanup_reload', '1');
         window.location.reload();
       }
     });
   });
+
+  // Only in production builds — the dev server has no need for an offline fallback, and a
+  // worker intercepting navigations during local development would just get in Vite's way.
+  if (import.meta.env.PROD) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        // Non-critical — the app works identically without offline support, it just won't
+        // show the branded offline page if the network drops.
+      });
+    });
+  }
 }
 
 createRoot(document.getElementById('root')).render(

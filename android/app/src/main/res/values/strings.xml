@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ============================================================================
+         QUICK CUSTOMIZATION — the only strings you need to touch. See android/README.md
+         "Customization Checklist" for the full list (package name, icon, website URL live
+         in other files).
+         ============================================================================ -->
+
+    <!-- The name shown under the launcher icon and in the Play Store listing. -->
+    <string name="app_name">FalsafahTot</string>
+
+    <!-- Your production domain, HTTPS, no scheme/path/trailing slash. Must exactly match the
+         domain that serves /.well-known/assetlinks.json (see public/.well-known/assetlinks.json
+         in the web app repo) or the Trusted Web Activity will fall back to showing Chrome's
+         address bar instead of a full-screen app. -->
+    <string name="host_name" translatable="false">your-domain.com</string>
+
+    <!-- Full launch URL — normally just https:// + host_name, but kept separate in case you
+         want the app to open on a specific path (e.g. a marketing landing page) instead of "/". -->
+    <string name="launch_url" translatable="false">https://your-domain.com</string>
+
+    <!-- ============================================================================ -->
+
+    <string name="app_short_description" translatable="false">Trade worldwide with sellers you can trust.</string>
+</resources>

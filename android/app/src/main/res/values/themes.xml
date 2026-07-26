@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- LauncherActivity (from androidbrowserhelper) is a plain framework Activity, not an
+         AppCompatActivity — it doesn't need/use AppCompat, so a plain Material theme is enough. -->
+    <style name="Theme.App" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/brand_green</item>
+        <item name="android:windowBackground">@color/brand_cream</item>
+    </style>
+</resources>

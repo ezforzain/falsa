@@ -1,0 +1,80 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Release signing reads from keystore.properties (gitignored, never commit it) so the real
+// keystore path/passwords never end up in source control. See android/README.md
+// "Create a release keystore" for how to generate this file — until it exists, `assembleRelease`
+// / `bundleRelease` still work but produce an UNSIGNED build.
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+def keystoreProperties = new Properties()
+def hasKeystoreConfig = keystorePropertiesFile.exists()
+if (hasKeystoreConfig) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    // ============================================================================
+    // QUICK CUSTOMIZATION #1 — your app's package name (aka applicationId). Changing this
+    // string is the ONLY place you need to edit it; ${applicationId} elsewhere in the project
+    // (AndroidManifest.xml's FileProvider authority) resolves automatically. See
+    // android/README.md "Customization Checklist" for the other 3 things to change.
+    namespace 'com.example.falsafahtot'
+    // ============================================================================
+
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.example.falsafahtot'
+        minSdk 26   // Android 8.0 Oreo — matches the "support Android 8.0+" requirement
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    signingConfigs {
+        if (hasKeystoreConfig) {
+            release {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasKeystoreConfig) {
+                signingConfig signingConfigs.release
+            }
+        }
+        debug {
+            // Lets a debug build live side-by-side with an installed release build on the same
+            // device/emulator instead of one overwriting the other.
+            applicationIdSuffix '.debug'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+dependencies {
+    // Trusted Web Activity support — LauncherActivity, DelegationService (notification
+    // delegation), FocusActivity, ManageDataLauncherActivity.
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.2'
+    implementation 'androidx.browser:browser:1.10.0'
+    // Pinned below the latest (1.19.x requires compileSdk 37 / AGP 9.1+, ahead of what this
+    // project's AGP 8.13.2 + compileSdk 36 supports) — safe to bump once you upgrade AGP.
+    implementation 'androidx.core:core:1.13.1'
+}
