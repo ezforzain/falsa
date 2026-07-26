@@ -496,6 +496,21 @@ export const companyProfile = (seller) => {
   };
 };
 
+// Deterministic "N sold" social-proof stat shown next to the rating — same hashString technique
+// as the other synthetic-but-stable stats above, so it stays fixed for a given product instead
+// of jumping around between renders.
+export const productSoldCount = (product) => {
+  const h = hashString(product.id);
+  return 150 + (h % 4850);
+};
+
+// Short spec-highlight chips for the icon badge row near the top of the Overview tab — just the
+// first few real specifications (falls back to the generated list, same as productSpecifications).
+export const productHighlights = (product) =>
+  productSpecifications(product)
+    .slice(0, 4)
+    .map(([label, value]) => ({ label, value }));
+
 export const mobileTabs = [
   {
     key: "aimode",

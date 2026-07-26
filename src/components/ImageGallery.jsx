@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import { IconBox, IconChevronLeft, IconChevronRight, IconClose, IconSearch } from './icons';
+import { IconBox, IconChevronLeft, IconChevronRight, IconClose, IconSearch, IconZoomIn } from './icons';
+import ZoomableImage from './ZoomableImage';
 
 // A single <img> that swaps itself for a neutral placeholder if the URL fails to load —
 // seller-supplied image URLs aren't validated server-side beyond "looks like a string",
@@ -153,14 +154,20 @@ export default function ImageGallery({
           </>
         )}
 
-        <span className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-black/45 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        {multi && (
+          <span className="absolute bottom-3 left-3 bg-black/50 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full pointer-events-none">
+            {selectedIndex + 1}/{safeImages.length}
+          </span>
+        )}
+
+        <span className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-black/45 flex items-center justify-center text-white sm:opacity-0 sm:group-hover:opacity-100 transition-opacity pointer-events-none">
           <IconSearch width="14" height="14" />
         </span>
       </div>
 
       {/* Pagination dots */}
       {multi && (
-        <div className="flex items-center justify-center gap-1.5 mt-3">
+        <div className="flex items-center justify-center gap-2 mt-3.5">
           {safeImages.map((_, i) => (
             <button
               key={i}
@@ -168,8 +175,8 @@ export default function ImageGallery({
               onClick={() => scrollTo(i)}
               aria-label={`Go to image ${i + 1}`}
               aria-current={i === selectedIndex}
-              className={`cursor-pointer rounded-full transition-all ${
-                i === selectedIndex ? 'w-5 h-[6px] bg-green' : 'w-[6px] h-[6px] bg-border-strong hover:bg-text-muted'
+              className={`cursor-pointer rounded-full transition-all duration-300 ${
+                i === selectedIndex ? 'w-6 h-[7px] bg-green' : 'w-[7px] h-[7px] bg-border-strong hover:bg-text-muted'
               }`}
             />
           ))}
@@ -233,18 +240,27 @@ export default function ImageGallery({
             </>
           )}
 
-          <img
-            src={safeImages[selectedIndex]}
-            alt={alt}
-            className="max-w-full max-h-[85vh] object-contain rounded-lg animate-fade-up"
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div className="w-full h-[85vh] animate-fade-up" onClick={(e) => e.stopPropagation()}>
+            <ZoomableImage
+              src={safeImages[selectedIndex]}
+              alt={alt}
+              resetKey={selectedIndex}
+              onSwipeLeft={multi ? scrollNext : undefined}
+              onSwipeRight={multi ? scrollPrev : undefined}
+            />
+          </div>
 
-          {multi && (
-            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/70 text-xs font-medium">
-              {selectedIndex + 1} / {safeImages.length}
-            </div>
-          )}
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 pointer-events-none">
+            <span className="flex items-center gap-1.5 text-white/60 text-[11px] font-medium">
+              <IconZoomIn width="12" height="12" />
+              Pinch or double-tap to zoom
+            </span>
+            {multi && (
+              <div className="text-white/70 text-xs font-medium">
+                {selectedIndex + 1} / {safeImages.length}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

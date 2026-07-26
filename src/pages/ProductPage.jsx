@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   galleryImageIds,
-  priceTiers,
   unsplash,
+  priceTiers,
   productDescription,
   productSpecifications,
   productFeatures,
@@ -13,6 +13,8 @@ import {
   productFaqs,
   certifications,
   companyProfile,
+  productSoldCount,
+  productHighlights,
 } from '../data/mockData';
 import { catalog, sellers } from '../lib/api';
 import { recordRecentlyViewed, getRecentlyViewedIds } from '../lib/recentlyViewed';
@@ -29,6 +31,10 @@ import FirstVisitSignupPrompt from '../components/FirstVisitSignupPrompt';
 import SectionCard from '../components/product/SectionCard';
 import TrustBadges from '../components/product/TrustBadges';
 import QuickFacts from '../components/product/QuickFacts';
+import PriceBox from '../components/product/PriceBox';
+import FeatureBadges from '../components/product/FeatureBadges';
+import StickyActionBar from '../components/product/StickyActionBar';
+import ProductTabs from '../components/product/ProductTabs';
 import ProductSpecifications from '../components/product/ProductSpecifications';
 import ProductFeatures from '../components/product/ProductFeatures';
 import PackagingShipping from '../components/product/PackagingShipping';
@@ -38,7 +44,7 @@ import CertificationsSection from '../components/product/CertificationsSection';
 import ReviewsSection from '../components/product/ReviewsSection';
 import FaqSection from '../components/product/FaqSection';
 import ProductRail from '../components/product/ProductRail';
-import { IconChevronRight, IconShield, IconTrendingUp, IconStar } from '../components/icons';
+import { IconChevronRight, IconShield, IconTrendingUp } from '../components/icons';
 
 export default function ProductPage() {
   const { id } = useParams();
@@ -62,6 +68,9 @@ export default function ProductPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetLoading, setSheetLoading] = useState(false);
   const [sheetError, setSheetError] = useState(null);
+
+  const [stickyBarVisible, setStickyBarVisible] = useState(false);
+  const ctaSentinelRef = useRef(null);
 
   const { addToCart, items } = useCart();
   const navigate = useNavigate();
@@ -135,6 +144,27 @@ export default function ProductPage() {
     };
   }, [product?.id]);
 
+  // Reveals the mobile sticky Buy Now / Add to Cart bar once the inline buy box (with its own
+  // full-size buttons) has scrolled out of view — avoids showing two copies of the same actions
+  // on screen at once right at the top of the page.
+  useEffect(() => {
+    if (!isMobile || !product) {
+      setStickyBarVisible(false);
+      return;
+    }
+    const sentinel = ctaSentinelRef.current;
+    if (!sentinel) return;
+    // `!isIntersecting` alone is true both when the sentinel is scrolled past (above the
+    // viewport — what we want) AND before it's been reached at all (still below the viewport, on
+    // first paint) — checking that its top has actually passed above 0 disambiguates the two.
+    const observer = new IntersectionObserver(
+      ([entry]) => setStickyBarVisible(!entry.isIntersecting && entry.boundingClientRect.top < 0),
+      { threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [isMobile, product]);
+
   useEffect(() => () => clearTimeout(orderTimer.current), []);
 
   // On mobile, "Order Now" opens the Daraz-style variant sheet so a shopper picks a color and
@@ -198,7 +228,7 @@ export default function ProductPage() {
     return (
       <main className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 pb-20">
         <div className="grid gap-10 lg:gap-16 items-start lg:grid-cols-[minmax(0,560px)_1fr]">
-          <div className="animate-pulse h-[280px] md:h-[400px] lg:h-[560px] rounded-[18px] bg-surface-muted" />
+          <div className="animate-pulse h-[320px] md:h-[440px] lg:h-[620px] rounded-[18px] bg-surface-muted" />
           <div className="animate-pulse flex flex-col gap-4">
             <div className="h-6 bg-surface-muted rounded w-2/3" />
             <div className="h-4 bg-surface-muted rounded w-1/2" />
@@ -224,10 +254,11 @@ export default function ProductPage() {
   if (!product) return null;
 
   const images = galleryImageIds.map((imgId) => unsplash(imgId, 1100));
-  const tiers = priceTiers(product.price);
   const reviewSummary = productReviewSummary(product);
   const reviews = productReviews(product);
   const profile = companyProfile(storeSeller);
+  const soldCount = productSoldCount(product);
+  const highlights = productHighlights(product);
 
   const relatedProducts = catalogProducts
     .filter((p) => p.id !== product.id && p.category === product.category)
@@ -238,10 +269,71 @@ export default function ProductPage() {
     .filter(Boolean)
     .slice(0, 4);
 
+  const tabs = [
+    {
+      key: 'overview',
+      label: 'Overview',
+      content: (
+        <div className="flex flex-col gap-6 sm:gap-8">
+          <SectionCard title="Product Description">
+            <p className="text-[14.5px] text-text leading-relaxed m-0">{productDescription(product)}</p>
+          </SectionCard>
+          <ProductFeatures features={productFeatures(product)} />
+          <PackagingShipping info={packagingShipping(product)} />
+          {storeSeller && <CompanyProfileSection profile={profile} />}
+          <CertificationsSection items={certifications} />
+        </div>
+      ),
+    },
+    {
+      key: 'ratings',
+      label: 'Ratings',
+      content: <ReviewsSection summary={reviewSummary} reviews={reviews} />,
+    },
+    {
+      key: 'details',
+      label: 'Product Details',
+      content: (
+        <div className="flex flex-col gap-6 sm:gap-8">
+          <SectionCard title="Bulk Pricing" subtitle="Unit price drops automatically at higher order quantities">
+            <div className="grid grid-cols-1 sm:grid-cols-3 border border-border rounded-2xl overflow-hidden">
+              {priceTiers(product.price).map((tier, i, arr) => (
+                <div
+                  key={tier.range}
+                  className={`px-5 py-[18px] ${i < arr.length - 1 ? 'border-b sm:border-b-0 sm:border-r border-border' : ''} ${i === arr.length - 1 ? 'bg-green-tint' : 'bg-white'}`}
+                >
+                  <div className="font-mono text-[11px] text-text-muted mb-1.5">{tier.range}</div>
+                  <div className="font-display font-bold text-xl text-green">{tier.price}</div>
+                  <div className="text-[11.5px] text-text-muted">PKR / {product.unit}</div>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+          <ProductSpecifications specs={productSpecifications(product)} />
+          {storeSeller && <SellerInfoSection seller={storeSeller} rating={product.rating} />}
+          <FaqSection faqs={productFaqs(product)} />
+        </div>
+      ),
+    },
+    {
+      key: 'recommended',
+      label: 'Recommended',
+      content: (
+        <div className="flex flex-col gap-8 sm:gap-10">
+          <ProductRail title="Related Products" products={relatedProducts} />
+          <ProductRail title="Recently Viewed Products" products={recentlyViewedProducts} />
+          {relatedProducts.length === 0 && recentlyViewedProducts.length === 0 && (
+            <p className="text-[14px] text-text-muted text-center py-8">Nothing to recommend yet — keep browsing the marketplace.</p>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <main className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 pb-20 animate-fade-up">
+    <main className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 pb-16 sm:pb-20 animate-fade-up">
       {/* Breadcrumb */}
-      <div className="text-[13px] text-text-muted mb-6 flex items-center gap-2 flex-wrap">
+      <div className="text-[13px] text-text-muted mb-5 sm:mb-6 flex items-center gap-2 flex-wrap">
         <Link to="/" className="text-green font-medium no-underline hover:underline">
           Home
         </Link>
@@ -252,42 +344,35 @@ export default function ProductPage() {
       </div>
 
       {/* ---------- Hero: gallery + info, two columns ---------- */}
-      <div className="grid gap-10 lg:gap-16 items-start lg:items-center lg:grid-cols-[minmax(0,560px)_1fr] mb-10 sm:mb-12">
-        {/* Gallery */}
-        <ImageGallery
-          images={images}
-          alt={product.name}
-          heightClassName="h-[280px] sm:h-[400px] lg:h-[560px]"
-          radiusClassName="rounded-[14px] sm:rounded-[16px] lg:rounded-[18px]"
-          thumbHeightClassName="h-[54px] sm:h-[66px] lg:h-[78px]"
-          fit="contain"
-          badge={
-            <span className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-white/94 text-green text-[11px] sm:text-xs font-bold px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 pointer-events-none">
-              <IconTrendingUp />
-              Trending #1
-            </span>
-          }
-        />
+      <div className="grid gap-8 sm:gap-10 lg:gap-16 items-start lg:grid-cols-[minmax(0,560px)_1fr] mb-10 sm:mb-12">
+        {/* Gallery — larger, swipeable, with pinch-to-zoom full-screen preview */}
+        <div className="lg:sticky lg:top-24">
+          <ImageGallery
+            images={images}
+            alt={product.name}
+            heightClassName="h-[320px] sm:h-[440px] lg:h-[560px]"
+            radiusClassName="rounded-[16px] sm:rounded-[18px] lg:rounded-[20px]"
+            thumbHeightClassName="h-[56px] sm:h-[68px] lg:h-[78px]"
+            fit="contain"
+            badge={
+              <span className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-white/94 text-green text-[11px] sm:text-xs font-bold px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 pointer-events-none">
+                <IconTrendingUp />
+                Trending #1
+              </span>
+            }
+          />
+        </div>
 
         {/* Info */}
-        <div>
-          <div className="inline-flex items-center gap-2 bg-green-tint text-green text-xs font-bold px-3.5 py-1.5 rounded-full mb-[18px]">
+        <div className="lg:sticky lg:top-24">
+          <div className="inline-flex items-center gap-2 bg-green-tint text-green text-xs font-bold px-3.5 py-1.5 rounded-full mb-4">
             <IconShield strokeWidth="2.2" />
             Verified seller · 100% Trusted
           </div>
 
-          <h1 className="font-display text-[28px] sm:text-[34px] lg:text-[38px] font-bold m-0 mb-3 tracking-tight leading-[1.12] text-balance">
+          <h1 className="font-display text-[26px] sm:text-[32px] lg:text-[36px] font-bold m-0 mb-4 tracking-tight leading-[1.14] text-balance">
             {product.name}
           </h1>
-
-          <a
-            href="#reviews"
-            className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-ink-soft no-underline hover:underline mb-4"
-          >
-            <IconStar width="14" height="14" />
-            {reviewSummary.rating.toFixed(1)}
-            <span className="text-text-muted font-medium">({reviewSummary.total.toLocaleString()} reviews)</span>
-          </a>
 
           {storeSeller ? (
             <StoreCard rating={product.rating} seller={storeSeller} />
@@ -295,27 +380,16 @@ export default function ProductPage() {
             <div className="animate-pulse h-[78px] bg-surface-muted rounded-2xl mb-[22px]" />
           )}
 
-          {/* Headline price */}
-          <div className="flex items-baseline gap-2 mb-3">
-            <span className="font-display font-bold text-[32px] sm:text-[38px] text-green tracking-tight">{product.price}</span>
-            <span className="text-sm text-text-muted font-medium">/ {product.unit}</span>
+          {/* Price — sticky-styled buy box: current/original/savings + rating + sold count */}
+          <div className="bg-surface-muted/60 border border-border rounded-2xl px-5 py-5 mb-5">
+            <PriceBox product={product} rating={reviewSummary.rating} reviewCount={reviewSummary.total} soldCount={soldCount} />
           </div>
 
-          {/* Price tiers */}
-          <div className="border border-border rounded-2xl overflow-hidden mb-6 bg-white">
-            <div className="grid grid-cols-1 sm:grid-cols-3">
-              {tiers.map((tier, i) => (
-                <div
-                  key={tier.range}
-                  className={`px-5 py-[18px] ${i < tiers.length - 1 ? 'border-b sm:border-b-0 sm:border-r border-border' : ''} ${i === tiers.length - 1 ? 'bg-[#F7FBF9]' : 'bg-white'}`}
-                >
-                  <div className="font-mono text-[11px] text-text-muted mb-1.5">{tier.range}</div>
-                  <div className="font-display font-bold text-xl text-green">{tier.price}</div>
-                  <div className="text-[11.5px] text-text-muted">PKR / {product.unit}</div>
-                </div>
-              ))}
+          {highlights.length > 0 && (
+            <div className="mb-5">
+              <FeatureBadges highlights={highlights} />
             </div>
-          </div>
+          )}
 
           {/* MOQ / stock / shipping / delivery quick facts */}
           <QuickFacts product={product} outOfStock={outOfStock} />
@@ -325,7 +399,9 @@ export default function ProductPage() {
 
           {actionError && <p className="text-sm text-orange-text mb-3">{actionError}</p>}
 
-          {/* Action buttons — one responsive row, Order Now is the dominant CTA */}
+          {/* Action buttons — one responsive row, Order Now is the dominant CTA. Sentinel marks
+              where this inline buy box ends, so the mobile sticky bar only appears once it's
+              scrolled out of view (see the IntersectionObserver effect above). */}
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
@@ -350,27 +426,15 @@ export default function ProductPage() {
             <ChatButton />
             <ShareButton title={product.name} />
           </div>
+          <div ref={ctaSentinelRef} />
         </div>
       </div>
 
-      {/* ---------- Content sections ---------- */}
-      <SectionCard title="Product Description" id="description">
-        <p className="text-[14.5px] text-text leading-relaxed m-0">{productDescription(product)}</p>
-      </SectionCard>
+      {/* ---------- Tabbed content: Overview / Ratings / Product Details / Recommended ---------- */}
+      <ProductTabs tabs={tabs} />
 
-      <ProductSpecifications specs={productSpecifications(product)} />
-      <ProductFeatures features={productFeatures(product)} />
-      <PackagingShipping info={packagingShipping(product)} />
-
-      {storeSeller && <SellerInfoSection seller={storeSeller} rating={product.rating} />}
-      {storeSeller && <CompanyProfileSection profile={profile} />}
-
-      <CertificationsSection items={certifications} />
-      <ReviewsSection summary={reviewSummary} reviews={reviews} />
-      <FaqSection faqs={productFaqs(product)} />
-
-      <ProductRail title="Related Products" products={relatedProducts} />
-      <ProductRail title="Recently Viewed Products" products={recentlyViewedProducts} />
+      {/* Clears the mobile sticky action bar so it never covers the last bit of content. */}
+      {stickyBarVisible && <div className="h-[84px] md:hidden" aria-hidden="true" />}
 
       <QuantityModal
         product={product}
@@ -391,6 +455,16 @@ export default function ProductPage() {
         onBuyNow={handleSheetBuyNow}
       />
       <FirstVisitSignupPrompt />
+
+      {stickyBarVisible && (
+        <StickyActionBar
+          product={product}
+          ordering={ordering}
+          outOfStock={outOfStock}
+          onOrderNow={handleOrderNow}
+          onAddToCart={openQuantityModal}
+        />
+      )}
     </main>
   );
 }

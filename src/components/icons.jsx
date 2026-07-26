@@ -342,3 +342,42 @@ export const IconShare = (props) => (
     <path d="m15.41 6.51-6.82 3.98" />
   </svg>
 );
+
+export const IconZoomIn = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="11" cy="11" r="8" />
+    <path d="m21 21-4.3-4.3" />
+    <path d="M11 8v6" />
+    <path d="M8 11h6" />
+  </svg>
+);
+
+export const IconMinus = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M5 12h14" />
+  </svg>
+);
+
+export const IconDroplet = (props) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M12 2.5s7 7.4 7 12a7 7 0 0 1-14 0c0-4.6 7-12 7-12Z" />
+  </svg>
+);
+
+export const IconBattery = (props) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="2" y="7" width="17" height="10" rx="2" />
+    <path d="M22 10v4" />
+    <path d="M6 10v4" />
+  </svg>
+);
+
+export const IconRadio = (props) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="12" cy="12" r="2" />
+    <path d="M8.5 8.5a5 5 0 0 0 0 7" />
+    <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+    <path d="M5.5 5.5a10 10 0 0 0 0 13" />
+    <path d="M18.5 5.5a10 10 0 0 1 0 13" />
+  </svg>
+);
