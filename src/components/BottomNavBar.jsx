@@ -11,7 +11,7 @@ const TABS = [
   { key: 'categories', label: 'Categories', to: '/categories', icon: IconGrid, match: (path) => path.startsWith('/categories') },
   { key: 'messenger', label: 'Messenger', to: '/messenger', icon: IconMessageCircle, match: (path) => path.startsWith('/messenger'), badge: 1 },
   { key: 'cart', label: 'Cart', to: '/cart', icon: IconCart, match: (path) => path.startsWith('/cart') },
-  { key: 'account', label: 'My Account', to: '/account', icon: IconUser, match: (path) => path.startsWith('/account') },
+  { key: 'account', label: 'Account', to: '/account', icon: IconUser, match: (path) => path.startsWith('/account') },
 ];
 
 // Fixed mobile tab bar for the buyer storefront — hidden at the md breakpoint, where the
@@ -37,7 +37,7 @@ export default function BottomNavBar() {
               key={key}
               to={to}
               aria-current={active ? 'page' : undefined}
-              className="group flex flex-col items-center justify-center gap-1 mx-1 my-1.5 rounded-2xl outline-none transition-transform duration-150 active:scale-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#FF6A00]"
+              className="group flex flex-col items-center justify-center gap-1 min-w-0 mx-0.5 my-1.5 rounded-2xl outline-none transition-transform duration-150 active:scale-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#FF6A00]"
             >
               <span className="relative flex items-center justify-center">
                 <Icon
@@ -55,7 +55,7 @@ export default function BottomNavBar() {
                 )}
               </span>
               <span
-                className="text-[11px] font-medium leading-none transition-colors duration-200 ease-out"
+                className="text-[11px] font-medium leading-none whitespace-nowrap transition-colors duration-200 ease-out"
                 style={{ color: active ? ACTIVE_COLOR : '#4B5563' }}
               >
                 {label}
