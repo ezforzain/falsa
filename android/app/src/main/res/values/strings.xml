@@ -13,11 +13,11 @@
          domain that serves /.well-known/assetlinks.json (see public/.well-known/assetlinks.json
          in the web app repo) or the Trusted Web Activity will fall back to showing Chrome's
          address bar instead of a full-screen app. -->
-    <string name="host_name" translatable="false">127.0.0.1:5176</string>
+    <string name="host_name" translatable="false">your-domain.com</string>
 
     <!-- Full launch URL — normally just https:// + host_name, but kept separate in case you
          want the app to open on a specific path (e.g. a marketing landing page) instead of "/". -->
-    <string name="launch_url" translatable="false">http://127.0.0.1:5176</string>
+    <string name="launch_url" translatable="false">https://your-domain.com</string>
 
     <!-- ============================================================================ -->
 
