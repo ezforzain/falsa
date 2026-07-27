@@ -148,6 +148,10 @@ export const sellers = {
 export const admin = {
   setSellerVerified: (id, verified) =>
     request(`/api/admin/sellers/${encodeURIComponent(id)}/verify`, { method: 'PATCH', body: { verified }, auth: true }),
+  products: () => request('/api/admin/products', { auth: true }),
+  createProduct: (payload) => request('/api/admin/products', { method: 'POST', body: payload, auth: true }),
+  updateProduct: (id, payload) => request(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload, auth: true }),
+  deleteProduct: (id) => request(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
 };
 
 // ---------- Seller KYC (CNIC identity verification, admin review) ----------

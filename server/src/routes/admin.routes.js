@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Seller } from '../models/Seller.js';
 import { User } from '../models/User.js';
+import { Product } from '../models/Product.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { serializeUser, serializeUsers } from '../utils/serializeUser.js';
@@ -15,6 +16,128 @@ router.patch(
     const sellerRecord = await Seller.findByIdAndUpdate(req.params.id, { verified: Boolean(verified) }, { new: true });
     if (!sellerRecord) return res.status(404).json({ message: 'Store not found.' });
     res.json({ seller: sellerRecord });
+  })
+);
+
+const DEFAULT_PRODUCT_IMG = 'https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=700&q=80';
+
+function slugify(name) {
+  return String(name)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-+|-+$)/g, '');
+}
+
+async function uniqueProductSlug(name) {
+  const base = slugify(name) || 'product';
+  let slug = base;
+  let n = 1;
+  // eslint-disable-next-line no-await-in-loop
+  while (await Product.exists({ _id: slug })) {
+    n += 1;
+    slug = `${base}-${n}`;
+  }
+  return slug;
+}
+
+function formatPrice(price) {
+  const trimmed = String(price).trim();
+  return /^rs\b/i.test(trimmed) ? trimmed : `Rs ${trimmed}`;
+}
+
+function serializeAdminProduct(doc) {
+  const p = doc.toObject();
+  const sellerDoc = p.sellerId;
+  return {
+    ...p,
+    id: p._id,
+    sellerId: sellerDoc?._id ?? p.sellerId,
+    sellerName: sellerDoc?.name ?? p.seller,
+    verified: sellerDoc?.verified || false,
+  };
+}
+
+router.get(
+  '/products',
+  asyncHandler(async (_req, res) => {
+    const products = await Product.find().sort({ createdAt: -1 }).populate('sellerId', 'name verified');
+    res.json({ products: products.map(serializeAdminProduct) });
+  })
+);
+
+router.post(
+  '/products',
+  asyncHandler(async (req, res) => {
+    const { name, sellerId, category, description, price, unit, moq, stock, badge, images, img } = req.body;
+    if (!name || !sellerId || !category || !price) {
+      return res.status(400).json({ message: 'Please fill in all required fields.' });
+    }
+    const sellerDoc = await Seller.findById(sellerId);
+    if (!sellerDoc) return res.status(400).json({ message: 'Selected store was not found.' });
+    if (stock !== undefined && stock !== null && stock !== '' && (!Number.isInteger(stock) || stock < 0)) {
+      return res.status(400).json({ message: 'Stock must be zero or a positive whole number.' });
+    }
+    if (images !== undefined && (!Array.isArray(images) || images.some((url) => typeof url !== 'string'))) {
+      return res.status(400).json({ message: 'Images must be a list of URLs.' });
+    }
+    const gallery = Array.isArray(images) && images.length > 0 ? images : [img || DEFAULT_PRODUCT_IMG];
+    const _id = await uniqueProductSlug(name);
+    const product = await Product.create({
+      _id,
+      name,
+      sellerId: sellerDoc._id,
+      seller: sellerDoc.name,
+      category,
+      description: description || '',
+      price: formatPrice(price),
+      moq: moq || '',
+      unit: unit || '',
+      badge: badge || undefined,
+      stock: stock === undefined || stock === null || stock === '' ? null : Number(stock),
+      img: gallery[0],
+      images: gallery,
+    });
+    await product.populate('sellerId', 'name verified');
+    res.status(201).json({ product: serializeAdminProduct(product) });
+  })
+);
+
+router.patch(
+  '/products/:id',
+  asyncHandler(async (req, res) => {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found.' });
+
+    const body = { ...req.body };
+    if (body.sellerId) {
+      const sellerDoc = await Seller.findById(body.sellerId);
+      if (!sellerDoc) return res.status(400).json({ message: 'Selected store was not found.' });
+      body.sellerId = sellerDoc._id;
+      body.seller = sellerDoc.name;
+    }
+    if (body.price !== undefined) body.price = formatPrice(body.price);
+    if (body.stock !== undefined) {
+      body.stock = body.stock === null || body.stock === '' ? null : Number(body.stock);
+    }
+    if (Array.isArray(body.images)) {
+      body.images = body.images.length > 0 ? body.images : product.images;
+      body.img = body.images[0];
+    }
+
+    product.set(body);
+    await product.save();
+    await product.populate('sellerId', 'name verified');
+    res.json({ product: serializeAdminProduct(product) });
+  })
+);
+
+router.delete(
+  '/products/:id',
+  asyncHandler(async (req, res) => {
+    const deleted = await Product.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Product not found.' });
+    res.json({ ok: true });
   })
 );
 
