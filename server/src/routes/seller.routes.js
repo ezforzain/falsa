@@ -3,6 +3,7 @@ import { SellerProduct } from '../models/SellerProduct.js';
 import { SellerOrder, ORDER_STATUSES } from '../models/SellerOrder.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { syncSellerProductToCatalog, removeSellerProductFromCatalog } from '../utils/publicCatalogSync.js';
 
 const router = Router();
 router.use(requireAuth, requireRole('seller'));
@@ -95,6 +96,7 @@ router.post(
       images: gallery,
       img: gallery[0],
     });
+    await syncSellerProductToCatalog(product, req.user);
     res.status(201).json({ product: serializeProduct(product) });
   })
 );
@@ -123,6 +125,7 @@ router.patch(
     }
     product.set(patch);
     await product.save();
+    await syncSellerProductToCatalog(product, req.user);
     res.json({ product: serializeProduct(product) });
   })
 );
@@ -132,6 +135,7 @@ router.delete(
   asyncHandler(async (req, res) => {
     const deleted = await SellerProduct.findOneAndDelete({ _id: req.params.id, sellerId: req.user._id });
     if (!deleted) return res.status(404).json({ message: 'Listing not found.' });
+    await removeSellerProductFromCatalog(deleted._id);
     res.json({ ok: true });
   })
 );
