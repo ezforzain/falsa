@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  galleryImageIds,
-  unsplash,
   priceTiers,
   productDescription,
   productSpecifications,
@@ -17,6 +15,7 @@ import {
   productHighlights,
 } from '../data/mockData';
 import { catalog, sellers } from '../lib/api';
+import { parseMoqNumber } from '../lib/moq';
 import { recordRecentlyViewed, getRecentlyViewedIds } from '../lib/recentlyViewed';
 import { useCart } from '../context/CartContext';
 import useIsMobile from '../hooks/useIsMobile';
@@ -180,7 +179,7 @@ export default function ProductPage() {
     setActionError(null);
     orderTimer.current = setTimeout(async () => {
       try {
-        await addToCart(product);
+        await addToCart(product, parseMoqNumber(product.moq) || 1);
         navigate('/cart');
       } catch (err) {
         setActionError(err.message);
@@ -253,7 +252,10 @@ export default function ProductPage() {
 
   if (!product) return null;
 
-  const images = galleryImageIds.map((imgId) => unsplash(imgId, 1100));
+  // Built from the product's own data (its cover photo plus real photos of other products in
+  // its category — see server/src/seed/data.js) rather than one fixed set of stock photos
+  // shared across every product regardless of category.
+  const images = product.images?.length ? product.images : product.img ? [product.img] : [];
   const reviewSummary = productReviewSummary(product);
   const reviews = productReviews(product);
   const profile = companyProfile(storeSeller);

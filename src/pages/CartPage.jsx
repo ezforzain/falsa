@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { formatPKR, parsePrice } from '../data/mockData';
+import { parseMoqNumber } from '../lib/moq';
 import { IconCart, IconCheck, IconTruck } from '../components/icons';
 
 export default function CartPage() {
@@ -111,6 +112,7 @@ export default function CartPage() {
         <div className="flex flex-col gap-4">
           {items.map(({ product, qty }) => {
             const lineTotal = parsePrice(product.price) * qty;
+            const moqMin = parseMoqNumber(product.moq) || 1;
             return (
               <div
                 key={product.id}
@@ -138,24 +140,28 @@ export default function CartPage() {
                 {/* Quantity selector + line total — indented to align under the product text on
                     mobile (stacked), sits inline at the end of the row on sm+ (side by side). */}
                 <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8 pl-20 sm:pl-0">
-                  <div className="flex items-center gap-2 border border-border rounded-full px-1 py-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleQtyChange(product.id, qty - 1)}
-                      aria-label="Decrease quantity"
-                      className="cursor-pointer w-7 h-7 rounded-full flex items-center justify-center text-ink hover:bg-surface-muted transition-colors"
-                    >
-                      −
-                    </button>
-                    <span className="text-sm font-semibold w-6 text-center">{qty}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleQtyChange(product.id, qty + 1)}
-                      aria-label="Increase quantity"
-                      className="cursor-pointer w-7 h-7 rounded-full flex items-center justify-center text-ink hover:bg-surface-muted transition-colors"
-                    >
-                      +
-                    </button>
+                  <div className="flex flex-col items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-2 border border-border rounded-full px-1 py-1">
+                      <button
+                        type="button"
+                        onClick={() => handleQtyChange(product.id, Math.max(qty - 1, moqMin))}
+                        disabled={qty <= moqMin}
+                        aria-label="Decrease quantity"
+                        className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-35 w-7 h-7 rounded-full flex items-center justify-center text-ink hover:bg-surface-muted transition-colors"
+                      >
+                        −
+                      </button>
+                      <span className="text-sm font-semibold w-6 text-center">{qty}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleQtyChange(product.id, qty + 1)}
+                        aria-label="Increase quantity"
+                        className="cursor-pointer w-7 h-7 rounded-full flex items-center justify-center text-ink hover:bg-surface-muted transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                    {moqMin > 1 && <span className="text-[10.5px] text-text-muted">Min {product.moq}</span>}
                   </div>
 
                   <div className="flex flex-col items-end gap-1.5 shrink-0 sm:min-w-[100px]">

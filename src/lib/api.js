@@ -44,8 +44,10 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
       // relative-path/same-origin dev case.
       credentials: API_BASE ? 'include' : 'same-origin',
     });
-  } catch {
-    throw new ApiError('Network error — please check your connection and try again.', 0);
+  } catch (networkErr) {
+    // eslint-disable-next-line no-console
+    console.error(`API network error on ${method} ${path}:`, networkErr);
+    throw new ApiError('Unable to connect. Please check your internet connection and try again.', 0);
   }
 
   const isJson = res.headers.get('content-type')?.includes('application/json');
@@ -55,9 +57,21 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
     // A non-JSON response from our own /api/* path usually means the backend (or its proxy)
     // isn't reachable rather than a normal API error, which always comes back as JSON.
     if (!isJson && path.startsWith('/api/')) {
-      throw new ApiError('Could not reach the server — please check it is running and try again.', res.status);
+      // eslint-disable-next-line no-console
+      console.error(`API ${method} ${path} returned a non-JSON ${res.status} response.`);
+      throw new ApiError('Unable to connect. Please check your internet connection and try again.', res.status);
     }
-    throw new ApiError(data?.message || `Request failed (${res.status}).`, res.status);
+    // Our own route handlers respond with a deliberate, safe-to-display message on every 4xx
+    // they raise (validation errors, "out of stock", auth failures, etc.). Anything else — a
+    // 5xx, or an error with no message at all (e.g. a blocked CORS preflight, which never even
+    // reaches our routes) — is technical detail that should never reach the UI verbatim, so it's
+    // logged here for debugging and swapped for one generic, friendly message instead.
+    if (res.status >= 500 || !data?.message) {
+      // eslint-disable-next-line no-console
+      console.error(`API ${method} ${path} failed (${res.status}):`, data?.message || res.statusText);
+      throw new ApiError('Something went wrong. Please try again.', res.status);
+    }
+    throw new ApiError(data.message, res.status);
   }
   return data;
 }

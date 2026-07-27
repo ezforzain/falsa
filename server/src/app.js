@@ -15,14 +15,14 @@ import sellerPortalRoutes from './routes/seller.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 
-// True for any private-network address on the Vite dev port — covers a phone or another
-// machine reaching this API via the same LAN IP the dev-server QR code points them to,
-// whatever that IP happens to be (192.168.x.x, 10.x.x.x, or 172.16-31.x.x), without needing
-// CLIENT_ORIGIN updated by hand every time this machine's IP changes.
+// True for any private-network/localhost address, on ANY port — covers a phone or another
+// machine reaching this API via the same LAN IP the dev-server QR code points them to (whatever
+// that IP happens to be: 192.168.x.x, 10.x.x.x, or 172.16-31.x.x), and covers every Vite dev
+// port (5173, 5174, 5175, ...) Vite might land on when the default port is already taken —
+// without needing CLIENT_ORIGIN updated by hand per port or per machine.
 function isPrivateLanOrigin(origin) {
   try {
-    const { hostname, port } = new URL(origin);
-    if (port !== '5173') return false;
+    const { hostname } = new URL(origin);
     return (
       hostname === 'localhost' ||
       /^127\./.test(hostname) ||
@@ -35,6 +35,17 @@ function isPrivateLanOrigin(origin) {
   }
 }
 
+// CLIENT_ORIGIN may be a single origin or a comma-separated list (e.g. a production domain plus
+// its www. variant, or multiple environments) — this is the only allow-list used in production,
+// where the LAN-wildcard bypass below is disabled.
+function getConfiguredOrigins() {
+  const raw = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  return raw
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+}
+
 export function createApp() {
   const app = express();
 
@@ -43,11 +54,10 @@ export function createApp() {
       origin(origin, callback) {
         // No Origin header (same-origin requests, curl, server-to-server) — always fine.
         if (!origin) return callback(null, true);
-        const configured = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
-        if (origin === configured) return callback(null, true);
-        // Outside production, also accept LAN-local origins so a phone/other device reaching
-        // this API directly (not just through the Vite proxy) isn't blocked. Production keeps
-        // the strict single-origin check above.
+        if (getConfiguredOrigins().includes(origin)) return callback(null, true);
+        // Outside production, also accept any localhost/private-LAN origin regardless of port,
+        // so requests keep working no matter which port Vite happens to bind (5173, 5174, ...)
+        // or which device on the LAN is making them. Production keeps the strict allow-list above.
         if (process.env.NODE_ENV !== 'production' && isPrivateLanOrigin(origin)) {
           return callback(null, true);
         }
@@ -93,10 +103,15 @@ export function createApp() {
     res.status(404).json({ message: 'Not found.' });
   });
 
+  // Every route handler in this app responds with its own deliberate, safe-to-display message
+  // directly (res.status(400).json({ message: ... })) rather than throwing — so anything that
+  // actually reaches this handler (a CORS rejection, an uncaught exception, a malformed-JSON
+  // body, a Mongoose error) is by definition unexpected and its real message is internal detail,
+  // not something a user should see. Full detail still goes to the server console for debugging.
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
     console.error(err);
-    res.status(err.status || 500).json({ message: err.message || 'Internal server error.' });
+    res.status(err.status || 500).json({ message: 'Something went wrong. Please try again.' });
   });
 
   return app;

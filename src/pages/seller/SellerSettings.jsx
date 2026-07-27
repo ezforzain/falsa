@@ -4,6 +4,7 @@ import { categories } from '../../data/mockData';
 import Toast from '../../components/Toast';
 import DragDropUpload from '../../components/DragDropUpload';
 import { fileToDataUrl, validateImageFile } from '../../lib/file';
+import { createHeicAwareFileHandler } from '../../lib/heic';
 import { IconCheck, IconShield } from '../../components/icons';
 
 export default function SellerSettings() {
@@ -176,8 +177,8 @@ export default function SellerSettings() {
                 <label className={labelClass}>CNIC front photo</label>
                 <input
                   type="file"
-                  accept="image/jpeg,image/png"
-                  onChange={(e) => setResubmitFront(e.target.files?.[0] || null)}
+                  accept="image/jpeg,image/png,image/heic,image/heif,.heic,.heif"
+                  onChange={createHeicAwareFileHandler(setResubmitFront, setResubmitError)}
                   className={`${fieldClass} cursor-pointer file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-green-tint file:px-3 file:py-2 file:text-xs file:font-semibold file:text-green`}
                 />
                 {resubmitFront && <p className="text-[11.5px] text-green mt-1.5 truncate">✓ {resubmitFront.name}</p>}
@@ -186,8 +187,8 @@ export default function SellerSettings() {
                 <label className={labelClass}>CNIC back photo</label>
                 <input
                   type="file"
-                  accept="image/jpeg,image/png"
-                  onChange={(e) => setResubmitBack(e.target.files?.[0] || null)}
+                  accept="image/jpeg,image/png,image/heic,image/heif,.heic,.heif"
+                  onChange={createHeicAwareFileHandler(setResubmitBack, setResubmitError)}
                   className={`${fieldClass} cursor-pointer file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-green-tint file:px-3 file:py-2 file:text-xs file:font-semibold file:text-green`}
                 />
                 {resubmitBack && <p className="text-[11.5px] text-green mt-1.5 truncate">✓ {resubmitBack.name}</p>}

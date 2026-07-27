@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useUnreadMessageCount } from '../hooks/useUnreadMessageCount';
 import { IconHome, IconGrid, IconMessageCircle, IconCart, IconUser } from './icons';
 
 const ACTIVE_COLOR = '#FF6A00';
@@ -9,7 +10,7 @@ const ACTIVE_COLOR = '#FF6A00';
 const TABS = [
   { key: 'home', label: 'Home', to: '/', icon: IconHome, match: (path) => path === '/' },
   { key: 'categories', label: 'Categories', to: '/categories', icon: IconGrid, match: (path) => path.startsWith('/categories') },
-  { key: 'messenger', label: 'Messenger', to: '/messenger', icon: IconMessageCircle, match: (path) => path.startsWith('/messenger'), badge: 1 },
+  { key: 'messenger', label: 'Messenger', to: '/messenger', icon: IconMessageCircle, match: (path) => path.startsWith('/messenger') },
   { key: 'cart', label: 'Cart', to: '/cart', icon: IconCart, match: (path) => path.startsWith('/cart') },
   { key: 'account', label: 'Account', to: '/account', icon: IconUser, match: (path) => path.startsWith('/account') },
 ];
@@ -18,6 +19,7 @@ const TABS = [
 // desktop Header/Footer take over primary navigation instead.
 export default function BottomNavBar() {
   const { pathname } = useLocation();
+  const unreadMessageCount = useUnreadMessageCount();
 
   return (
     <nav
@@ -30,8 +32,9 @@ export default function BottomNavBar() {
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}
     >
       <div className="grid grid-cols-5 h-[72px]">
-        {TABS.map(({ key, label, to, icon: Icon, match, badge }) => {
+        {TABS.map(({ key, label, to, icon: Icon, match }) => {
           const active = match(pathname);
+          const badge = key === 'messenger' && unreadMessageCount > 0 ? unreadMessageCount : null;
           return (
             <Link
               key={key}
@@ -50,7 +53,7 @@ export default function BottomNavBar() {
                 />
                 {badge != null && (
                   <span className="animate-badge-pop absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-[3px] rounded-full bg-red-500 text-white text-[10px] leading-[16px] font-semibold text-center ring-2 ring-white">
-                    {badge}
+                    {badge > 99 ? '99+' : badge}
                   </span>
                 )}
               </span>

@@ -170,15 +170,16 @@ export default function MobileHome() {
         ))}
       </div>
 
-      {/* Trust banner */}
+      {/* Trust banner — labels wrap onto a second line instead of forcing single-line width, so
+          a long line like "Money-back protection" never overflows past the card. */}
       <div className="mx-[18px] mb-1 bg-orange-tint rounded-[14px] px-3 py-3.5 flex items-center">
         <div className="flex-1 flex items-center gap-2.5 min-w-0">
           <span className="w-8 h-8 rounded-[9px] bg-white flex items-center justify-center shrink-0">
             <IconShipFast />
           </span>
           <span className="min-w-0">
-            <span className="block text-[12.5px] font-bold text-ink whitespace-nowrap">FREE shipping</span>
-            <span className="block text-[11px] text-orange-text-dark whitespace-nowrap">on your first order</span>
+            <span className="block text-[12.5px] font-bold text-ink leading-snug">FREE shipping</span>
+            <span className="block text-[11px] text-orange-text-dark leading-snug">on your first order</span>
           </span>
         </div>
         <span className="w-[1.5px] self-stretch bg-[#E9C9A0] mx-3 shrink-0" />
@@ -187,8 +188,8 @@ export default function MobileHome() {
             <IconMoneyBack />
           </span>
           <span className="min-w-0">
-            <span className="block text-[12.5px] font-bold text-ink whitespace-nowrap">Money-back protection</span>
-            <span className="block text-[11px] text-orange-text-dark whitespace-nowrap">for up to 60 days</span>
+            <span className="block text-[12.5px] font-bold text-ink leading-snug">Money-back protection</span>
+            <span className="block text-[11px] text-orange-text-dark leading-snug">for up to 60 days</span>
           </span>
         </div>
       </div>

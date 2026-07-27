@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { categories } from '../data/mockData';
-import { IconBox, IconClose, IconPlus } from './icons';
+import ProductImagesUploader from './ProductImagesUploader';
+import { IconClose } from './icons';
 
 const MAX_IMAGES = 6;
 
-const emptyForm = { name: '', category: '', description: '', sku: '', price: '', unit: '', moq: '', stock: '', status: 'active', images: [''] };
+const emptyForm = { name: '', category: '', description: '', sku: '', price: '', unit: '', moq: '', stock: '', status: 'active', images: [] };
 
 export default function ProductFormModal({ open, product, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
@@ -24,7 +25,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             moq: product.moq,
             stock: String(product.stock),
             status: product.status,
-            images: product.images && product.images.length > 0 ? product.images : [product.img || ''],
+            images: product.images && product.images.length > 0 ? product.images : product.img ? [product.img] : [],
           }
         : emptyForm
     );
@@ -40,18 +41,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
   if (!open) return null;
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
-
-  const setImage = (i, value) =>
-    setForm((f) => ({ ...f, images: f.images.map((url, idx) => (idx === i ? value : url)) }));
-
-  const addImageRow = () =>
-    setForm((f) => (f.images.length >= MAX_IMAGES ? f : { ...f, images: [...f.images, ''] }));
-
-  const removeImageRow = (i) =>
-    setForm((f) => {
-      if (f.images.length <= 1) return { ...f, images: [''] }; // always keep one visible row
-      return { ...f, images: f.images.filter((_, idx) => idx !== i) };
-    });
+  const setImages = (images) => setForm((f) => ({ ...f, images }));
 
   const submit = () => {
     onSubmit({
@@ -64,7 +54,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       moq: form.moq.trim(),
       stock: Number(form.stock),
       status: form.status,
-      images: form.images.map((url) => url.trim()).filter(Boolean),
+      images: form.images,
     });
   };
 
@@ -154,50 +144,8 @@ export default function ProductFormModal({ open, product, loading, error, onClos
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className={labelClass + ' mb-0'}>Images (optional)</label>
-              {form.images.length < MAX_IMAGES && (
-                <button
-                  type="button"
-                  onClick={addImageRow}
-                  className="cursor-pointer flex items-center gap-1 text-xs font-semibold text-green hover:underline"
-                >
-                  <IconPlus width="11" height="11" strokeWidth="3" />
-                  Add image
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              {form.images.map((url, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  {url.trim() ? (
-                    <img src={url} alt="" className="w-10 h-10 rounded-lg object-cover border border-border shrink-0 bg-surface-muted" />
-                  ) : (
-                    <span className="w-10 h-10 rounded-lg border border-dashed border-border-strong flex items-center justify-center text-text-muted shrink-0">
-                      <IconBox width="16" height="16" />
-                    </span>
-                  )}
-                  <input
-                    type="text"
-                    value={url}
-                    onChange={(e) => setImage(i, e.target.value)}
-                    placeholder="https://…"
-                    className={`${fieldClass} flex-1`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImageRow(i)}
-                    aria-label="Remove image"
-                    disabled={form.images.length === 1 && !url}
-                    className="shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 text-text-muted hover:text-orange-text p-1.5"
-                  >
-                    <IconClose width="14" height="14" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <p className="text-[11px] text-text-muted mt-2">First image is used as the listing's cover photo. Up to {MAX_IMAGES} images.</p>
+            <label className={labelClass}>Photos (optional)</label>
+            <ProductImagesUploader images={form.images} onChange={setImages} max={MAX_IMAGES} />
           </div>
         </div>
 

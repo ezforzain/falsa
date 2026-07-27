@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatPKR, parsePrice } from '../data/mockData';
+import { parseMoqNumber } from '../lib/moq';
 import VariantCard from './VariantCard';
 import QuantitySelector from './QuantitySelector';
 import BuyNowButton from './BuyNowButton';
@@ -11,12 +12,13 @@ import { IconClose } from './icons';
 // navigate) so this component stays presentation-only and reusable outside ProductPage too.
 export default function VariantBottomSheet({ product, open, loading = false, error = null, onClose, onBuyNow }) {
   const [selectedVariant, setSelectedVariant] = useState(null);
-  const [qty, setQty] = useState(1);
+  const moqMin = parseMoqNumber(product?.moq) || 1;
+  const [qty, setQty] = useState(moqMin);
 
   useEffect(() => {
     if (open && product) {
       setSelectedVariant(product.variants?.[0] || null);
-      setQty(1);
+      setQty(parseMoqNumber(product.moq) || 1);
     }
   }, [open, product]);
 
@@ -30,15 +32,16 @@ export default function VariantBottomSheet({ product, open, loading = false, err
   if (!open || !product) return null;
 
   const isTracked = typeof product.stock === 'number';
-  const maxQty = isTracked ? Math.max(product.stock, 1) : Infinity;
+  const maxQty = isTracked ? Math.max(product.stock, moqMin) : Infinity;
   const outOfStock = isTracked && product.stock <= 0;
+  const moqUnreachable = !outOfStock && isTracked && product.stock < moqMin;
 
   const currentPrice = parsePrice(product.price);
   const discountPercent = product.discountPercent || 0;
   const originalPrice = discountPercent > 0 ? currentPrice / (1 - discountPercent / 100) : null;
 
   const confirm = () => {
-    if (outOfStock || loading) return;
+    if (outOfStock || moqUnreachable || loading) return;
     onBuyNow({ variant: selectedVariant, qty });
   };
 
@@ -102,14 +105,23 @@ export default function VariantBottomSheet({ product, open, loading = false, err
           <div>
             <div className="flex items-center justify-between">
               <span className="text-[13.5px] font-semibold text-ink-soft">Quantity</span>
-              <QuantitySelector qty={qty} onChange={setQty} min={1} max={maxQty} />
+              <QuantitySelector qty={qty} onChange={setQty} min={moqMin} max={maxQty} />
             </div>
-            {isTracked && (
-              <div className="text-xs text-text-muted mt-2 text-right">
-                {outOfStock ? <span className="text-orange-text font-semibold">Out of stock</span> : `${product.stock} available`}
-              </div>
-            )}
+            <div className="flex items-center justify-between text-xs text-text-muted mt-2">
+              {moqMin > 1 ? <span>Minimum order: {product.moq}</span> : <span />}
+              {isTracked && (
+                <span>
+                  {outOfStock ? <span className="text-orange-text font-semibold">Out of stock</span> : `${product.stock} available`}
+                </span>
+              )}
+            </div>
           </div>
+
+          {moqUnreachable && (
+            <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5">
+              Only {product.stock} left — below the {product.moq} minimum order quantity. Please contact the seller for options.
+            </p>
+          )}
 
           {error && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5">{error}</p>}
         </div>
@@ -119,7 +131,7 @@ export default function VariantBottomSheet({ product, open, loading = false, err
           className="shrink-0 px-5 py-4 border-t border-border"
           style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
         >
-          <BuyNowButton onClick={confirm} disabled={outOfStock} loading={loading} />
+          <BuyNowButton onClick={confirm} disabled={outOfStock || moqUnreachable} loading={loading} />
         </div>
       </div>
     </div>

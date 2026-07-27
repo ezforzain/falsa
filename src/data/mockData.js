@@ -280,14 +280,6 @@ export const searchHints = [
   "match-grade footballs",
 ];
 
-export const galleryImageIds = [
-  "photo-1523381210434-271e8be1f52b",
-  "photo-1620799140408-edc6dcb6d633",
-  "photo-1489987707025-afc232f7ea0f",
-  "photo-1441986300917-64674bd600d8",
-  "photo-1558769132-cb1aea458c5e",
-];
-
 export const priceTiers = (basePrice) => {
   const base = parsePrice(basePrice) || 670;
   return [

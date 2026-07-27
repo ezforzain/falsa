@@ -26,6 +26,19 @@ export function validateDocumentFile(file) {
   return null;
 }
 
+// Product photo uploads go through the real backend (server/src/middleware/upload.js), which
+// also accepts WEBP and allows up to 8MB — mirrored here so an oversized or unsupported file is
+// rejected immediately instead of only after a round trip to the server.
+export const ALLOWED_PRODUCT_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+export const MAX_PRODUCT_IMAGE_BYTES = 8 * 1024 * 1024; // 8MB, matches the server upload limit
+
+export function validateProductImageFile(file) {
+  if (!file) return 'Please choose a file.';
+  if (!ALLOWED_PRODUCT_IMAGE_TYPES.includes(file.type)) return 'Only JPG, PNG, or WEBP images are allowed.';
+  if (file.size > MAX_PRODUCT_IMAGE_BYTES) return 'Image must be 8MB or smaller.';
+  return null;
+}
+
 export function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

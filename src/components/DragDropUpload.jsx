@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { validateDocumentFile } from '../lib/file';
+import { isHeicFile, toDisplayableImage } from '../lib/heic';
 import { IconAlertCircle, IconCheck, IconFile, IconTrash, IconUpload } from './icons';
 
 // Reusable drag & drop file upload: click-or-drag to choose a file, a brief simulated
@@ -7,11 +8,15 @@ import { IconAlertCircle, IconCheck, IconFile, IconTrash, IconUpload } from './i
 // still matters for the UX this spec asks for), an image thumbnail or generic file-icon
 // preview, and remove/replace controls. Fully keyboard accessible — the drop zone is a real
 // <label htmlFor> wrapping a native file input, so Tab+Enter/Space opens the picker for free.
+//
+// HEIC/HEIF photos (the default format on iPhones) are converted to JPEG the moment they're
+// selected — see lib/heic.js — so validation, the preview, and whatever this hands back via
+// onFileChange all ever see a normal, displayable image.
 export default function DragDropUpload({
   file,
   onFileChange,
   label,
-  helpText = 'PDF, JPG, or PNG — up to 5MB',
+  helpText = 'JPG, PNG, or HEIC (from iPhone) — up to 5MB',
   validate = validateDocumentFile,
   error,
   required = false,
@@ -24,7 +29,7 @@ export default function DragDropUpload({
   const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
-    if (!file || !file.type.startsWith('image/')) {
+    if (!file || isHeicFile(file) || !file.type.startsWith('image/')) {
       setPreviewUrl(null);
       return;
     }
@@ -33,19 +38,29 @@ export default function DragDropUpload({
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const acceptFile = (candidate) => {
-    const validationError = validate(candidate);
+  const acceptFile = async (candidate) => {
+    setLocalError(null);
+    setUploading(true);
+    let displayable;
+    try {
+      displayable = await toDisplayableImage(candidate);
+    } catch {
+      setUploading(false);
+      setLocalError('Could not process that HEIC photo. Please try a different file.');
+      return;
+    }
+
+    const validationError = validate(displayable);
     if (validationError) {
+      setUploading(false);
       setLocalError(validationError);
       return;
     }
-    setLocalError(null);
-    setUploading(true);
     // Brief simulated processing delay so the upload animation / success check reads as real
     // feedback rather than an instant flicker — there's no actual network call to await here.
     setTimeout(() => {
       setUploading(false);
-      onFileChange(candidate);
+      onFileChange(displayable);
     }, 400);
   };
 
@@ -117,7 +132,7 @@ export default function DragDropUpload({
             id={inputId}
             ref={inputRef}
             type="file"
-            accept="image/jpeg,image/png,application/pdf"
+            accept="image/jpeg,image/png,image/heic,image/heif,.heic,.heif,application/pdf"
             onChange={handleInputChange}
             className="sr-only"
             aria-describedby={displayError ? `${inputId}-error` : undefined}
@@ -147,7 +162,7 @@ export default function DragDropUpload({
               className="cursor-pointer text-[11.5px] font-semibold text-green hover:text-green-hover px-2.5 py-1.5 rounded-lg hover:bg-green-tint transition-colors"
             >
               Replace
-              <input id={inputId} type="file" accept="image/jpeg,image/png,application/pdf" onChange={handleInputChange} className="sr-only" />
+              <input id={inputId} type="file" accept="image/jpeg,image/png,image/heic,image/heif,.heic,.heif,application/pdf" onChange={handleInputChange} className="sr-only" />
             </label>
             <button
               type="button"

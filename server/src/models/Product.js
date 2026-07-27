@@ -29,6 +29,10 @@ const productSchema = new mongoose.Schema(
     badge: String,
     stock: { type: Number, default: null },
     img: String,
+    // Detail-page gallery — always built from this product's own photo plus real photos of
+    // other products in the same category (see seed/data.js), never from an unrelated category,
+    // so the gallery can never show e.g. clothing photos on a sports-goods listing.
+    images: { type: [String], default: [] },
     discountPercent: Number,
     variants: [variantSchema],
     trendingOrder: { type: Number, default: null }, // set for products in the "trending" rail

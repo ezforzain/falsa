@@ -1,16 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { IconClose } from './icons';
+import { parseMoqNumber } from '../lib/moq';
 
 export default function QuantityModal({ product, open, alreadyInCart = 0, loading, error, onClose, onConfirm }) {
-  const [qty, setQty] = useState(1);
+  const moqMin = parseMoqNumber(product?.moq) || 1;
+  const [qty, setQty] = useState(moqMin);
+  const [belowMoqNotice, setBelowMoqNotice] = useState(false);
   const inputRef = useRef(null);
 
   const isTracked = typeof product?.stock === 'number';
   const remaining = isTracked ? Math.max(product.stock - alreadyInCart, 0) : Infinity;
   const outOfStock = isTracked && remaining <= 0;
+  // The seller's stock can't even cover one minimum order — nothing the buyer picks here will
+  // ever be valid, so this is treated as its own blocking state rather than letting them fiddle
+  // with a stepper that can never reach a submittable value.
+  const moqUnreachable = !outOfStock && isTracked && remaining < moqMin;
 
   useEffect(() => {
-    if (open) setQty(1);
+    if (open) {
+      setQty(moqMin);
+      setBelowMoqNotice(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, product?.id]);
 
   useEffect(() => {
@@ -22,9 +33,9 @@ export default function QuantityModal({ product, open, alreadyInCart = 0, loadin
 
   if (!open || !product) return null;
 
-  const clamp = (n) => Math.min(Math.max(n, 1), isTracked ? Math.max(remaining, 1) : Infinity);
+  const clamp = (n) => Math.min(Math.max(n, moqMin), isTracked ? Math.max(remaining, moqMin) : Infinity);
 
-  const decrease = () => setQty((q) => Math.max(q - 1, 1));
+  const decrease = () => setQty((q) => Math.max(q - 1, moqMin));
   const increase = () => setQty((q) => clamp(q + 1));
 
   const handleInputChange = (e) => {
@@ -33,11 +44,16 @@ export default function QuantityModal({ product, open, alreadyInCart = 0, loadin
     // typed into a number so large the layout has to fight it; the font-size step-down below
     // is the real overflow guard for whatever's left within that ceiling.
     const raw = e.target.value.replace(/[^0-9]/g, '').slice(0, 9);
+    setBelowMoqNotice(false);
     setQty(raw === '' ? '' : Number(raw));
   };
 
   const handleInputBlur = () => {
-    setQty((q) => clamp(Number(q) || 1));
+    setQty((q) => {
+      const n = Number(q) || moqMin;
+      setBelowMoqNotice(n > 0 && n < moqMin);
+      return clamp(n);
+    });
   };
 
   const digitLength = String(qty || '').length;
@@ -46,8 +62,8 @@ export default function QuantityModal({ product, open, alreadyInCart = 0, loadin
   const displayQty = qty === '' ? '' : Number(qty).toLocaleString('en-US');
 
   const confirm = () => {
-    if (outOfStock || loading) return;
-    const finalQty = clamp(Number(qty) || 1);
+    if (outOfStock || moqUnreachable || loading) return;
+    const finalQty = clamp(Number(qty) || moqMin);
     onConfirm(finalQty);
   };
 
@@ -93,6 +109,10 @@ export default function QuantityModal({ product, open, alreadyInCart = 0, loadin
 
         {outOfStock ? (
           <div className="text-center py-4 text-sm text-text mb-2">This product is currently out of stock.</div>
+        ) : moqUnreachable ? (
+          <div className="text-center py-4 text-sm text-text mb-2">
+            Only {remaining} left — below the {product.moq} minimum order quantity. Please contact the seller for options.
+          </div>
         ) : (
           <div className="mb-5">
             <label className="block text-[13.5px] font-semibold text-ink-soft mb-2.5">Quantity</label>
@@ -100,7 +120,7 @@ export default function QuantityModal({ product, open, alreadyInCart = 0, loadin
               <button
                 type="button"
                 onClick={decrease}
-                disabled={qty <= 1}
+                disabled={qty <= moqMin}
                 aria-label="Decrease quantity"
                 className="shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 w-11 h-11 rounded-full border border-border flex items-center justify-center text-xl font-semibold text-ink hover:bg-surface-muted transition-colors"
               >
@@ -128,6 +148,14 @@ export default function QuantityModal({ product, open, alreadyInCart = 0, loadin
                 +
               </button>
             </div>
+            {moqMin > 1 && (
+              <p className="text-center text-[11.5px] text-text-muted mt-2.5">Minimum order: {product.moq}</p>
+            )}
+            {belowMoqNotice && (
+              <p className="text-center text-[11.5px] text-orange-text mt-1.5">
+                Quantity adjusted to meet the {product.moq} minimum order quantity.
+              </p>
+            )}
           </div>
         )}
 
@@ -142,7 +170,7 @@ export default function QuantityModal({ product, open, alreadyInCart = 0, loadin
           <button
             type="button"
             onClick={confirm}
-            disabled={outOfStock || loading}
+            disabled={outOfStock || moqUnreachable || loading}
             className="flex-1 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-sm py-3 rounded-full shadow-[0_6px_16px_rgba(14,90,70,0.25)] transition-colors"
           >
             {loading && (

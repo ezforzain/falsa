@@ -5,6 +5,7 @@ import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser } from '..
 import OfficialBadge from '../components/OfficialBadge';
 import CorporateVerificationForm from '../components/CorporateVerificationForm';
 import { fileToDataUrl, validateImageFile } from '../lib/file';
+import { createHeicAwareFileHandler } from '../lib/heic';
 
 const ROLE_BUYER = 'buyer';
 const ROLE_SELLER = 'seller';
@@ -530,7 +531,9 @@ function SignUpRole({ role, setRole, onContinue, goSignin }) {
 
 function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, error, onBack, onSubmit, goSignin }) {
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
-  const setFile = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.files?.[0] || null }));
+  // Converts HEIC/HEIF photos (the default format on iPhones) to JPEG the moment they're
+  // selected, so a downstream Android/desktop admin reviewing this KYC photo can actually see it.
+  const setFile = (key) => createHeicAwareFileHandler((file) => setForm((f) => ({ ...f, [key]: file })));
   const fileInputClass = `${inputClass} cursor-pointer file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-green-tint file:px-3 file:py-2 file:text-xs file:font-semibold file:text-green`;
   const isCorporate = isSeller && form.sellerType === 'corporate';
   const patchForm = (patch) => setForm((f) => ({ ...f, ...patch }));
@@ -655,12 +658,12 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
         <div className="grid gap-4 mb-[18px]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
           <div>
             <FieldLabel>CNIC front photo</FieldLabel>
-            <input type="file" accept="image/jpeg,image/png" onChange={setFile('cnicFront')} className={fileInputClass} />
+            <input type="file" accept="image/jpeg,image/png,image/heic,image/heif,.heic,.heif" onChange={setFile('cnicFront')} className={fileInputClass} />
             {form.cnicFront && <p className="text-[11.5px] text-green mt-1.5 truncate">✓ {form.cnicFront.name}</p>}
           </div>
           <div>
             <FieldLabel>CNIC back photo</FieldLabel>
-            <input type="file" accept="image/jpeg,image/png" onChange={setFile('cnicBack')} className={fileInputClass} />
+            <input type="file" accept="image/jpeg,image/png,image/heic,image/heif,.heic,.heif" onChange={setFile('cnicBack')} className={fileInputClass} />
             {form.cnicBack && <p className="text-[11.5px] text-green mt-1.5 truncate">✓ {form.cnicBack.name}</p>}
           </div>
         </div>

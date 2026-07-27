@@ -3,6 +3,7 @@ import { Cart } from '../models/Cart.js';
 import { Product } from '../models/Product.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { parsePrice } from '../utils/price.js';
+import { parseMoqNumber } from '../utils/moq.js';
 import { ensureGuestId } from '../middleware/guest.js';
 
 const router = Router();
@@ -57,6 +58,14 @@ router.post(
     const currentQty = existing ? existing.qty : 0;
     const requestedTotal = currentQty + qty;
 
+    const moqMin = parseMoqNumber(product.moq);
+    if (moqMin && requestedTotal < moqMin) {
+      return res.status(400).json({
+        message: `Minimum order quantity for this product is ${product.moq}.`,
+        minQty: moqMin,
+      });
+    }
+
     if (typeof product.stock === 'number' && requestedTotal > product.stock) {
       const available = Math.max(product.stock - currentQty, 0);
       return res.status(409).json({
@@ -88,6 +97,15 @@ router.patch(
     }
 
     const product = await Product.findById(req.params.productId);
+
+    const moqMin = parseMoqNumber(product?.moq);
+    if (moqMin && qty < moqMin) {
+      return res.status(400).json({
+        message: `Minimum order quantity for this product is ${product.moq}.`,
+        minQty: moqMin,
+      });
+    }
+
     if (typeof product?.stock === 'number' && qty > product.stock) {
       return res.status(409).json({
         message: `Only ${product.stock} unit${product.stock === 1 ? '' : 's'} available for this product.`,

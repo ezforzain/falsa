@@ -295,22 +295,39 @@ export const products = [
   { id: 'warehouse-racking-systems', name: 'Warehouse Racking Systems', seller: 'PakPack Industries', location: 'Lahore, Pakistan', category: 'Hardware & Tools', rating: '4.6', price: 'Rs 8,400', moq: '10set', unit: 'set', badge: 'Verified', stock: 42, img: unsplash('photo-1553413077-190dd305871c') },
 ].map(withDetails);
 
-const VARIANT_IMAGE_IDS = [
-  'photo-1523381210434-271e8be1f52b',
-  'photo-1620799140408-edc6dcb6d633',
-  'photo-1489987707025-afc232f7ea0f',
-  'photo-1441986300917-64674bd600d8',
-];
+// Color-family variants only make sense for goods that actually come in dyeable colors — showing
+// a "Charcoal Grey" swatch on a football or a rice bag was a symptom of the same bug as the
+// gallery images below: one fixed set of apparel photos/labels applied to every product
+// regardless of category. Restricted to the categories where a color choice is realistic, and
+// built from real photos of actual products in those categories rather than an arbitrary set.
+const APPAREL_LIKE_CATEGORIES = new Set(['Textiles & Fabrics', 'Leather Goods']);
 const VARIANT_NAMES = ['Classic White', 'Charcoal Grey', 'Deep Forest Green', 'Sandstone Beige'];
 const DISCOUNT_PERCENTS = [12, 18, 22, 15, 20, 10, 25, 8, 14];
 
 products.forEach((product, i) => {
   product.discountPercent = DISCOUNT_PERCENTS[i % DISCOUNT_PERCENTS.length];
-  product.variants = VARIANT_NAMES.map((name, vi) => ({
-    id: `${product.id}-var-${vi + 1}`,
-    name,
-    img: unsplash(VARIANT_IMAGE_IDS[vi % VARIANT_IMAGE_IDS.length], 200),
-  }));
+
+  // Images come only from this exact category (not the broader apparel-like group) — a cotton
+  // fabric's color swatches should never show a leather glove, even though both categories are
+  // apparel-adjacent enough to have a "color family" picker at all.
+  const categoryMateImages = products.filter((p) => p.category === product.category && p.id !== product.id).map((p) => p.img);
+  const allCategoryImages = [product.img, ...categoryMateImages];
+
+  product.variants = APPAREL_LIKE_CATEGORIES.has(product.category)
+    ? VARIANT_NAMES.map((name, vi) => ({
+        id: `${product.id}-var-${vi + 1}`,
+        name,
+        img: allCategoryImages[vi % allCategoryImages.length],
+      }))
+    : [];
+
+  // Detail-page gallery — built from this product's own cover photo plus real photos of other
+  // products sharing its category (both already verified-correct elsewhere in this file),
+  // padded out with repeats of its own photo if the category has no siblings. Previously every
+  // product's gallery used one fixed, unrelated set of clothing photos regardless of category.
+  const gallery = [...new Set(allCategoryImages.filter(Boolean))];
+  while (gallery.length < 3) gallery.push(product.img);
+  product.images = gallery;
 });
 
 export const trendingProductIds = ['cotton-twill-fabric', 'surgical-instrument-set', 'leather-work-gloves', 'match-grade-footballs'];

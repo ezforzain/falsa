@@ -69,6 +69,7 @@ async function seed() {
       badge: p.badge,
       stock: p.stock,
       img: p.img,
+      images: p.images,
       discountPercent: p.discountPercent,
       variants: p.variants,
       trendingOrder: trendingProductIds.includes(p.id) ? trendingProductIds.indexOf(p.id) : null,
