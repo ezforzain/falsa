@@ -50,20 +50,20 @@
 
             <meta-data
                 android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR"
-                android:resource="@color/brand_green" />
+                android:resource="@color/brand_cream" />
 
             <meta-data
                 android:name="android.support.customtabs.trusted.NAVIGATION_BAR_COLOR"
                 android:resource="@color/brand_cream" />
 
-            <!-- Splash screen: brand-green background + the app's logo mark, shown for the brief
+            <!-- Splash screen: cream background + the app's logo mark, shown for the brief
                  moment between tapping the launcher icon and the site's own content appearing. -->
             <meta-data
                 android:name="android.support.customtabs.trusted.SPLASH_IMAGE_DRAWABLE"
-                android:resource="@drawable/ic_launcher_foreground" />
+                android:resource="@drawable/splash_logo" />
             <meta-data
                 android:name="android.support.customtabs.trusted.SPLASH_SCREEN_BACKGROUND_COLOR"
-                android:resource="@color/brand_green" />
+                android:resource="@color/brand_cream" />
             <meta-data
                 android:name="android.support.customtabs.trusted.SPLASH_SCREEN_FADE_OUT_DURATION"
                 android:value="300" />

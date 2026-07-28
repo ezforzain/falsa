@@ -5,5 +5,6 @@
     <color name="brand_cream">#F7F5F0</color>
     <color name="brand_gold">#F5C98A</color>
 
-    <color name="ic_launcher_background">#0E5A46</color>
+    <!-- Matches the new brand mark's icon/splash background (see src/assets/logo-transparent.png). -->
+    <color name="ic_launcher_background">#F7F5F0</color>
 </resources>

@@ -13,12 +13,12 @@ import {
   IconClose,
   IconEdit,
   IconFile,
-  IconLogo,
   IconLogout,
   IconPlus,
   IconShield,
   IconTrash,
 } from '../../components/icons';
+import logoMark from '../../assets/logo-mark.png';
 
 export default function AdminPage() {
   const { user, status, isAuthenticated, logout } = useAuth();
@@ -256,9 +256,7 @@ export default function AdminPage() {
       <header className="bg-green-deep text-white sticky top-0 z-40">
         <div className="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4 h-16">
           <Link to="/" className="flex items-center gap-2 no-underline shrink-0">
-            <span className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
-              <IconLogo width="18" height="18" />
-            </span>
+            <img src={logoMark} alt="" className="w-9 h-9 object-contain" />
             <span className="hidden sm:flex flex-col leading-none">
               <span className="flex items-center gap-1.5">
                 <span className="font-display text-base font-bold text-white tracking-tight">

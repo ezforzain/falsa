@@ -2,7 +2,8 @@ import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react
 import { useAuth } from '../../context/AuthContext';
 import VerifiedBadge from '../../components/VerifiedBadge';
 import OfficialBadge from '../../components/OfficialBadge';
-import { IconAlertCircle, IconBox, IconGrid, IconLogo, IconLogout, IconReceipt, IconSettings } from '../../components/icons';
+import { IconAlertCircle, IconBox, IconGrid, IconLogout, IconReceipt, IconSettings } from '../../components/icons';
+import logoMark from '../../assets/logo-mark.png';
 
 const TABS = [
   { to: '/seller', label: 'Dashboard', icon: IconGrid, end: true, requiresApproval: true },
@@ -64,9 +65,7 @@ export default function SellerLayout() {
       <header className="bg-green-deep text-white sticky top-0 z-40">
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4 h-16">
           <Link to="/" className="flex items-center gap-2 no-underline shrink-0">
-            <span className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
-              <IconLogo width="18" height="18" />
-            </span>
+            <img src={logoMark} alt="" className="w-9 h-9 object-contain" />
             <span className="hidden sm:flex flex-col leading-none">
               <span className="flex items-center gap-1.5">
                 <span className="font-display text-base font-bold text-white tracking-tight">

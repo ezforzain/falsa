@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { IconLogo, IconMenu } from './icons';
+import { IconMenu } from './icons';
 import InformationDrawer from './InformationDrawer';
+import logoMark from '../assets/logo-mark.png';
 
 // Lightweight top bar for the "bare" mobile screens (Home, Spotlight) that skip the desktop
 // Header/Footer chrome — just the wordmark and a hamburger into the Information sheet. The
@@ -12,9 +13,7 @@ export default function MobileTopBar() {
   return (
     <>
       <div className="flex items-center gap-2 px-4 pt-4 pb-1">
-        <span className="w-8 h-8 rounded-lg bg-green flex items-center justify-center shrink-0">
-          <IconLogo width="16" height="16" />
-        </span>
+        <img src={logoMark} alt="" className="w-8 h-8 object-contain shrink-0" />
         <span className="font-display text-lg font-bold text-green tracking-tight flex-1">
           Falsafah<span className="text-orange">Tot</span>
         </span>

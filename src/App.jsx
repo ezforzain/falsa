@@ -1,5 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
+import SplashScreen from './components/SplashScreen';
+import { useAuth } from './context/AuthContext';
 import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
 import SpotlightPage from './pages/SpotlightPage';
@@ -27,8 +29,11 @@ import SellerSettings from './pages/seller/SellerSettings';
 import AdminPage from './pages/admin/AdminPage';
 
 export default function App() {
+  const { status } = useAuth();
+
   return (
     <>
+      <SplashScreen visible={status === 'loading'} />
       <ScrollToTop />
       <Routes>
         <Route element={<MainLayout />}>

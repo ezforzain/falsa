@@ -6,7 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import useRotatingHints from '../hooks/useRotatingHints';
 import SearchHintOverlay from './SearchHintOverlay';
 import ProfileDropdown from './ProfileDropdown';
-import { IconSearch, IconCart, IconUser, IconLogout, IconSparkle, IconLogo, IconBox, IconShield } from './icons';
+import { IconSearch, IconCart, IconUser, IconLogout, IconSparkle, IconBox, IconShield } from './icons';
+import logoMark from '../assets/logo-mark.png';
 
 export default function Header() {
   const [searchValue, setSearchValue] = useState('');
@@ -47,9 +48,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-border">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5 px-4 sm:px-6 lg:px-10 py-2.5">
         <Link to="/" className="flex items-center gap-2.5 no-underline shrink-0">
-          <span className="w-[42px] h-[42px] rounded-xl bg-green flex items-center justify-center shadow-[0_4px_12px_rgba(14,90,70,0.25)]">
-            <IconLogo />
-          </span>
+          <img src={logoMark} alt="" className="w-[42px] h-[42px] object-contain" />
           <span className="flex flex-col leading-none">
             <span className="font-display text-[25px] font-bold text-green tracking-tight">
               Falsafah<span className="text-orange">Tot</span>

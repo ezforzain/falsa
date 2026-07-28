@@ -125,15 +125,6 @@ export const IconSparkle = (props) => (
   </svg>
 );
 
-export const IconLogo = (props) => (
-  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#F5C98A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="m7.5 4.27 9 5.15" />
-    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-    <path d="m3.3 7 8.7 5 8.7-5" />
-    <path d="M12 22V12" />
-  </svg>
-);
-
 export const IconEye = (props) => (
   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
