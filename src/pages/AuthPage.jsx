@@ -261,7 +261,7 @@ export default function AuthPage() {
       <Link to="/" className="flex flex-col items-center gap-1.5 mb-5 sm:mb-6 no-underline shrink-0">
         <span className="flex items-center gap-2">
           <span className="font-display text-[36px] sm:text-[46px] font-bold text-green tracking-tight leading-none">
-            Falsafah<span className="text-orange">Tot</span>
+            Falsafah
           </span>
           <OfficialBadge size={22} tooltipPosition="bottom" />
         </span>

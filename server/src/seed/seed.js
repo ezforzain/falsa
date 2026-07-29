@@ -76,6 +76,9 @@ async function seed() {
       description: p.description,
       specifications: p.specifications,
       reviews: p.reviews,
+      sold: p.sold || 0,
+      spotlight: p.spotlight || false,
+      spotlightType: p.spotlightType || 'featured',
     });
     productDocs[p.id] = doc;
   }

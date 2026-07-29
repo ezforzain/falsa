@@ -284,15 +284,15 @@ function withDetails(product) {
 }
 
 export const products = [
-  { id: 'cotton-twill-fabric', name: 'Cotton Twill Fabric 280 GSM', seller: 'Anwar Textile Mills', location: 'Faisalabad, Pakistan', category: 'Textiles & Fabrics', rating: '4.8', price: 'Rs 670', moq: '500m', unit: 'metre', badge: 'Best seller', stock: 2400, img: unsplash('photo-1523381210434-271e8be1f52b') },
-  { id: 'surgical-instrument-set', name: 'Stainless Surgical Instrument Set', seller: 'Sialkot Surgical Co.', location: 'Sialkot, Pakistan', category: 'Surgical Instruments', rating: '4.9', price: 'Rs 2,480', moq: '100pc', unit: 'set', badge: 'Top rated', stock: 340, img: unsplash('photo-1583911860205-72f8ac8ddcbe') },
-  { id: 'leather-work-gloves', name: 'Full-Grain Leather Work Gloves', seller: 'Karachi Leatherworks', location: 'Karachi, Pakistan', category: 'Leather Goods', rating: '4.7', price: 'Rs 865', moq: '300pr', unit: 'pair', badge: 'Verified', stock: 980, img: unsplash('photo-1473188588951-666fce8e7c68') },
-  { id: 'match-grade-footballs', name: 'Match-Grade Footballs', seller: 'Star Sports Mfg.', location: 'Sialkot, Pakistan', category: 'Sports Goods', rating: '4.8', price: 'Rs 1,560', moq: '200pc', unit: 'piece', badge: 'Hot', stock: 18, img: unsplash('photo-1575361204480-aadea25e6e68') },
-  { id: 'corrugated-shipping-boxes', name: 'Corrugated Shipping Boxes', seller: 'PakPack Industries', location: 'Lahore, Pakistan', category: 'Packaging', rating: '4.6', price: 'Rs 340', moq: '1000pc', unit: 'piece', badge: 'Verified', stock: 5200, img: unsplash('photo-1607166452427-7e4477079cb9') },
-  { id: 'hand-tools-hardware-set', name: 'Hand Tools & Hardware Set', seller: 'Gujranwala Metals', location: 'Gujranwala, Pakistan', category: 'Hardware & Tools', rating: '4.7', price: 'Rs 1,120', moq: '150pc', unit: 'set', badge: 'Verified', stock: 610, img: unsplash('photo-1504148455328-c376907d081c') },
-  { id: 'basmati-rice-25kg', name: 'Basmati Rice 25kg Bags', seller: 'Al-Barkat Rice Mills', location: 'Sheikhupura, Pakistan', category: 'Rice & Grains', rating: '4.7', price: 'Rs 3,200', moq: '50bag', unit: 'bag', badge: 'Trending', stock: 240, img: unsplash('photo-1586201375761-83865001e31c') },
-  { id: 'denim-fabric-rolls', name: 'Denim Fabric Rolls', seller: 'Faisalabad Denim Co.', location: 'Faisalabad, Pakistan', category: 'Textiles & Fabrics', rating: '4.5', price: 'Rs 590', moq: '400m', unit: 'metre', badge: 'Trending', stock: 0, img: unsplash('photo-1565084888279-aca607ecce0c') },
-  { id: 'warehouse-racking-systems', name: 'Warehouse Racking Systems', seller: 'PakPack Industries', location: 'Lahore, Pakistan', category: 'Hardware & Tools', rating: '4.6', price: 'Rs 8,400', moq: '10set', unit: 'set', badge: 'Verified', stock: 42, img: unsplash('photo-1553413077-190dd305871c') },
+  { id: 'cotton-twill-fabric', name: 'Cotton Twill Fabric 280 GSM', seller: 'Anwar Textile Mills', location: 'Faisalabad, Pakistan', category: 'Textiles & Fabrics', rating: '4.8', price: 'Rs 670', moq: '500m', unit: 'metre', badge: 'Best seller', stock: 2400, sold: 860, spotlight: true, spotlightType: 'featured', img: unsplash('photo-1523381210434-271e8be1f52b') },
+  { id: 'surgical-instrument-set', name: 'Stainless Surgical Instrument Set', seller: 'Sialkot Surgical Co.', location: 'Sialkot, Pakistan', category: 'Surgical Instruments', rating: '4.9', price: 'Rs 2,480', moq: '100pc', unit: 'set', badge: 'Top rated', stock: 340, sold: 540, spotlight: true, spotlightType: 'featured', img: unsplash('photo-1583911860205-72f8ac8ddcbe') },
+  { id: 'leather-work-gloves', name: 'Full-Grain Leather Work Gloves', seller: 'Karachi Leatherworks', location: 'Karachi, Pakistan', category: 'Leather Goods', rating: '4.7', price: 'Rs 865', moq: '300pr', unit: 'pair', badge: 'Verified', stock: 980, sold: 1200, spotlight: true, spotlightType: 'sponsored', img: unsplash('photo-1473188588951-666fce8e7c68') },
+  { id: 'match-grade-footballs', name: 'Match-Grade Footballs', seller: 'Star Sports Mfg.', location: 'Sialkot, Pakistan', category: 'Sports Goods', rating: '4.8', price: 'Rs 1,560', moq: '200pc', unit: 'piece', badge: 'Hot', stock: 18, sold: 210, img: unsplash('photo-1575361204480-aadea25e6e68') },
+  { id: 'corrugated-shipping-boxes', name: 'Corrugated Shipping Boxes', seller: 'PakPack Industries', location: 'Lahore, Pakistan', category: 'Packaging', rating: '4.6', price: 'Rs 340', moq: '1000pc', unit: 'piece', badge: 'Verified', stock: 5200, sold: 670, img: unsplash('photo-1607166452427-7e4477079cb9') },
+  { id: 'hand-tools-hardware-set', name: 'Hand Tools & Hardware Set', seller: 'Gujranwala Metals', location: 'Gujranwala, Pakistan', category: 'Hardware & Tools', rating: '4.7', price: 'Rs 1,120', moq: '150pc', unit: 'set', badge: 'Verified', stock: 610, sold: 305, img: unsplash('photo-1504148455328-c376907d081c') },
+  { id: 'basmati-rice-25kg', name: 'Basmati Rice 25kg Bags', seller: 'Al-Barkat Rice Mills', location: 'Sheikhupura, Pakistan', category: 'Rice & Grains', rating: '4.7', price: 'Rs 3,200', moq: '50bag', unit: 'bag', badge: 'Trending', stock: 240, sold: 430, spotlight: true, spotlightType: 'sponsored', img: unsplash('photo-1586201375761-83865001e31c') },
+  { id: 'denim-fabric-rolls', name: 'Denim Fabric Rolls', seller: 'Faisalabad Denim Co.', location: 'Faisalabad, Pakistan', category: 'Textiles & Fabrics', rating: '4.5', price: 'Rs 590', moq: '400m', unit: 'metre', badge: 'Trending', stock: 0, sold: 150, img: unsplash('photo-1565084888279-aca607ecce0c') },
+  { id: 'warehouse-racking-systems', name: 'Warehouse Racking Systems', seller: 'PakPack Industries', location: 'Lahore, Pakistan', category: 'Hardware & Tools', rating: '4.6', price: 'Rs 8,400', moq: '10set', unit: 'set', badge: 'Verified', stock: 42, sold: 95, spotlight: true, spotlightType: 'featured', img: unsplash('photo-1553413077-190dd305871c') },
 ].map(withDetails);
 
 // Color-family variants only make sense for goods that actually come in dyeable colors — showing
@@ -383,7 +383,7 @@ export const DEMO_USERS = [
     email: 'admin@falsafahtot.com',
     phone: '+92 300 9999999',
     password: 'password123',
-    companyName: 'Falsafah Tot HQ',
+    companyName: 'Falsafah HQ',
     country: 'Pakistan',
   },
 ];

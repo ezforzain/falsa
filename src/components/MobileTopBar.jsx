@@ -15,7 +15,7 @@ export default function MobileTopBar() {
       <div className="flex items-center gap-2 px-4 pt-4 pb-1">
         <img src={logoMark} alt="" className="w-8 h-8 object-contain shrink-0" />
         <span className="font-display text-lg font-bold text-green tracking-tight flex-1">
-          Falsafah<span className="text-orange">Tot</span>
+          Falsafah
         </span>
         <button
           type="button"

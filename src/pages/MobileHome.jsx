@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { normalizeQuery, searchHints } from '../data/mockData';
 import { catalog } from '../lib/api';
@@ -6,6 +6,7 @@ import useRotatingHints from '../hooks/useRotatingHints';
 import useInfiniteFeed from '../hooks/useInfiniteFeed';
 import SearchHintOverlay from '../components/SearchHintOverlay';
 import MobileTopBar from '../components/MobileTopBar';
+import FeaturedSpotlight from '../components/spotlight/FeaturedSpotlight';
 import { IconSearch } from '../components/icons';
 
 export default function MobileHome() {
@@ -15,6 +16,7 @@ export default function MobileHome() {
 
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('spotlight');
+  const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -24,6 +26,7 @@ export default function MobileHome() {
   const [productsError, setProductsError] = useState(null);
 
   const searchInputRef = useRef(null);
+  const productGridRef = useRef(null);
   const navigate = useNavigate();
 
   // Fetch the tabs + curated category circles once on mount.
@@ -81,9 +84,23 @@ export default function MobileHome() {
   let label = activeCatDef ? activeCatDef.name : 'All categories';
   if (debouncedQuery) label = `Results for "${debouncedQuery}"`;
 
+  // "Low MOQ" reads the leading number off the moq string (e.g. "150pc" -> 150) regardless of unit,
+  // since MOQ units aren't comparable across product types — only the seller's own threshold is.
+  const LOW_MOQ_THRESHOLD = 200;
+  const filteredProducts = useMemo(() => {
+    if (activeFilter === 'verified') return products.filter((p) => p.verified);
+    if (activeFilter === 'lowMoq') {
+      return products.filter((p) => {
+        const n = parseInt(p.moq, 10);
+        return !isNaN(n) && n <= LOW_MOQ_THRESHOLD;
+      });
+    }
+    return products;
+  }, [products, activeFilter]);
+
   // The mock catalog is small and finite — this loops it endlessly (reshuffled each lap) so the
   // feed behaves like an infinite/YouTube-style feed instead of stopping after ~9 products.
-  const { items: feedProducts, loadingMore, sentinelRef } = useInfiniteFeed(products, { batchSize: 6 });
+  const { items: feedProducts, loadingMore, sentinelRef } = useInfiniteFeed(filteredProducts, { batchSize: 6 });
 
   // Paused the moment the user focuses the search field or has typed anything, and only
   // resumes — with a fresh full dwell time — once it's empty and unfocused again.
@@ -159,14 +176,27 @@ export default function MobileHome() {
       {/* Quick actions */}
       <div className="flex gap-2.5 px-[18px] pb-4">
         {[
-          { label: 'Start exploring', bg: 'bg-green-tint', icon: <IconGrid /> },
-          { label: 'Request for Quotation', bg: 'bg-orange-tint', icon: <IconTarget /> },
-          { label: 'Top Sellers', bg: 'bg-green-tint', icon: <IconTrophy /> },
+          { label: 'Start exploring', bg: 'bg-green-tint', icon: <IconGrid />, onClick: () => navigate('/categories') },
+          { label: 'Request for Quotation', bg: 'bg-orange-tint', icon: <IconTarget />, onClick: () => navigate('/messenger') },
+          {
+            label: 'Top Sellers',
+            bg: 'bg-green-tint',
+            icon: <IconTrophy />,
+            onClick: () => {
+              setActiveFilter('verified');
+              productGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            },
+          },
         ].map((a) => (
-          <div key={a.label} className="flex-1 bg-cream rounded-[14px] px-2.5 py-3 flex flex-col items-start gap-2">
+          <button
+            key={a.label}
+            type="button"
+            onClick={a.onClick}
+            className="flex-1 bg-cream rounded-[14px] px-2.5 py-3 flex flex-col items-start gap-2 text-left cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-95 active:shadow-none"
+          >
             <span className={`w-[30px] h-[30px] rounded-[9px] ${a.bg} flex items-center justify-center`}>{a.icon}</span>
             <span className="text-[12.5px] font-semibold text-ink leading-snug">{a.label}</span>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -194,6 +224,13 @@ export default function MobileHome() {
         </div>
       </div>
 
+      {/* Spotlight tab gets its own curated, admin-driven section instead of the generic grid —
+          but an active search always wins, since typing a query means the user wants results,
+          not curated picks. */}
+      {activeTab === 'spotlight' && !debouncedQuery ? (
+        <FeaturedSpotlight />
+      ) : (
+      <>
       {/* Category circles */}
       <div className="flex gap-[18px] px-[18px] pt-4 pb-1.5 overflow-x-auto no-scrollbar">
         {metaLoading
@@ -232,14 +269,32 @@ export default function MobileHome() {
 
       {/* Filter pills */}
       <div className="flex gap-2 px-[18px] pt-2.5 pb-3.5">
-        <span className="bg-ink text-white text-[12.5px] font-bold px-4 py-1.5 rounded-full">All</span>
-        <span className="bg-surface-muted text-text text-[12.5px] font-semibold px-4 py-1.5 rounded-full">Verified</span>
-        <span className="bg-surface-muted text-text text-[12.5px] font-semibold px-4 py-1.5 rounded-full">Low MOQ</span>
+        {[
+          { key: 'all', label: 'All' },
+          { key: 'verified', label: 'Verified' },
+          { key: 'lowMoq', label: 'Low MOQ' },
+        ].map((f) => (
+          <span
+            key={f.key}
+            data-testid={`filter-pill-${f.key}`}
+            onClick={() => setActiveFilter(f.key)}
+            className={`text-[12.5px] font-bold px-4 py-1.5 rounded-full cursor-pointer transition-colors ${
+              activeFilter === f.key ? 'bg-ink text-white' : 'bg-surface-muted text-text font-semibold hover:bg-[#EFEBE2]'
+            }`}
+          >
+            {f.label}
+          </span>
+        ))}
       </div>
 
       {/* Active label */}
-      <div className="px-[18px] pb-2.5 text-[13px] text-text">
+      <div ref={productGridRef} className="px-[18px] pb-2.5 text-[13px] text-text scroll-mt-4">
         Showing <strong className="text-ink">{label}</strong>
+        {activeFilter !== 'all' && (
+          <>
+            {' '}· <strong className="text-ink">{activeFilter === 'verified' ? 'Verified sellers' : 'Low MOQ'}</strong>
+          </>
+        )}
       </div>
 
       {/* Product grid */}
@@ -310,6 +365,8 @@ export default function MobileHome() {
             Clear search
           </button>
         </div>
+      )}
+      </>
       )}
     </div>
   );

@@ -69,7 +69,7 @@ export default function SellerLayout() {
             <span className="hidden sm:flex flex-col leading-none">
               <span className="flex items-center gap-1.5">
                 <span className="font-display text-base font-bold text-white tracking-tight">
-                  Falsafah<span className="text-gold">Tot</span>
+                  Falsafah
                 </span>
                 <OfficialBadge size={14} tooltipPosition="bottom" />
               </span>

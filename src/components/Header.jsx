@@ -51,7 +51,7 @@ export default function Header() {
           <img src={logoMark} alt="" className="w-[42px] h-[42px] object-contain" />
           <span className="flex flex-col leading-none">
             <span className="font-display text-[25px] font-bold text-green tracking-tight">
-              Falsafah<span className="text-orange">Tot</span>
+              Falsafah
             </span>
           </span>
         </Link>

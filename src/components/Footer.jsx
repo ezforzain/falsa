@@ -48,7 +48,7 @@ export default function Footer() {
           <div>
             <span className="flex items-center gap-1.5">
               <span className="font-display font-bold text-lg text-white tracking-tight">
-                Falsafah<span className="text-orange">Tot</span>
+                Falsafah
               </span>
               <OfficialBadge size={14} />
             </span>
@@ -71,7 +71,7 @@ export default function Footer() {
         <div className="sm:hidden flex flex-col items-center gap-4 pb-5 border-b border-white/10 text-center">
           <span className="flex items-center gap-1.5">
             <span className="font-display font-bold text-base text-white tracking-tight">
-              Falsafah<span className="text-orange">Tot</span>
+              Falsafah
             </span>
             <OfficialBadge size={13} />
           </span>
@@ -86,7 +86,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5 pt-4 text-[11.5px] text-teal-mist/70 text-center sm:text-left">
-          <span>© 2026 FalsafahTot. All rights reserved.</span>
+          <span>© 2026 Falsafah. All rights reserved.</span>
           <span>Worldwide Free Shipping · 100% Trusted B2B Marketplace</span>
         </div>
       </div>

@@ -16,6 +16,7 @@ import {
   IconLogout,
   IconPlus,
   IconShield,
+  IconSparkle,
   IconTrash,
 } from '../../components/icons';
 import logoMark from '../../assets/logo-mark.png';
@@ -147,6 +148,22 @@ export default function AdminPage() {
     }
   };
 
+  // Cycles a product through Off -> Featured -> Sponsored -> Off in the Home "Spotlight" tab —
+  // the only place admins curate that section, since it has no separate management screen.
+  const [spotlightUpdatingId, setSpotlightUpdatingId] = useState(null);
+  const handleSetSpotlight = async (product, spotlight, spotlightType) => {
+    setSpotlightUpdatingId(product.id);
+    try {
+      await admin.updateProduct(product.id, { spotlight, spotlightType });
+      showToast(spotlight ? `Added to Spotlight (${spotlightType})` : 'Removed from Spotlight');
+      loadProducts();
+    } catch (err) {
+      showToast(err.message || 'Could not update Spotlight status');
+    } finally {
+      setSpotlightUpdatingId(null);
+    }
+  };
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream">
@@ -260,7 +277,7 @@ export default function AdminPage() {
             <span className="hidden sm:flex flex-col leading-none">
               <span className="flex items-center gap-1.5">
                 <span className="font-display text-base font-bold text-white tracking-tight">
-                  Falsafah<span className="text-gold">Tot</span>
+                  Falsafah
                 </span>
                 <OfficialBadge size={14} tooltipPosition="bottom" />
               </span>
@@ -376,7 +393,7 @@ export default function AdminPage() {
                           </span>
                         )}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 mb-2">
                         <button
                           type="button"
                           onClick={() => openEditProduct(p)}
@@ -393,6 +410,33 @@ export default function AdminPage() {
                           <IconTrash width="13" height="13" />
                           Delete
                         </button>
+                      </div>
+
+                      {/* Home "Spotlight" tab curation — the only control surface for it. */}
+                      <div className="flex items-center gap-1 pt-2 border-t border-border">
+                        <IconSparkle width="12" height="12" className="text-orange shrink-0" />
+                        <div className="flex gap-1 flex-1">
+                          {[
+                            { value: null, label: 'Off' },
+                            { value: 'featured', label: 'Featured' },
+                            { value: 'sponsored', label: 'Sponsored' },
+                          ].map((opt) => {
+                            const isActive = opt.value === null ? !p.spotlight : p.spotlight && p.spotlightType === opt.value;
+                            return (
+                              <button
+                                key={opt.label}
+                                type="button"
+                                disabled={spotlightUpdatingId === p.id}
+                                onClick={() => handleSetSpotlight(p, opt.value !== null, opt.value || 'featured')}
+                                className={`flex-1 text-[10.5px] font-semibold py-1.5 rounded-md cursor-pointer transition-colors disabled:opacity-50 ${
+                                  isActive ? 'bg-green text-white' : 'bg-surface-muted text-text-muted hover:bg-[#EFEBE2]'
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>

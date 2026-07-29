@@ -107,6 +107,8 @@ export const catalog = {
   product: (id) => request(`/api/products/${encodeURIComponent(id)}`),
   spotlightNear: () => request('/api/spotlight/near'),
   spotlightTrending: () => request('/api/spotlight/trending'),
+  spotlightFeatured: (category) =>
+    request(`/api/spotlight/featured-section${category ? `?category=${encodeURIComponent(category)}` : ''}`),
 };
 
 // ---------- Cart ----------

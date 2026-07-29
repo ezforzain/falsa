@@ -54,7 +54,7 @@ export default function FirstVisitSignupPrompt() {
         <span className="w-16 h-16 rounded-full bg-green-tint inline-flex items-center justify-center mb-4">
           <IconUser width="26" height="26" className="text-green" />
         </span>
-        <h2 className="font-display text-xl font-bold text-ink m-0 mb-2">Join Falsafah Tot free</h2>
+        <h2 className="font-display text-xl font-bold text-ink m-0 mb-2">Join Falsafah free</h2>
         <p className="text-sm text-text mb-6 leading-relaxed">
           Sign up to save products, message sellers, and check out faster — free shipping on your first order.
         </p>

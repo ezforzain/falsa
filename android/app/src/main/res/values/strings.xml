@@ -7,7 +7,7 @@
          ============================================================================ -->
 
     <!-- The name shown under the launcher icon and in the Play Store listing. -->
-    <string name="app_name">FalsafahTot</string>
+    <string name="app_name">Falsafah</string>
 
     <!-- Your production domain, HTTPS, no scheme/path/trailing slash. Must exactly match the
          domain that serves /.well-known/assetlinks.json (see public/.well-known/assetlinks.json

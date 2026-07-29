@@ -224,7 +224,7 @@ const DEMO_USERS = [
     email: 'admin@falsafahtot.com',
     phone: '+92 300 9999999',
     password: 'password123',
-    companyName: 'Falsafah Tot HQ',
+    companyName: 'Falsafah HQ',
     country: 'Pakistan',
   },
 ];

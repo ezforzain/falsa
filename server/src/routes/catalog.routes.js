@@ -76,6 +76,44 @@ router.get(
 );
 
 router.get(
+  '/spotlight/featured-section',
+  asyncHandler(async (req, res) => {
+    const { category } = req.query;
+
+    // Rank is computed against the *whole* category (not just spotlighted items), so a "TOP 3"
+    // badge means what it says rather than only counting other admin-picked products.
+    const allInCategory = await Product.find({}, 'category sold').lean();
+    const soldByCategory = new Map();
+    for (const p of allInCategory) {
+      const list = soldByCategory.get(p.category) || [];
+      list.push(p.sold || 0);
+      soldByCategory.set(p.category, list);
+    }
+    for (const list of soldByCategory.values()) list.sort((a, b) => b - a);
+
+    const filter = { spotlight: true };
+    if (category) filter.category = category;
+    const products = await Product.find(filter).populate('sellerId', 'verified');
+
+    const items = products.map((doc) => {
+      const product = serializeProduct(doc);
+      const ranked = soldByCategory.get(product.category) || [];
+      const rank = ranked.indexOf(product.sold || 0) + 1;
+      return {
+        type: product.spotlightType || 'featured',
+        rankInCategory: rank > 0 && rank <= 10 ? rank : null,
+        product,
+      };
+    });
+    items.sort((a, b) => (a.type === b.type ? (b.product.sold || 0) - (a.product.sold || 0) : a.type === 'featured' ? -1 : 1));
+
+    const categories = [...new Set(products.map((p) => p.category))].sort();
+
+    res.json({ items, categories });
+  })
+);
+
+router.get(
   '/spotlight/near',
   asyncHandler(async (_req, res) => {
     const entries = await SpotlightEntry.find({ kind: 'near' })

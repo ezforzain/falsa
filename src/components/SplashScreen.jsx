@@ -28,7 +28,7 @@ export default function SplashScreen({ visible }) {
     >
       <img
         src={logoMark}
-        alt="FalsafahTot"
+        alt="Falsafah"
         className="animate-splash-logo w-24 h-24 sm:w-28 sm:h-28"
         width={112}
         height={112}

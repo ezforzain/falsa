@@ -39,6 +39,11 @@ const productSchema = new mongoose.Schema(
     description: String,
     specifications: [specSchema],
     reviews: [reviewSchema],
+    sold: { type: Number, default: 0 }, // units sold, drives the "Best Seller · TOP N" rank badge
+    // Admin-curated placement in the Home "Spotlight" tab — independent of the near/trending
+    // SpotlightEntry rails, which are seeded/ranked rather than hand-picked per product.
+    spotlight: { type: Boolean, default: false },
+    spotlightType: { type: String, enum: ['featured', 'sponsored'], default: 'featured' },
   },
   { timestamps: true }
 );
