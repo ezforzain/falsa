@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { normalizeQuery, searchHints } from '../data/mockData';
 import { catalog } from '../lib/api';
 import useRotatingHints from '../hooks/useRotatingHints';
 import useInfiniteFeed from '../hooks/useInfiniteFeed';
+import usePullToRefresh from '../hooks/usePullToRefresh';
 import SearchHintOverlay from '../components/SearchHintOverlay';
 import MobileTopBar from '../components/MobileTopBar';
 import FeaturedSpotlight from '../components/spotlight/FeaturedSpotlight';
+import MobileProductCard from '../components/product/MobileProductCard';
 import { IconSearch } from '../components/icons';
 
 export default function MobileHome() {
@@ -58,28 +60,34 @@ export default function MobileHome() {
   const activeCatDef = categories.find((c) => c.key === activeCategory);
 
   // Fetch the product grid from the server whenever the category or (debounced) search changes —
-  // filtering by name/category/seller happens in the mock API, not in this component.
-  useEffect(() => {
-    let cancelled = false;
+  // filtering by name/category/seller happens in the mock API, not in this component. Pulled out
+  // to a stable callback (rather than inline in the effect) so pull-to-refresh can re-trigger the
+  // same fetch on demand; a request-id ref discards stale responses the same way the old
+  // effect-local `cancelled` flag did.
+  const fetchIdRef = useRef(0);
+  const fetchProducts = useCallback(() => {
+    const requestId = ++fetchIdRef.current;
     setProductsLoading(true);
     setProductsError(null);
 
-    catalog
+    return catalog
       .products({ category: activeCatDef?.fullName, q: debouncedQuery })
       .then(({ products: fetched }) => {
-        if (!cancelled) setProducts(fetched);
+        if (fetchIdRef.current === requestId) setProducts(fetched);
       })
       .catch((err) => {
-        if (!cancelled) setProductsError(err.message || 'Could not load products right now.');
+        if (fetchIdRef.current === requestId) setProductsError(err.message || 'Could not load products right now.');
       })
       .finally(() => {
-        if (!cancelled) setProductsLoading(false);
+        if (fetchIdRef.current === requestId) setProductsLoading(false);
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [activeCatDef?.fullName, debouncedQuery]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  const { pullDistance, refreshing, threshold } = usePullToRefresh(fetchProducts);
 
   let label = activeCatDef ? activeCatDef.name : 'All categories';
   if (debouncedQuery) label = `Results for "${debouncedQuery}"`;
@@ -113,6 +121,23 @@ export default function MobileHome() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
+      {/* Pull-to-refresh indicator — height tracks the live pull distance, spins while refreshing */}
+      {(pullDistance > 0 || refreshing) && (
+        <div
+          className="flex items-center justify-center overflow-hidden transition-[height] duration-150"
+          style={{ height: refreshing ? 44 : Math.min(pullDistance, 44) }}
+        >
+          <span
+            className="w-5 h-5 rounded-full border-2 border-border-strong border-t-green"
+            style={{
+              animation: refreshing ? 'spin 0.7s linear infinite' : 'none',
+              transform: refreshing ? undefined : `rotate(${(pullDistance / threshold) * 360}deg)`,
+              opacity: refreshing ? 1 : Math.min(pullDistance / threshold, 1),
+            }}
+          />
+        </div>
+      )}
+
       <MobileTopBar />
 
       {/* Top tabs */}
@@ -322,24 +347,7 @@ export default function MobileHome() {
         <>
           <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-3">
             {feedProducts.map((p) => (
-              <div
-                key={p.feedKey}
-                onClick={() => navigate(`/product/${p.id}`)}
-                className="bg-white border border-[#EFEBE2] rounded-[14px] overflow-hidden cursor-pointer"
-              >
-                <div className="h-[130px] overflow-hidden">
-                  <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
-                </div>
-                <div className="px-2.5 pt-2.5 pb-2.5">
-                  <div className="text-[12.5px] font-semibold text-ink leading-snug mb-1.5 line-clamp-2">{p.name}</div>
-                  <div className="flex items-baseline justify-between">
-                    <span className="font-display font-bold text-[14.5px] text-green">{p.price}</span>
-                    <span className="text-[10px] text-orange-text bg-orange-tint px-1.5 py-1 rounded-md font-semibold">
-                      MOQ {p.moq}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <MobileProductCard key={p.feedKey} product={p} />
             ))}
           </div>
 

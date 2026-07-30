@@ -10,15 +10,17 @@ import { IconClose } from './icons';
 // overlay, lets the buyer pick a "Color Family" option and a quantity, then confirms via a
 // sticky Buy Now footer. `onBuyNow({ variant, qty })` is left to the caller (e.g. add-to-cart +
 // navigate) so this component stays presentation-only and reusable outside ProductPage too.
-export default function VariantBottomSheet({ product, open, loading = false, error = null, onClose, onBuyNow }) {
+export default function VariantBottomSheet({ product, open, loading = false, error = null, onClose, onConfirm }) {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const moqMin = parseMoqNumber(product?.moq) || 1;
   const [qty, setQty] = useState(moqMin);
+  const [pendingIntent, setPendingIntent] = useState(null);
 
   useEffect(() => {
     if (open && product) {
       setSelectedVariant(product.variants?.[0] || null);
       setQty(parseMoqNumber(product.moq) || 1);
+      setPendingIntent(null);
     }
   }, [open, product]);
 
@@ -39,10 +41,12 @@ export default function VariantBottomSheet({ product, open, loading = false, err
   const currentPrice = parsePrice(product.price);
   const discountPercent = product.discountPercent || 0;
   const originalPrice = discountPercent > 0 ? currentPrice / (1 - discountPercent / 100) : null;
+  const total = currentPrice * qty;
 
-  const confirm = () => {
+  const confirm = (intent) => {
     if (outOfStock || moqUnreachable || loading) return;
-    onBuyNow({ variant: selectedVariant, qty });
+    setPendingIntent(intent);
+    onConfirm({ variant: selectedVariant, qty, intent });
   };
 
   return (
@@ -126,12 +130,32 @@ export default function VariantBottomSheet({ product, open, loading = false, err
           {error && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5">{error}</p>}
         </div>
 
-        {/* Sticky Buy Now */}
+        {/* Sticky footer — live total updates as qty changes, then Add to Cart / Buy Now */}
         <div
-          className="shrink-0 px-5 py-4 border-t border-border"
+          className="shrink-0 px-5 pt-3.5 pb-4 border-t border-border flex flex-col gap-3"
           style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
         >
-          <BuyNowButton onClick={confirm} disabled={outOfStock || moqUnreachable} loading={loading} />
+          <div className="flex items-baseline justify-between">
+            <span className="text-[13px] font-semibold text-ink-soft">Total</span>
+            <span className="font-display font-bold text-xl text-ink">{formatPKR(total)}</span>
+          </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => confirm('cart')}
+              disabled={outOfStock || moqUnreachable || loading}
+              aria-busy={loading && pendingIntent === 'cart'}
+              className="flex-1 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-white border-[1.5px] border-green text-green font-bold text-[14.5px] py-[15px] rounded-full transition-all active:scale-[0.98]"
+            >
+              {loading && pendingIntent === 'cart' ? 'Adding…' : 'Add to Cart'}
+            </button>
+            <BuyNowButton
+              onClick={() => confirm('buy')}
+              disabled={outOfStock || moqUnreachable}
+              loading={loading && pendingIntent === 'buy'}
+              className="flex-[1.3]"
+            />
+          </div>
         </div>
       </div>
     </div>

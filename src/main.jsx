@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { CartProvider } from './context/CartContext.jsx'
+import { WishlistProvider } from './context/WishlistContext.jsx'
 import { ProfileDrawerProvider } from './context/ProfileDrawerContext.jsx'
 
 // Clears out any leftover service worker that isn't our own (e.g. the mock API worker earlier
@@ -40,9 +41,11 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
-          <ProfileDrawerProvider>
-            <App />
-          </ProfileDrawerProvider>
+          <WishlistProvider>
+            <ProfileDrawerProvider>
+              <App />
+            </ProfileDrawerProvider>
+          </WishlistProvider>
         </CartProvider>
       </AuthProvider>
     </BrowserRouter>

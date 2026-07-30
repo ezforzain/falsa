@@ -92,9 +92,9 @@ const PRODUCT_DETAILS = {
       { label: 'Origin', value: 'Faisalabad, Pakistan' },
     ],
     reviews: [
-      { author: 'Gulistan Sourcing Co.', rating: 5, comment: 'Consistent GSM across every roll in a 2,200m order — exactly what we needed for a uniform contract. Reordering.', daysAgo: 12 },
+      { author: 'Gulistan Sourcing Co.', rating: 5, comment: 'Consistent GSM across every roll in a 2,200m order — exactly what we needed for a uniform contract. Reordering.', daysAgo: 12, images: [unsplash('photo-1523381210434-271e8be1f52b', 300), unsplash('photo-1620799140408-edc6dcb6d633', 300)] },
       { author: 'Redwood Imports LLC', rating: 5, comment: 'Color held up after 40+ industrial washes in our testing. Sanforizing claim checks out.', daysAgo: 28 },
-      { author: 'Nordic Trade House', rating: 4, comment: 'Good quality twill, lead time ran about 3 days over the quoted window during peak season.', daysAgo: 45 },
+      { author: 'Nordic Trade House', rating: 4, comment: 'Good quality twill, lead time ran about 3 days over the quoted window during peak season.', daysAgo: 45, verifiedPurchase: false },
     ],
   },
   'surgical-instrument-set': {
@@ -114,7 +114,7 @@ const PRODUCT_DETAILS = {
       { label: 'Origin', value: 'Sialkot, Pakistan' },
     ],
     reviews: [
-      { author: 'Meridian Health Supply', rating: 5, comment: 'Hinge tension is even across the whole set — no loose scissors like we’ve had from other suppliers.', daysAgo: 9 },
+      { author: 'Meridian Health Supply', rating: 5, comment: 'Hinge tension is even across the whole set — no loose scissors like we’ve had from other suppliers.', daysAgo: 9, images: [unsplash('photo-1583911860205-72f8ac8ddcbe', 300)] },
       { author: 'Al-Karam Traders', rating: 5, comment: 'Passed our sterilization validation on the first batch. Documentation was thorough.', daysAgo: 33 },
       { author: 'Redwood Imports LLC', rating: 5, comment: 'Top-rated for a reason. Consistent finish quality across a 100-set order.', daysAgo: 51 },
     ],
@@ -279,6 +279,8 @@ function withDetails(product) {
       rating: r.rating,
       comment: r.comment,
       date: new Date(Date.now() - r.daysAgo * 86400000),
+      images: r.images || [],
+      verifiedPurchase: r.verifiedPurchase !== false,
     })),
   };
 }
@@ -292,7 +294,7 @@ export const products = [
   { id: 'hand-tools-hardware-set', name: 'Hand Tools & Hardware Set', seller: 'Gujranwala Metals', location: 'Gujranwala, Pakistan', category: 'Hardware & Tools', rating: '4.7', price: 'Rs 1,120', moq: '150pc', unit: 'set', badge: 'Verified', stock: 610, sold: 305, img: unsplash('photo-1504148455328-c376907d081c') },
   { id: 'basmati-rice-25kg', name: 'Basmati Rice 25kg Bags', seller: 'Al-Barkat Rice Mills', location: 'Sheikhupura, Pakistan', category: 'Rice & Grains', rating: '4.7', price: 'Rs 3,200', moq: '50bag', unit: 'bag', badge: 'Trending', stock: 240, sold: 430, spotlight: true, spotlightType: 'sponsored', img: unsplash('photo-1586201375761-83865001e31c') },
   { id: 'denim-fabric-rolls', name: 'Denim Fabric Rolls', seller: 'Faisalabad Denim Co.', location: 'Faisalabad, Pakistan', category: 'Textiles & Fabrics', rating: '4.5', price: 'Rs 590', moq: '400m', unit: 'metre', badge: 'Trending', stock: 0, sold: 150, img: unsplash('photo-1565084888279-aca607ecce0c') },
-  { id: 'warehouse-racking-systems', name: 'Warehouse Racking Systems', seller: 'PakPack Industries', location: 'Lahore, Pakistan', category: 'Hardware & Tools', rating: '4.6', price: 'Rs 8,400', moq: '10set', unit: 'set', badge: 'Verified', stock: 42, sold: 95, spotlight: true, spotlightType: 'featured', img: unsplash('photo-1553413077-190dd305871c') },
+  { id: 'warehouse-racking-systems', name: 'Warehouse Racking Systems', seller: 'PakPack Industries', location: 'Lahore, Pakistan', category: 'Hardware & Tools', rating: '4.6', price: 'Rs 8,400', moq: '10set', unit: 'set', badge: 'Verified', stock: 42, sold: 95, spotlight: true, spotlightType: 'featured', freeShipping: false, img: unsplash('photo-1553413077-190dd305871c') },
 ].map(withDetails);
 
 // Color-family variants only make sense for goods that actually come in dyeable colors — showing
@@ -346,14 +348,14 @@ export const spotlightTrend = [
 ];
 
 export const SELLER_SEED_META = {
-  'Anwar Textile Mills': { verified: true, followerCount: 1240, responseRate: 97 },
-  'Karachi Leatherworks': { verified: true, followerCount: 860, responseRate: 95 },
-  'PakPack Industries': { verified: true, followerCount: 640, responseRate: 93 },
-  'Sialkot Surgical Co.': { verified: false, followerCount: 410, responseRate: 89 },
-  'Star Sports Mfg.': { verified: false, followerCount: 520, responseRate: 91 },
-  'Gujranwala Metals': { verified: false, followerCount: 310, responseRate: 88 },
-  'Al-Barkat Rice Mills': { verified: false, followerCount: 275, responseRate: 90 },
-  'Faisalabad Denim Co.': { verified: false, followerCount: 380, responseRate: 87 },
+  'Anwar Textile Mills': { verified: true, followerCount: 1240, responseRate: 97, responseTime: 'Within 1 hour' },
+  'Karachi Leatherworks': { verified: true, followerCount: 860, responseRate: 95, responseTime: 'Within 2 hours' },
+  'PakPack Industries': { verified: true, followerCount: 640, responseRate: 93, responseTime: 'Within 3 hours' },
+  'Sialkot Surgical Co.': { verified: false, followerCount: 410, responseRate: 89, responseTime: 'Within 6 hours' },
+  'Star Sports Mfg.': { verified: false, followerCount: 520, responseRate: 91, responseTime: 'Within 4 hours' },
+  'Gujranwala Metals': { verified: false, followerCount: 310, responseRate: 88, responseTime: 'Within a day' },
+  'Al-Barkat Rice Mills': { verified: false, followerCount: 275, responseRate: 90, responseTime: 'Within 8 hours' },
+  'Faisalabad Denim Co.': { verified: false, followerCount: 380, responseRate: 87, responseTime: 'Within a day' },
 };
 
 export const DEMO_USERS = [

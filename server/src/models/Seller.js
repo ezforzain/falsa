@@ -10,6 +10,7 @@ const sellerSchema = new mongoose.Schema(
     verified: { type: Boolean, default: false },
     followerCount: { type: Number, default: 0 },
     responseRate: { type: Number, default: 90 },
+    responseTime: { type: String, default: 'Within a day' },
   },
   { timestamps: true, toJSON: { virtuals: true } }
 );

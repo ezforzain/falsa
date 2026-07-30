@@ -427,6 +427,8 @@ export const productReviews = (product) => {
       rating: r.rating,
       comment: r.comment,
       date: r.date,
+      images: r.images || [],
+      verifiedPurchase: r.verifiedPurchase !== false,
     }));
   }
 
@@ -440,6 +442,8 @@ export const productReviews = (product) => {
       rating: 5 - ((h + i) % 2),
       comment: REVIEW_COMMENTS[(h + i * 5) % REVIEW_COMMENTS.length],
       date: new Date(Date.now() - daysAgo * 86400000).toISOString(),
+      images: [],
+      verifiedPurchase: true,
     };
   });
 };

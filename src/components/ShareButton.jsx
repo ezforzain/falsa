@@ -14,7 +14,7 @@ const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1'];
 // LAN address (see /api/dev/network-info, dev-only) and prefer that whenever the current origin
 // is localhost — guaranteeing the shared link is reachable from another device on the same
 // Wi-Fi regardless of how the sharer got to this page.
-export default function ShareButton({ title, className = '' }) {
+export default function ShareButton({ title, className = '', iconOnly = false }) {
   const [lanUrl, setLanUrl] = useState(undefined); // undefined = still checking, null = unavailable
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
@@ -74,10 +74,14 @@ export default function ShareButton({ title, className = '' }) {
             ? "Couldn't detect a network address — this link may only open on this computer."
             : 'Share this product'
         }
-        className="flex items-center justify-center gap-1.5 cursor-pointer text-text hover:text-ink bg-white border border-border hover:border-border-strong rounded-full w-[52px] sm:w-auto h-[52px] sm:px-4 sm:py-[13px] text-sm font-semibold transition-colors"
+        className={
+          iconOnly
+            ? 'flex items-center justify-center cursor-pointer text-ink-soft hover:text-ink transition-colors'
+            : 'flex items-center justify-center gap-1.5 cursor-pointer text-text hover:text-ink bg-white border border-border hover:border-border-strong rounded-full w-[52px] sm:w-auto h-[52px] sm:px-4 sm:py-[13px] text-sm font-semibold transition-colors'
+        }
       >
-        <IconShare width="16" height="16" className={linkMightNotWork ? 'text-orange-text' : undefined} />
-        <span className="hidden sm:inline">Share</span>
+        <IconShare width={iconOnly ? '19' : '16'} height={iconOnly ? '19' : '16'} className={linkMightNotWork ? 'text-orange-text' : undefined} />
+        {!iconOnly && <span className="hidden sm:inline">Share</span>}
       </button>
       <Toast message={toastMessage} show={toastVisible} onHide={() => setToastVisible(false)} />
     </div>

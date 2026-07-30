@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import SectionCard from './SectionCard';
-import { IconStar } from '../icons';
+import { IconCheck, IconStar, IconThumbsUp } from '../icons';
 
 function timeAgoLabel(dateStr) {
   const days = Math.max(0, Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000));
@@ -8,6 +9,53 @@ function timeAgoLabel(dateStr) {
   if (days < 30) return `${days} days ago`;
   const months = Math.round(days / 30);
   return months === 1 ? '1 month ago' : `${months} months ago`;
+}
+
+// Deterministic per-review base tally so the count doesn't jump around on every render/reload —
+// no backend vote storage exists for a review-helpfulness feature, so only *this browser's* own
+// vote is persisted (localStorage), added on top of that stable base.
+function helpfulBaseCount(reviewId) {
+  let h = 0;
+  for (let i = 0; i < reviewId.length; i++) h = (h * 31 + reviewId.charCodeAt(i)) >>> 0;
+  return 2 + (h % 27);
+}
+
+function HelpfulButton({ reviewId }) {
+  const storageKey = `falsafahtot_helpful_${reviewId}`;
+  const [voted, setVoted] = useState(() => {
+    try {
+      return localStorage.getItem(storageKey) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggle = () => {
+    const next = !voted;
+    setVoted(next);
+    try {
+      if (next) localStorage.setItem(storageKey, '1');
+      else localStorage.removeItem(storageKey);
+    } catch {
+      // Storage unavailable — vote just won't persist this session.
+    }
+  };
+
+  const count = helpfulBaseCount(reviewId) + (voted ? 1 : 0);
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-pressed={voted}
+      className={`inline-flex items-center gap-1.5 text-[12px] font-semibold px-2.5 py-1 rounded-full cursor-pointer transition-colors ${
+        voted ? 'bg-green-tint text-green' : 'bg-surface-muted text-text-muted hover:bg-[#EFEBE2]'
+      }`}
+    >
+      <IconThumbsUp width="12" height="12" />
+      Helpful ({count})
+    </button>
+  );
 }
 
 export default function ReviewsSection({ summary, reviews }) {
@@ -46,7 +94,15 @@ export default function ReviewsSection({ summary, reviews }) {
                   {review.name.trim()[0]?.toUpperCase()}
                 </span>
                 <div>
-                  <div className="text-[13.5px] font-semibold text-ink">{review.name}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[13.5px] font-semibold text-ink">{review.name}</span>
+                    {review.verifiedPurchase && (
+                      <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-green bg-green-tint px-1.5 py-0.5 rounded-full">
+                        <IconCheck width="9" height="9" strokeWidth="3" />
+                        Verified Purchase
+                      </span>
+                    )}
+                  </div>
                   {review.country && <div className="text-[11.5px] text-text-muted">{review.country}</div>}
                 </div>
               </div>
@@ -59,7 +115,15 @@ export default function ReviewsSection({ summary, reviews }) {
                 <span className="text-[11.5px] text-text-muted">{timeAgoLabel(review.date)}</span>
               </div>
             </div>
-            <p className="text-[13.5px] text-text leading-relaxed m-0">{review.comment}</p>
+            <p className="text-[13.5px] text-text leading-relaxed m-0 mb-3">{review.comment}</p>
+            {review.images?.length > 0 && (
+              <div className="flex gap-2 mb-3">
+                {review.images.map((src, i) => (
+                  <img key={i} src={src} alt="" className="w-16 h-16 rounded-lg object-cover border border-border" loading="lazy" />
+                ))}
+              </div>
+            )}
+            <HelpfulButton reviewId={review.id} />
           </div>
         ))}
       </div>

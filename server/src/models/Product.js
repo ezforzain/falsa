@@ -8,7 +8,14 @@ const variantSchema = new mongoose.Schema(
 const specSchema = new mongoose.Schema({ label: String, value: String }, { _id: false });
 
 const reviewSchema = new mongoose.Schema(
-  { author: String, rating: Number, comment: String, date: Date },
+  {
+    author: String,
+    rating: Number,
+    comment: String,
+    date: Date,
+    images: { type: [String], default: [] },
+    verifiedPurchase: { type: Boolean, default: true },
+  },
   { _id: false }
 );
 
@@ -40,6 +47,7 @@ const productSchema = new mongoose.Schema(
     specifications: [specSchema],
     reviews: [reviewSchema],
     sold: { type: Number, default: 0 }, // units sold, drives the "Best Seller · TOP N" rank badge
+    freeShipping: { type: Boolean, default: true },
     // Admin-curated placement in the Home "Spotlight" tab — independent of the near/trending
     // SpotlightEntry rails, which are seeded/ranked rather than hand-picked per product.
     spotlight: { type: Boolean, default: false },

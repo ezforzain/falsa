@@ -3,7 +3,7 @@ import SectionCard from './SectionCard';
 import VerifiedBadge from '../VerifiedBadge';
 import FollowButton from '../FollowButton';
 import ChatButton from '../ChatButton';
-import { IconStar, IconPin } from '../icons';
+import { IconStar, IconPin, IconBox, IconClock } from '../icons';
 
 export default function SellerInfoSection({ seller, rating }) {
   const initial = seller.name?.trim()?.[0]?.toUpperCase() || '?';
@@ -40,6 +40,18 @@ export default function SellerInfoSection({ seller, rating }) {
               </span>
             )}
             {typeof seller.responseRate === 'number' && <span>{seller.responseRate}% response rate</span>}
+            {seller.responseTime && (
+              <span className="flex items-center gap-1">
+                <IconClock width="13" height="13" />
+                {seller.responseTime}
+              </span>
+            )}
+            {typeof seller.productCount === 'number' && (
+              <span className="flex items-center gap-1">
+                <IconBox width="13" height="13" />
+                {seller.productCount} product{seller.productCount === 1 ? '' : 's'}
+              </span>
+            )}
           </div>
         </div>
 

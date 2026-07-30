@@ -79,6 +79,7 @@ async function seed() {
       sold: p.sold || 0,
       spotlight: p.spotlight || false,
       spotlightType: p.spotlightType || 'featured',
+      freeShipping: p.freeShipping !== false,
     });
     productDocs[p.id] = doc;
   }

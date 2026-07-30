@@ -43,6 +43,7 @@ import CertificationsSection from '../components/product/CertificationsSection';
 import ReviewsSection from '../components/product/ReviewsSection';
 import FaqSection from '../components/product/FaqSection';
 import ProductRail from '../components/product/ProductRail';
+import MobileProductHeader from '../components/product/MobileProductHeader';
 import { IconChevronRight, IconShield, IconTrendingUp } from '../components/icons';
 
 export default function ProductPage() {
@@ -189,13 +190,16 @@ export default function ProductPage() {
     }, 400);
   };
 
-  const handleSheetBuyNow = async ({ qty }) => {
+  // The sheet always offers both actions regardless of which button opened it — `intent` (set by
+  // whichever of the sheet's own two footer buttons was tapped) decides what happens next.
+  const handleSheetConfirm = async ({ qty, intent }) => {
     setSheetLoading(true);
     setSheetError(null);
     try {
       await addToCart(product, qty);
       setSheetOpen(false);
-      navigate('/cart');
+      if (intent === 'buy') navigate('/cart');
+      else setToastVisible(true);
     } catch (err) {
       setSheetError(err.message);
     } finally {
@@ -203,8 +207,16 @@ export default function ProductPage() {
     }
   };
 
+  // Mobile routes "Add to Cart" through the same variant sheet as "Order Now" (see
+  // handleOrderNow) rather than the plain QuantityModal, so both actions get the same
+  // color/quantity picker. Desktop keeps its existing QuantityModal flow.
   const openQuantityModal = () => {
     if (!product || outOfStock) return;
+    if (isMobile) {
+      setSheetError(null);
+      setSheetOpen(true);
+      return;
+    }
     setModalError(null);
     setModalOpen(true);
   };
@@ -225,28 +237,34 @@ export default function ProductPage() {
 
   if (loading) {
     return (
-      <main className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 pb-20">
-        <div className="grid gap-10 lg:gap-16 items-start lg:grid-cols-[minmax(0,560px)_1fr]">
-          <div className="animate-pulse h-[320px] md:h-[440px] lg:h-[620px] rounded-[18px] bg-surface-muted" />
-          <div className="animate-pulse flex flex-col gap-4">
-            <div className="h-6 bg-surface-muted rounded w-2/3" />
-            <div className="h-4 bg-surface-muted rounded w-1/2" />
-            <div className="h-32 bg-surface-muted rounded" />
-            <div className="h-12 bg-surface-muted rounded" />
+      <>
+        {isMobile && <MobileProductHeader />}
+        <main className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 pb-20">
+          <div className="grid gap-10 lg:gap-16 items-start lg:grid-cols-[minmax(0,560px)_1fr]">
+            <div className="animate-pulse h-[320px] md:h-[440px] lg:h-[620px] rounded-[18px] bg-surface-muted" />
+            <div className="animate-pulse flex flex-col gap-4">
+              <div className="h-6 bg-surface-muted rounded w-2/3" />
+              <div className="h-4 bg-surface-muted rounded w-1/2" />
+              <div className="h-32 bg-surface-muted rounded" />
+              <div className="h-12 bg-surface-muted rounded" />
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </>
     );
   }
 
   if (notFound || (!product && error)) {
     return (
-      <main className="max-w-[1320px] mx-auto px-6 py-20 text-center">
-        <p className="text-text mb-5">{notFound ? 'Product not found.' : error}</p>
-        <Link to="/" className="text-green font-semibold no-underline hover:underline">
-          Back to marketplace
-        </Link>
-      </main>
+      <>
+        {isMobile && <MobileProductHeader />}
+        <main className="max-w-[1320px] mx-auto px-6 py-20 text-center">
+          <p className="text-text mb-5">{notFound ? 'Product not found.' : error}</p>
+          <Link to="/" className="text-green font-semibold no-underline hover:underline">
+            Back to marketplace
+          </Link>
+        </main>
+      </>
     );
   }
 
@@ -262,9 +280,12 @@ export default function ProductPage() {
   const soldCount = productSoldCount(product);
   const highlights = productHighlights(product);
 
-  const relatedProducts = catalogProducts
-    .filter((p) => p.id !== product.id && p.category === product.category)
-    .slice(0, 4);
+  const sameCategory = catalogProducts.filter((p) => p.id !== product.id && p.category === product.category);
+  const relatedProducts = sameCategory.slice(0, 4);
+  // Distinct slice from relatedProducts (offset by 2) so the two rails don't show identical
+  // items — a real "bought together" signal would come from order co-occurrence data, which
+  // doesn't exist yet, so this is same-category products as a reasonable stand-in.
+  const frequentlyBoughtWith = sameCategory.slice(2, 4);
   const recentlyViewedProducts = getRecentlyViewedIds()
     .filter((pid) => pid !== product.id)
     .map((pid) => catalogProducts.find((p) => p.id === pid))
@@ -323,8 +344,9 @@ export default function ProductPage() {
       content: (
         <div className="flex flex-col gap-8 sm:gap-10">
           <ProductRail title="Related Products" products={relatedProducts} />
+          <ProductRail title="Frequently Bought Together" products={frequentlyBoughtWith} />
           <ProductRail title="Recently Viewed Products" products={recentlyViewedProducts} />
-          {relatedProducts.length === 0 && recentlyViewedProducts.length === 0 && (
+          {relatedProducts.length === 0 && frequentlyBoughtWith.length === 0 && recentlyViewedProducts.length === 0 && (
             <p className="text-[14px] text-text-muted text-center py-8">Nothing to recommend yet — keep browsing the marketplace.</p>
           )}
         </div>
@@ -333,9 +355,11 @@ export default function ProductPage() {
   ];
 
   return (
-    <main className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 pb-16 sm:pb-20 animate-fade-up">
-      {/* Breadcrumb */}
-      <div className="text-[13px] text-text-muted mb-5 sm:mb-6 flex items-center gap-2 flex-wrap">
+    <>
+      {isMobile && <MobileProductHeader product={product} />}
+      <main className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 pb-16 sm:pb-20 animate-fade-up">
+      {/* Breadcrumb — replaced by MobileProductHeader's Back button on mobile */}
+      <div className="hidden md:flex text-[13px] text-text-muted mb-5 sm:mb-6 items-center gap-2 flex-wrap">
         <Link to="/" className="text-green font-medium no-underline hover:underline">
           Home
         </Link>
@@ -454,7 +478,7 @@ export default function ProductPage() {
         loading={sheetLoading}
         error={sheetError}
         onClose={() => setSheetOpen(false)}
-        onBuyNow={handleSheetBuyNow}
+        onConfirm={handleSheetConfirm}
       />
       <FirstVisitSignupPrompt />
 
@@ -467,6 +491,7 @@ export default function ProductPage() {
           onAddToCart={openQuantityModal}
         />
       )}
-    </main>
+      </main>
+    </>
   );
 }
