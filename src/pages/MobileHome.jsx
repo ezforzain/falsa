@@ -257,10 +257,10 @@ export default function MobileHome() {
       ) : (
       <>
       {/* Category circles */}
-      <div className="flex gap-[18px] px-[18px] pt-4 pb-1.5 overflow-x-auto no-scrollbar">
+      <div className="grid grid-cols-4 gap-x-2 gap-y-4 px-[18px] pt-4 pb-1.5">
         {metaLoading
-          ? Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-2 shrink-0 w-[66px]">
+          ? Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-2">
                 <div className="animate-pulse w-[62px] h-[62px] rounded-full bg-surface-muted" />
               </div>
             ))
@@ -270,7 +270,7 @@ export default function MobileHome() {
                 <div
                   key={cat.key}
                   onClick={() => setActiveCategory((c) => (c === cat.key ? 'all' : cat.key))}
-                  className="flex flex-col items-center gap-2 shrink-0 w-[66px] cursor-pointer"
+                  className="flex flex-col items-center gap-2 cursor-pointer"
                 >
                   <span
                     className="w-[62px] h-[62px] rounded-full overflow-hidden transition-colors"

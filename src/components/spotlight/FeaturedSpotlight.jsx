@@ -1,14 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { catalog } from '../../lib/api';
 import { IconSparkle } from '../icons';
 import SpotlightCard from './SpotlightCard';
 
-const AUTOPLAY_INTERVAL_MS = 3200;
-const RESUME_AFTER_MS = 4000;
-
 function SkeletonCard() {
   return (
-    <div className="w-[210px] sm:w-[240px] shrink-0 bg-white border border-border rounded-2xl overflow-hidden">
+    <div className="bg-white border border-border rounded-2xl overflow-hidden">
       <div className="h-[150px] sm:h-[168px] bg-surface-muted animate-pulse" />
       <div className="p-3 flex flex-col gap-2">
         <div className="h-3 bg-surface-muted rounded animate-pulse w-full" />
@@ -21,7 +18,7 @@ function SkeletonCard() {
 }
 
 // Featured Spotlight — admin-curated products (via the /admin products "Spotlight" toggle),
-// shown as an autoplaying horizontal carousel with its own category filter, independent of the
+// shown as a vertically-scrolling grid with its own category filter, independent of the
 // near/trending SpotlightEntry rails on the dedicated Spotlight page.
 export default function FeaturedSpotlight() {
   const [items, setItems] = useState([]);
@@ -29,10 +26,6 @@ export default function FeaturedSpotlight() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const scrollerRef = useRef(null);
-  const autoplayRef = useRef(null);
-  const resumeTimerRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,42 +51,6 @@ export default function FeaturedSpotlight() {
 
   const categoryChips = useMemo(() => ['all', ...categories], [categories]);
 
-  const stopAutoplay = () => {
-    if (autoplayRef.current) {
-      clearInterval(autoplayRef.current);
-      autoplayRef.current = null;
-    }
-  };
-
-  const startAutoplay = () => {
-    stopAutoplay();
-    if (items.length < 2) return;
-    autoplayRef.current = setInterval(() => {
-      const el = scrollerRef.current;
-      if (!el) return;
-      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
-      const cardWidth = el.firstChild?.offsetWidth || 220;
-      el.scrollTo({
-        left: atEnd ? 0 : el.scrollLeft + cardWidth + 10,
-        behavior: 'smooth',
-      });
-    }, AUTOPLAY_INTERVAL_MS);
-  };
-
-  useEffect(() => {
-    if (!loading && !error && items.length > 0) startAutoplay();
-    return stopAutoplay;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, error, items]);
-
-  const pauseThenResume = () => {
-    stopAutoplay();
-    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
-    resumeTimerRef.current = setTimeout(startAutoplay, RESUME_AFTER_MS);
-  };
-
-  useEffect(() => () => clearTimeout(resumeTimerRef.current), []);
-
   return (
     <div className="pb-3.5">
       <div className="px-[18px] pb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] uppercase text-orange">
@@ -102,13 +59,13 @@ export default function FeaturedSpotlight() {
       </div>
 
       {categoryChips.length > 1 && (
-        <div className="flex gap-2 px-[18px] pb-3 overflow-x-auto no-scrollbar">
+        <div className="flex flex-wrap gap-2 px-[18px] pb-3">
           {categoryChips.map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => setActiveCategory(c)}
-              className={`shrink-0 text-[12.5px] font-bold px-4 py-1.5 rounded-full cursor-pointer transition-colors whitespace-nowrap ${
+              className={`text-[12.5px] font-bold px-4 py-1.5 rounded-full cursor-pointer transition-colors whitespace-nowrap ${
                 activeCategory === c ? 'bg-ink text-white' : 'bg-surface-muted text-text font-semibold hover:bg-[#EFEBE2]'
               }`}
             >
@@ -119,8 +76,8 @@ export default function FeaturedSpotlight() {
       )}
 
       {loading && (
-        <div className="flex gap-3 px-[18px] overflow-hidden">
-          {Array.from({ length: 3 }).map((_, i) => (
+        <div className="grid grid-cols-2 gap-3 px-[18px]">
+          {Array.from({ length: 4 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))}
         </div>
@@ -147,14 +104,7 @@ export default function FeaturedSpotlight() {
       )}
 
       {!loading && !error && items.length > 0 && (
-        <div
-          ref={scrollerRef}
-          onPointerDown={pauseThenResume}
-          onTouchStart={pauseThenResume}
-          onMouseEnter={stopAutoplay}
-          onMouseLeave={startAutoplay}
-          className="flex gap-3 px-[18px] overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth"
-        >
+        <div className="grid grid-cols-2 gap-3 px-[18px]">
           {items.map((item) => (
             <SpotlightCard key={item.product.id} item={item} />
           ))}

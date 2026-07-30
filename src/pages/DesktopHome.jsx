@@ -94,10 +94,10 @@ export default function DesktopHome() {
   return (
     <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pb-20 animate-fade-up">
       {/* Category chips */}
-      <div className="flex gap-2.5 py-5 pb-6 overflow-x-auto no-scrollbar">
+      <div className="flex flex-wrap gap-2.5 py-5 pb-6">
         {categoriesLoading
           ? Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="animate-pulse h-[38px] w-[130px] shrink-0 rounded-full bg-surface-muted" />
+              <div key={i} className="animate-pulse h-[38px] w-[130px] rounded-full bg-surface-muted" />
             ))
           : categories.map((cat) => {
               const isActive = view.type === 'category' && view.key === cat.key;
@@ -107,7 +107,7 @@ export default function DesktopHome() {
                   type="button"
                   onClick={() => toggleCategory(cat.key)}
                   aria-pressed={isActive}
-                  className={`shrink-0 flex items-center gap-2 whitespace-nowrap px-[18px] py-2.5 rounded-full border text-[13.5px] font-medium cursor-pointer transition-colors ${
+                  className={`flex items-center gap-2 whitespace-nowrap px-[18px] py-2.5 rounded-full border text-[13.5px] font-medium cursor-pointer transition-colors ${
                     isActive
                       ? 'border-green text-green bg-green-tint'
                       : 'border-border bg-white text-ink-soft hover:border-green hover:text-green hover:bg-green-tint'

@@ -4,4 +4,9 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <external-cache-path name="twa_external_cache" path="." />
     <cache-path name="twa_cache" path="." />
+    <!-- Required by androidbrowserhelper's splash-screen transfer (SplashImageTransferTask),
+         which writes the launch splash image to getFilesDir()/twa_splash/ before handing it
+         to Chrome via this FileProvider. Without this entry, FileProvider.getUriForFile()
+         throws IllegalArgumentException and crashes the app on every cold launch. -->
+    <files-path name="twa_splash" path="twa_splash/" />
 </paths>

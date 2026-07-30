@@ -11,7 +11,7 @@ export default function SpotlightCard({ item }) {
   const sold = product.sold || 0;
 
   return (
-    <div className="w-[210px] sm:w-[240px] shrink-0 snap-start bg-white border border-border rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(20,40,32,0.12)]">
+    <div className="w-full bg-white border border-border rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(20,40,32,0.12)]">
       <div className="relative h-[150px] sm:h-[168px] overflow-hidden bg-surface-muted">
         <img src={product.img} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
         <span
