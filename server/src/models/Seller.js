@@ -11,6 +11,9 @@ const sellerSchema = new mongoose.Schema(
     followerCount: { type: Number, default: 0 },
     responseRate: { type: Number, default: 90 },
     responseTime: { type: String, default: 'Within a day' },
+    description: { type: String, default: '' },
+    bannerUrl: { type: String, default: null },
+    hours: { type: String, default: null },
   },
   { timestamps: true, toJSON: { virtuals: true } }
 );

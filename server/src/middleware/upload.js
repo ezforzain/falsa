@@ -4,7 +4,7 @@ import multer from 'multer';
 import { nanoid } from 'nanoid';
 
 const UPLOAD_ROOT = path.resolve('uploads');
-const ALLOWED_TYPES = new Set(['cnic', 'business-docs', 'products']);
+const ALLOWED_TYPES = new Set(['cnic', 'business-docs', 'products', 'store-banners']);
 const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
 
 const storage = multer.diskStorage({

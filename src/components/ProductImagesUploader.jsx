@@ -12,7 +12,7 @@ const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.hei
 // client-side before upload (see lib/heic.js) — the server converts again as a safety net. Every
 // entry in `images` is always a real, already-uploaded URL; nothing is added until its upload
 // has actually succeeded.
-export default function ProductImagesUploader({ images, onChange, max = 6 }) {
+export default function ProductImagesUploader({ images, onChange, max = 6, type = 'products' }) {
   const inputRef = useRef(null);
   const replaceInputRef = useRef(null);
   const replaceIndexRef = useRef(null);
@@ -28,7 +28,7 @@ export default function ProductImagesUploader({ images, onChange, max = 6 }) {
     });
     const validationError = validateProductImageFile(displayable);
     if (validationError) throw new Error(validationError);
-    const { url } = await uploadFile('products', displayable);
+    const { url } = await uploadFile(type, displayable);
     return url;
   };
 

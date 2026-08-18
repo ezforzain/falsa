@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { Seller } from '../models/Seller.js';
 import { User } from '../models/User.js';
 import { Product } from '../models/Product.js';
+import { PromotionRequest } from '../models/PromotionRequest.js';
+import { Payout } from '../models/Payout.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { serializeUser, serializeUsers } from '../utils/serializeUser.js';
@@ -182,6 +184,166 @@ router.patch(
     });
     await user.save();
     res.json({ seller: await serializeUser(user) });
+  })
+);
+
+// ---------- Users ----------
+
+router.get(
+  '/users',
+  asyncHandler(async (req, res) => {
+    const { role, q } = req.query;
+    const filter = {};
+    if (role && ['buyer', 'seller', 'admin'].includes(role)) filter.role = role;
+    if (q && q.trim()) {
+      const re = new RegExp(q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [{ companyName: re }, { email: re }, { phone: re }];
+    }
+    const users = await User.find(filter).sort({ createdAt: -1 });
+    res.json({ users: await serializeUsers(users) });
+  })
+);
+
+router.patch(
+  '/users/:id',
+  asyncHandler(async (req, res) => {
+    const { companyName, email, phone, country } = req.body;
+    if (!companyName || !email) {
+      return res.status(400).json({ message: 'Company name and email are required.' });
+    }
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const emailTaken = await User.findOne({ _id: { $ne: user._id }, email: normalizedEmail });
+    if (emailTaken) return res.status(409).json({ message: 'Another account already uses this email.' });
+    if (phone) {
+      const phoneTaken = await User.findOne({ _id: { $ne: user._id }, phone });
+      if (phoneTaken) return res.status(409).json({ message: 'Another account already uses this phone number.' });
+    }
+
+    user.set({ companyName, email: normalizedEmail, phone, country });
+    await user.save();
+    res.json({ user: await serializeUser(user) });
+  })
+);
+
+router.patch(
+  '/users/:id/status',
+  asyncHandler(async (req, res) => {
+    const { status } = req.body;
+    if (!['active', 'suspended'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status.' });
+    }
+    if (req.params.id === req.user._id.toString()) {
+      return res.status(400).json({ message: "You can't suspend your own account." });
+    }
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    user.status = status;
+    await user.save();
+    res.json({ user: await serializeUser(user) });
+  })
+);
+
+router.delete(
+  '/users/:id',
+  asyncHandler(async (req, res) => {
+    if (req.params.id === req.user._id.toString()) {
+      return res.status(400).json({ message: "You can't delete your own account." });
+    }
+    const deleted = await User.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'User not found.' });
+    res.json({ ok: true });
+  })
+);
+
+function serializePayout(doc) {
+  const p = doc.toObject();
+  return { ...p, id: p._id };
+}
+
+router.get(
+  '/users/:id/payouts',
+  asyncHandler(async (req, res) => {
+    const payouts = await Payout.find({ sellerId: req.params.id }).sort({ paidAt: -1 });
+    res.json({ payouts: payouts.map(serializePayout) });
+  })
+);
+
+router.post(
+  '/users/:id/payouts',
+  asyncHandler(async (req, res) => {
+    const { amount, method, reference, note } = req.body;
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ message: 'Amount must be a positive number.' });
+    }
+    const seller = await User.findOne({ _id: req.params.id, role: 'seller' });
+    if (!seller) return res.status(404).json({ message: 'Seller not found.' });
+    const payout = await Payout.create({
+      sellerId: seller._id,
+      amount,
+      method: ['bank_transfer', 'cash', 'other'].includes(method) ? method : 'bank_transfer',
+      reference: reference || '',
+      note: note || '',
+      recordedBy: req.user._id,
+    });
+    res.status(201).json({ payout: serializePayout(payout) });
+  })
+);
+
+// ---------- Promotion requests ----------
+
+const PROMO_STATUS_ORDER = { pending: 0, approved: 1, rejected: 2 };
+
+function serializePromotion(doc) {
+  const p = doc.toObject();
+  const sellerDoc = p.sellerId;
+  return {
+    ...p,
+    id: p._id,
+    sellerId: sellerDoc?._id ?? p.sellerId,
+    sellerName: sellerDoc?.companyName ?? null,
+  };
+}
+
+router.get(
+  '/promotions',
+  asyncHandler(async (req, res) => {
+    const { status } = req.query;
+    const filter = status && ['pending', 'approved', 'rejected'].includes(status) ? { status } : {};
+    const requests = await PromotionRequest.find(filter).populate('sellerId', 'companyName').sort({ createdAt: -1 });
+    const serialized = requests.map(serializePromotion);
+    serialized.sort((a, b) => (PROMO_STATUS_ORDER[a.status] ?? 3) - (PROMO_STATUS_ORDER[b.status] ?? 3));
+    res.json({ requests: serialized });
+  })
+);
+
+router.patch(
+  '/promotions/:id',
+  asyncHandler(async (req, res) => {
+    const { status, rejectionReason } = req.body;
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status.' });
+    }
+    const request = await PromotionRequest.findById(req.params.id);
+    if (!request) return res.status(404).json({ message: 'Promotion request not found.' });
+
+    request.status = status;
+    request.rejectionReason = status === 'rejected' ? rejectionReason || null : null;
+    request.reviewedBy = req.user._id;
+    request.reviewedAt = new Date();
+    await request.save();
+
+    if (status === 'approved') {
+      await Product.findByIdAndUpdate(request.productId, {
+        spotlight: true,
+        spotlightType: request.spotlightType,
+      });
+    }
+
+    await request.populate('sellerId', 'companyName');
+    res.json({ request: serializePromotion(request) });
   })
 );
 

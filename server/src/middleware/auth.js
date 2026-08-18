@@ -19,6 +19,9 @@ export const attachUser = asyncHandler(async (req, _res, next) => {
 
 export const requireAuth = (req, res, next) => {
   if (!req.user) return res.status(401).json({ message: 'Not signed in.' });
+  if (req.user.status === 'suspended') {
+    return res.status(403).json({ message: 'Your account has been suspended. Contact support for help.' });
+  }
   next();
 };
 

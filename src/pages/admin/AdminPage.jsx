@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { sellers, admin, kyc } from '../../lib/api';
+import { sellers, admin, adminUsers, kyc } from '../../lib/api';
 import VerifiedBadge from '../../components/VerifiedBadge';
 import OfficialBadge from '../../components/OfficialBadge';
 import AdminProductFormModal from '../../components/AdminProductFormModal';
+import AdminUserFormModal from '../../components/AdminUserFormModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import Toast from '../../components/Toast';
 import {
@@ -18,6 +19,7 @@ import {
   IconShield,
   IconSparkle,
   IconTrash,
+  IconUser,
 } from '../../components/icons';
 import logoMark from '../../assets/logo-mark.png';
 
@@ -57,6 +59,32 @@ export default function AdminPage() {
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
 
+  const [usersList, setUsersList] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState(null);
+  const [userSearch, setUserSearch] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState('');
+  const [editingUser, setEditingUser] = useState(null);
+  const [userFormOpen, setUserFormOpen] = useState(false);
+  const [userFormLoading, setUserFormLoading] = useState(false);
+  const [userFormError, setUserFormError] = useState(null);
+  const [userStatusPendingId, setUserStatusPendingId] = useState(null);
+  const [deleteUserTarget, setDeleteUserTarget] = useState(null);
+  const [deleteUserLoading, setDeleteUserLoading] = useState(false);
+  const [expandedUserId, setExpandedUserId] = useState(null);
+  const [userPayouts, setUserPayouts] = useState([]);
+  const [userPayoutsLoading, setUserPayoutsLoading] = useState(false);
+  const [payoutForm, setPayoutForm] = useState({ amount: '', method: 'bank_transfer', reference: '', note: '' });
+  const [payoutSubmitting, setPayoutSubmitting] = useState(false);
+  const [payoutError, setPayoutError] = useState(null);
+
+  const [promotionRequests, setPromotionRequests] = useState([]);
+  const [promotionsLoading, setPromotionsLoading] = useState(true);
+  const [promotionsError, setPromotionsError] = useState(null);
+  const [reviewingPromoId, setReviewingPromoId] = useState(null);
+  const [rejectingPromoId, setRejectingPromoId] = useState(null);
+  const [promoRejectReason, setPromoRejectReason] = useState('');
+
   const showToast = (message) => {
     setToastMessage(message);
     setToastVisible(true);
@@ -92,14 +120,41 @@ export default function AdminPage() {
       .finally(() => setProductsLoading(false));
   };
 
+  const loadUsers = () => {
+    setUsersLoading(true);
+    setUsersError(null);
+    adminUsers
+      .list({ role: userRoleFilter || undefined, q: userSearch || undefined })
+      .then((res) => setUsersList(res.users))
+      .catch((err) => setUsersError(err.message))
+      .finally(() => setUsersLoading(false));
+  };
+
+  const loadPromotions = () => {
+    setPromotionsLoading(true);
+    setPromotionsError(null);
+    admin
+      .promotions()
+      .then((res) => setPromotionRequests(res.requests))
+      .catch((err) => setPromotionsError(err.message))
+      .finally(() => setPromotionsLoading(false));
+  };
+
   useEffect(() => {
     if (isAuthenticated && user?.role === 'admin') {
       load();
       loadKyc();
       loadProducts();
+      loadUsers();
+      loadPromotions();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user?.role]);
+
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'admin') loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userRoleFilter]);
 
   const openAddProduct = () => {
     setEditingProduct(null);
@@ -161,6 +216,128 @@ export default function AdminPage() {
       showToast(err.message || 'Could not update Spotlight status');
     } finally {
       setSpotlightUpdatingId(null);
+    }
+  };
+
+  const openEditUser = (userRecord) => {
+    setEditingUser(userRecord);
+    setUserFormError(null);
+    setUserFormOpen(true);
+  };
+
+  const handleSubmitUserForm = async (payload) => {
+    setUserFormLoading(true);
+    setUserFormError(null);
+    try {
+      await adminUsers.update(editingUser.id, payload);
+      showToast('User updated successfully');
+      setUserFormOpen(false);
+      loadUsers();
+    } catch (err) {
+      setUserFormError(err.message);
+    } finally {
+      setUserFormLoading(false);
+    }
+  };
+
+  const handleSetUserStatus = async (userRecord, status) => {
+    setUserStatusPendingId(userRecord.id);
+    try {
+      await adminUsers.setStatus(userRecord.id, status);
+      showToast(status === 'suspended' ? 'Account suspended' : 'Account reactivated');
+      loadUsers();
+    } catch (err) {
+      showToast(err.message || 'Could not update account status');
+    } finally {
+      setUserStatusPendingId(null);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteUserTarget) return;
+    setDeleteUserLoading(true);
+    try {
+      await adminUsers.remove(deleteUserTarget.id);
+      setDeleteUserTarget(null);
+      showToast('User deleted');
+      loadUsers();
+    } catch (err) {
+      showToast(err.message || 'Could not delete user');
+    } finally {
+      setDeleteUserLoading(false);
+    }
+  };
+
+  const toggleUserExpand = async (userRecord) => {
+    if (expandedUserId === userRecord.id) {
+      setExpandedUserId(null);
+      return;
+    }
+    setExpandedUserId(userRecord.id);
+    setPayoutForm({ amount: '', method: 'bank_transfer', reference: '', note: '' });
+    setPayoutError(null);
+    setUserPayoutsLoading(true);
+    try {
+      const { payouts } = await adminUsers.payouts(userRecord.id);
+      setUserPayouts(payouts);
+    } catch (err) {
+      setPayoutError(err.message);
+    } finally {
+      setUserPayoutsLoading(false);
+    }
+  };
+
+  const handleAddPayout = async (userRecord) => {
+    const amount = Number(payoutForm.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setPayoutError('Enter a valid payout amount.');
+      return;
+    }
+    setPayoutSubmitting(true);
+    setPayoutError(null);
+    try {
+      const { payout } = await adminUsers.addPayout(userRecord.id, {
+        amount,
+        method: payoutForm.method,
+        reference: payoutForm.reference.trim(),
+        note: payoutForm.note.trim(),
+      });
+      setUserPayouts((current) => [payout, ...current]);
+      setPayoutForm({ amount: '', method: 'bank_transfer', reference: '', note: '' });
+      showToast('Payout recorded');
+    } catch (err) {
+      setPayoutError(err.message);
+    } finally {
+      setPayoutSubmitting(false);
+    }
+  };
+
+  const handleApprovePromotion = async (req) => {
+    setReviewingPromoId(req.id);
+    try {
+      await admin.reviewPromotion(req.id, { status: 'approved' });
+      showToast(`Boosted "${req.productName}"`);
+      loadPromotions();
+      loadProducts();
+    } catch (err) {
+      showToast(err.message || 'Could not approve promotion request');
+    } finally {
+      setReviewingPromoId(null);
+    }
+  };
+
+  const handleRejectPromotion = async (req) => {
+    setReviewingPromoId(req.id);
+    try {
+      await admin.reviewPromotion(req.id, { status: 'rejected', rejectionReason: promoRejectReason.trim() });
+      showToast('Promotion request rejected');
+      setRejectingPromoId(null);
+      setPromoRejectReason('');
+      loadPromotions();
+    } catch (err) {
+      showToast(err.message || 'Could not reject promotion request');
+    } finally {
+      setReviewingPromoId(null);
     }
   };
 
@@ -303,6 +480,7 @@ export default function AdminPage() {
             { key: 'products', label: 'Products' },
             { key: 'stores', label: 'Verified Stores' },
             { key: 'kyc', label: 'Seller ID Verification' },
+            { key: 'users', label: 'Users' },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -319,6 +497,80 @@ export default function AdminPage() {
 
         {activeTab === 'products' && (
           <>
+            {!promotionsLoading && !promotionsError && promotionRequests.some((r) => r.status === 'pending') && (
+              <div className="bg-white border border-border rounded-2xl overflow-hidden mb-6">
+                <div className="flex items-center gap-2 px-5 py-3.5 border-b border-border bg-orange-tint/40">
+                  <IconSparkle width="14" height="14" className="text-orange shrink-0" />
+                  <h2 className="font-display text-[15px] font-bold text-ink">
+                    Pending promotion requests ({promotionRequests.filter((r) => r.status === 'pending').length})
+                  </h2>
+                </div>
+                {promotionRequests
+                  .filter((r) => r.status === 'pending')
+                  .map((req, i, arr) => (
+                    <div key={req.id} className={`px-5 py-4 flex items-center justify-between gap-4 flex-wrap ${i !== arr.length - 1 ? 'border-b border-border' : ''}`}>
+                      <div className="min-w-0">
+                        <div className="text-[14px] font-semibold text-ink truncate">{req.productName}</div>
+                        <div className="text-xs text-text-muted truncate">
+                          {req.sellerName || 'Unknown seller'} · requesting{' '}
+                          <span className="font-semibold text-ink-soft capitalize">{req.spotlightType}</span>
+                          {req.note && ` · "${req.note}"`}
+                        </div>
+                      </div>
+
+                      {rejectingPromoId === req.id ? (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <input
+                            type="text"
+                            value={promoRejectReason}
+                            onChange={(e) => setPromoRejectReason(e.target.value)}
+                            placeholder="Reason (optional)"
+                            className="px-3 py-2 border border-border rounded-lg text-xs outline-none focus:border-green w-[200px]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setRejectingPromoId(null)}
+                            className="cursor-pointer bg-white border border-border text-ink-soft font-semibold text-xs px-3 py-2 rounded-full hover:bg-surface-muted transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            disabled={reviewingPromoId === req.id}
+                            onClick={() => handleRejectPromotion(req)}
+                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-orange hover:bg-orange-hover text-white font-semibold text-xs px-4 py-2 rounded-full transition-colors"
+                          >
+                            {reviewingPromoId === req.id ? 'Submitting…' : 'Confirm reject'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            disabled={reviewingPromoId === req.id}
+                            onClick={() => {
+                              setRejectingPromoId(req.id);
+                              setPromoRejectReason('');
+                            }}
+                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-white border border-border text-orange-text font-semibold text-xs px-4 py-2 rounded-full hover:bg-orange-tint transition-colors"
+                          >
+                            Reject
+                          </button>
+                          <button
+                            type="button"
+                            disabled={reviewingPromoId === req.id}
+                            onClick={() => handleApprovePromotion(req)}
+                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-xs px-4 py-2 rounded-full transition-colors"
+                          >
+                            {reviewingPromoId === req.id ? 'Submitting…' : 'Approve'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            )}
+
             <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
               <div>
                 <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Products</h1>
@@ -844,6 +1096,206 @@ export default function AdminPage() {
         </div>
           </>
         )}
+
+        {activeTab === 'users' && (
+          <>
+            <div className="mb-6">
+              <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Users</h1>
+              <p className="text-sm text-text mt-1">View, edit, suspend, or delete any buyer, seller, or admin account.</p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                loadUsers();
+              }}
+              className="flex items-center gap-3 flex-wrap mb-5"
+            >
+              <input
+                type="text"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="Search by name, email, or phone…"
+                className="flex-1 min-w-[220px] px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+              />
+              <select
+                value={userRoleFilter}
+                onChange={(e) => setUserRoleFilter(e.target.value)}
+                className="px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+              >
+                <option value="">All roles</option>
+                <option value="buyer">Buyers</option>
+                <option value="seller">Sellers</option>
+                <option value="admin">Admins</option>
+              </select>
+              <button
+                type="submit"
+                className="cursor-pointer bg-green hover:bg-green-hover text-white font-semibold text-sm px-5 py-2.5 rounded-full transition-colors"
+              >
+                Search
+              </button>
+            </form>
+
+            <div className="bg-white border border-border rounded-2xl overflow-hidden">
+              {usersLoading && (
+                <div className="p-6 flex flex-col gap-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="animate-pulse h-12 bg-surface-muted rounded-xl" />
+                  ))}
+                </div>
+              )}
+
+              {!usersLoading && usersError && <div className="p-8 text-center text-sm text-orange-text">{usersError}</div>}
+
+              {!usersLoading &&
+                !usersError &&
+                usersList.map((u, i) => (
+                  <div key={u.id} className={i !== usersList.length - 1 ? 'border-b border-border' : ''}>
+                    <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="w-9 h-9 rounded-lg bg-green-tint flex items-center justify-center shrink-0">
+                          <IconUser width="16" height="16" className="text-green" strokeWidth="2.2" />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-[14.5px] text-ink truncate">{u.companyName}</span>
+                            {u.verified && <VerifiedBadge size={14} />}
+                            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-text-muted bg-surface-muted px-1.5 py-0.5 rounded capitalize">
+                              {u.role}
+                            </span>
+                            <span
+                              className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                                u.status === 'suspended' ? 'bg-orange-tint text-orange-text' : 'bg-green-tint text-green'
+                              }`}
+                            >
+                              {u.status === 'suspended' ? 'Suspended' : 'Active'}
+                            </span>
+                          </div>
+                          <div className="text-xs text-text-muted truncate">
+                            {u.email} · {u.phone}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                        {u.role === 'seller' && (
+                          <button
+                            type="button"
+                            onClick={() => toggleUserExpand(u)}
+                            className="cursor-pointer bg-white border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
+                          >
+                            {expandedUserId === u.id ? 'Close' : 'Payouts'}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => openEditUser(u)}
+                          className="cursor-pointer bg-white border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          disabled={userStatusPendingId === u.id || u.id === user.id}
+                          onClick={() => handleSetUserStatus(u, u.status === 'suspended' ? 'active' : 'suspended')}
+                          className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 font-semibold text-xs px-3.5 py-2 rounded-full transition-colors ${
+                            u.status === 'suspended'
+                              ? 'bg-green hover:bg-green-hover text-white'
+                              : 'bg-white border border-border text-orange-text hover:bg-orange-tint'
+                          }`}
+                        >
+                          {userStatusPendingId === u.id ? 'Saving…' : u.status === 'suspended' ? 'Activate' : 'Suspend'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={u.id === user.id}
+                          onClick={() => setDeleteUserTarget(u)}
+                          className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center bg-white border border-border text-orange-text p-2 rounded-full hover:bg-orange-tint transition-colors"
+                          aria-label="Delete user"
+                        >
+                          <IconTrash width="13" height="13" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {expandedUserId === u.id && (
+                      <div className="px-5 pb-5 bg-surface-muted/60">
+                        <div className="text-[11px] font-semibold text-text-muted mb-2.5 uppercase tracking-wide pt-1">Payout ledger</div>
+
+                        {userPayoutsLoading && <div className="text-sm text-text-muted py-2">Loading…</div>}
+
+                        {!userPayoutsLoading && userPayouts.length > 0 && (
+                          <div className="flex flex-col gap-2 mb-4">
+                            {userPayouts.map((p) => (
+                              <div key={p.id} className="flex items-center justify-between gap-3 bg-white border border-border rounded-lg px-3.5 py-2.5 text-sm">
+                                <div className="min-w-0">
+                                  <span className="font-semibold text-ink">Rs {Number(p.amount).toLocaleString('en-US')}</span>
+                                  <span className="text-xs text-text-muted ml-2 capitalize">{p.method.replace('_', ' ')}</span>
+                                  {p.reference && <span className="text-xs text-text-muted ml-2">Ref: {p.reference}</span>}
+                                </div>
+                                <span className="text-xs text-text-muted shrink-0">{new Date(p.paidAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {!userPayoutsLoading && userPayouts.length === 0 && (
+                          <p className="text-sm text-text-muted mb-4">No payouts recorded yet.</p>
+                        )}
+
+                        {payoutError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-3">{payoutError}</p>}
+
+                        <div className="flex items-end gap-2 flex-wrap">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-text-muted mb-1">Amount (Rs)</label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={payoutForm.amount}
+                              onChange={(e) => setPayoutForm((f) => ({ ...f, amount: e.target.value }))}
+                              className="w-[120px] px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-text-muted mb-1">Method</label>
+                            <select
+                              value={payoutForm.method}
+                              onChange={(e) => setPayoutForm((f) => ({ ...f, method: e.target.value }))}
+                              className="px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                            >
+                              <option value="bank_transfer">Bank transfer</option>
+                              <option value="cash">Cash</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-text-muted mb-1">Reference (optional)</label>
+                            <input
+                              type="text"
+                              value={payoutForm.reference}
+                              onChange={(e) => setPayoutForm((f) => ({ ...f, reference: e.target.value }))}
+                              className="w-[150px] px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            disabled={payoutSubmitting}
+                            onClick={() => handleAddPayout(u)}
+                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-xs px-4 py-2.5 rounded-full transition-colors"
+                          >
+                            {payoutSubmitting ? 'Recording…' : 'Record payout'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+              {!usersLoading && !usersError && usersList.length === 0 && (
+                <div className="p-10 text-center text-sm text-text">No users found.</div>
+              )}
+            </div>
+          </>
+        )}
       </main>
 
       <AdminProductFormModal
@@ -864,6 +1316,25 @@ export default function AdminPage() {
         loading={deleteProductLoading}
         onCancel={() => setDeleteProductTarget(null)}
         onConfirm={handleDeleteProduct}
+      />
+
+      <AdminUserFormModal
+        open={userFormOpen}
+        user={editingUser}
+        loading={userFormLoading}
+        error={userFormError}
+        onClose={() => setUserFormOpen(false)}
+        onSubmit={handleSubmitUserForm}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteUserTarget)}
+        title="Delete this user?"
+        message={`"${deleteUserTarget?.companyName}" will be permanently removed. This can't be undone.`}
+        confirmLabel="Delete"
+        loading={deleteUserLoading}
+        onCancel={() => setDeleteUserTarget(null)}
+        onConfirm={handleDeleteUser}
       />
 
       <Toast message={toastMessage} show={toastVisible} onHide={() => setToastVisible(false)} />

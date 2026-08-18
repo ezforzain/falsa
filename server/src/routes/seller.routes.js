@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { SellerProduct } from '../models/SellerProduct.js';
 import { SellerOrder, ORDER_STATUSES } from '../models/SellerOrder.js';
+import { Seller } from '../models/Seller.js';
+import { PromotionRequest } from '../models/PromotionRequest.js';
+import { Payout } from '../models/Payout.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { syncSellerProductToCatalog, removeSellerProductFromCatalog } from '../utils/publicCatalogSync.js';
@@ -160,6 +163,151 @@ router.patch(
     order.status = status;
     await order.save();
     res.json({ order: serializeOrder(order) });
+  })
+);
+
+// ---------- Store profile ----------
+
+function serializeStore(doc) {
+  const s = doc.toObject();
+  return { ...s, id: s._id };
+}
+
+router.get(
+  '/store',
+  asyncHandler(async (req, res) => {
+    if (!req.user.sellerId) return res.status(404).json({ message: 'No storefront found for this account.' });
+    const store = await Seller.findById(req.user.sellerId);
+    if (!store) return res.status(404).json({ message: 'No storefront found for this account.' });
+    res.json({ store: serializeStore(store) });
+  })
+);
+
+router.patch(
+  '/store',
+  asyncHandler(async (req, res) => {
+    if (!req.user.sellerId) return res.status(404).json({ message: 'No storefront found for this account.' });
+    const { description, bannerUrl, hours } = req.body;
+    const store = await Seller.findByIdAndUpdate(
+      req.user.sellerId,
+      { description: description ?? '', bannerUrl: bannerUrl || null, hours: hours || null },
+      { new: true }
+    );
+    if (!store) return res.status(404).json({ message: 'No storefront found for this account.' });
+    res.json({ store: serializeStore(store) });
+  })
+);
+
+// ---------- Analytics ----------
+
+router.get(
+  '/analytics',
+  asyncHandler(async (req, res) => {
+    const orders = await SellerOrder.find({ sellerId: req.user._id });
+
+    const DAYS = 30;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const byDay = new Map();
+    const dayKeys = [];
+    for (let i = DAYS - 1; i >= 0; i -= 1) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      dayKeys.push(key);
+      byDay.set(key, { date: key, revenue: 0, orders: 0 });
+    }
+    const cutoff = new Date(today);
+    cutoff.setDate(cutoff.getDate() - (DAYS - 1));
+
+    const productTotals = new Map();
+    orders.forEach((o) => {
+      if (o.status === 'Cancelled') return;
+      const revenue = o.qty * o.unitPrice;
+
+      const placed = new Date(o.placedAt);
+      if (placed >= cutoff) {
+        const key = placed.toISOString().slice(0, 10);
+        const bucket = byDay.get(key);
+        if (bucket) {
+          bucket.revenue += revenue;
+          bucket.orders += 1;
+        }
+      }
+
+      const existing = productTotals.get(o.productName) || { name: o.productName, revenue: 0, qty: 0 };
+      existing.revenue += revenue;
+      existing.qty += o.qty;
+      productTotals.set(o.productName, existing);
+    });
+
+    const daily = dayKeys.map((key) => byDay.get(key));
+    const topProducts = Array.from(productTotals.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+
+    res.json({ daily, topProducts });
+  })
+);
+
+// ---------- Promotion requests ----------
+
+function serializePromotionRequest(doc) {
+  const p = doc.toObject();
+  return { ...p, id: p._id };
+}
+
+router.post(
+  '/promotions',
+  asyncHandler(async (req, res) => {
+    const { productId, spotlightType, note } = req.body;
+    if (!productId || !['featured', 'sponsored'].includes(spotlightType)) {
+      return res.status(400).json({ message: 'A product and promotion type are required.' });
+    }
+    const product = await SellerProduct.findOne({ _id: productId, sellerId: req.user._id, status: 'active' });
+    if (!product) return res.status(404).json({ message: 'Listing not found or not active.' });
+
+    const existingPending = await PromotionRequest.findOne({ productId, status: 'pending' });
+    if (existingPending) {
+      return res.status(409).json({ message: 'This listing already has a pending promotion request.' });
+    }
+
+    const request = await PromotionRequest.create({
+      sellerId: req.user._id,
+      productId: product._id,
+      productName: product.name,
+      spotlightType,
+      note: note || '',
+    });
+    res.status(201).json({ request: serializePromotionRequest(request) });
+  })
+);
+
+router.get(
+  '/promotions',
+  asyncHandler(async (req, res) => {
+    const requests = await PromotionRequest.find({ sellerId: req.user._id }).sort({ createdAt: -1 });
+    res.json({ requests: requests.map(serializePromotionRequest) });
+  })
+);
+
+// ---------- Payouts ----------
+
+function serializePayout(doc) {
+  const p = doc.toObject();
+  return { ...p, id: p._id };
+}
+
+router.get(
+  '/payouts',
+  asyncHandler(async (req, res) => {
+    const [payouts, deliveredOrders] = await Promise.all([
+      Payout.find({ sellerId: req.user._id }).sort({ paidAt: -1 }),
+      SellerOrder.find({ sellerId: req.user._id, status: 'Delivered' }),
+    ]);
+    const totalDelivered = deliveredOrders.reduce((sum, o) => sum + o.qty * o.unitPrice, 0);
+    const totalPaid = payouts.reduce((sum, p) => sum + p.amount, 0);
+    res.json({ payouts: payouts.map(serializePayout), pendingBalance: totalDelivered - totalPaid });
   })
 );
 

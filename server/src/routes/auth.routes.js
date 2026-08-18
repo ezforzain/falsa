@@ -39,6 +39,9 @@ router.post(
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ message: 'Invalid email/phone or password.' });
     }
+    if (user.status === 'suspended') {
+      return res.status(403).json({ message: 'Your account has been suspended. Contact support for help.' });
+    }
     const token = signAuthToken(user);
     res.json({ token, user: await serializeUser(user) });
   })

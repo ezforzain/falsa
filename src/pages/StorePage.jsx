@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { sellers } from '../lib/api';
 import ProductCard from '../components/ProductCard';
 import VerifiedBadge from '../components/VerifiedBadge';
-import { IconBox, IconShield, IconStar, IconPin } from '../components/icons';
+import { IconBox, IconShield, IconStar, IconPin, IconClock } from '../components/icons';
 
 export default function StorePage() {
   const { id } = useParams();
@@ -78,40 +78,55 @@ export default function StorePage() {
 
   return (
     <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20 animate-fade-up">
-      <div className="bg-white border border-border rounded-2xl p-6 sm:p-8 mb-8 flex items-center gap-5 flex-wrap">
-        <span className="w-16 h-16 rounded-2xl bg-green-tint flex items-center justify-center shrink-0">
-          <IconBox width="28" height="28" className="text-green" />
-        </span>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="font-display text-2xl sm:text-[28px] font-bold m-0 tracking-tight text-ink truncate">{store.name}</h1>
-            {store.verified && <VerifiedBadge size={20} />}
+      <div className="bg-white border border-border rounded-2xl overflow-hidden mb-8">
+        {store.bannerUrl && (
+          <div className="h-[140px] sm:h-[180px] w-full overflow-hidden">
+            <img src={store.bannerUrl} alt="" className="w-full h-full object-cover" />
           </div>
-          <div
-            className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full mt-2.5 ${
-              store.verified ? 'bg-green-tint text-green' : 'bg-surface-muted text-text-muted'
-            }`}
-          >
-            <IconShield width="13" height="13" strokeWidth="2.2" />
-            {store.verified ? 'Verified Store' : 'Not yet verified'}
-          </div>
+        )}
+        <div className="p-6 sm:p-8 flex items-center gap-5 flex-wrap">
+          <span className="w-16 h-16 rounded-2xl bg-green-tint flex items-center justify-center shrink-0">
+            <IconBox width="28" height="28" className="text-green" />
+          </span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="font-display text-2xl sm:text-[28px] font-bold m-0 tracking-tight text-ink truncate">{store.name}</h1>
+              {store.verified && <VerifiedBadge size={20} />}
+            </div>
+            <div
+              className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full mt-2.5 ${
+                store.verified ? 'bg-green-tint text-green' : 'bg-surface-muted text-text-muted'
+              }`}
+            >
+              <IconShield width="13" height="13" strokeWidth="2.2" />
+              {store.verified ? 'Verified Store' : 'Not yet verified'}
+            </div>
 
-          <div className="flex items-center gap-x-4 gap-y-1.5 text-[13px] text-text-muted mt-3 flex-wrap">
-            {avgRating && (
-              <span className="flex items-center gap-1 font-semibold text-ink-soft">
-                <IconStar width="13" height="13" />
-                {avgRating} rating
-              </span>
-            )}
-            <span className="font-semibold text-ink-soft">{(store.followerCount ?? 0).toLocaleString()} followers</span>
-            {location && (
-              <span className="flex items-center gap-1">
-                <IconPin width="13" height="13" />
-                {location}
-              </span>
-            )}
-            <span>{storeProducts.length} products</span>
-            {typeof store.responseRate === 'number' && <span>{store.responseRate}% response rate</span>}
+            {store.description && <p className="text-sm text-text mt-3 max-w-[640px] leading-relaxed">{store.description}</p>}
+
+            <div className="flex items-center gap-x-4 gap-y-1.5 text-[13px] text-text-muted mt-3 flex-wrap">
+              {avgRating && (
+                <span className="flex items-center gap-1 font-semibold text-ink-soft">
+                  <IconStar width="13" height="13" />
+                  {avgRating} rating
+                </span>
+              )}
+              <span className="font-semibold text-ink-soft">{(store.followerCount ?? 0).toLocaleString()} followers</span>
+              {location && (
+                <span className="flex items-center gap-1">
+                  <IconPin width="13" height="13" />
+                  {location}
+                </span>
+              )}
+              <span>{storeProducts.length} products</span>
+              {typeof store.responseRate === 'number' && <span>{store.responseRate}% response rate</span>}
+              {store.hours && (
+                <span className="flex items-center gap-1">
+                  <IconClock width="13" height="13" />
+                  {store.hours}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

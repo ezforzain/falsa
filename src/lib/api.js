@@ -131,6 +131,12 @@ export const seller = {
   deleteProduct: (id) => request(`/api/seller/products/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
   orders: () => request('/api/seller/orders', { auth: true }),
   updateOrderStatus: (id, status) => request(`/api/seller/orders/${encodeURIComponent(id)}`, { method: 'PATCH', body: { status }, auth: true }),
+  getStoreProfile: () => request('/api/seller/store', { auth: true }),
+  updateStoreProfile: (payload) => request('/api/seller/store', { method: 'PATCH', body: payload, auth: true }),
+  analytics: () => request('/api/seller/analytics', { auth: true }),
+  requestPromotion: (payload) => request('/api/seller/promotions', { method: 'POST', body: payload, auth: true }),
+  promotions: () => request('/api/seller/promotions', { auth: true }),
+  payouts: () => request('/api/seller/payouts', { auth: true }),
 };
 
 // ---------- Sellers directory (Store Profile + Verified Store badge) ----------
@@ -152,6 +158,25 @@ export const admin = {
   createProduct: (payload) => request('/api/admin/products', { method: 'POST', body: payload, auth: true }),
   updateProduct: (id, payload) => request(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload, auth: true }),
   deleteProduct: (id) => request(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
+  promotions: (status) => request(`/api/admin/promotions${status ? `?status=${encodeURIComponent(status)}` : ''}`, { auth: true }),
+  reviewPromotion: (id, payload) => request(`/api/admin/promotions/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload, auth: true }),
+};
+
+// ---------- Admin: user management ----------
+
+export const adminUsers = {
+  list: ({ role, q } = {}) => {
+    const params = new URLSearchParams();
+    if (role) params.set('role', role);
+    if (q) params.set('q', q);
+    const qs = params.toString();
+    return request(`/api/admin/users${qs ? `?${qs}` : ''}`, { auth: true });
+  },
+  update: (id, payload) => request(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload, auth: true }),
+  setStatus: (id, status) => request(`/api/admin/users/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: { status }, auth: true }),
+  remove: (id) => request(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
+  payouts: (id) => request(`/api/admin/users/${encodeURIComponent(id)}/payouts`, { auth: true }),
+  addPayout: (id, payload) => request(`/api/admin/users/${encodeURIComponent(id)}/payouts`, { method: 'POST', body: payload, auth: true }),
 };
 
 // ---------- Seller KYC (CNIC identity verification, admin review) ----------

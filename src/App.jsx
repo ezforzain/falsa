@@ -26,6 +26,10 @@ import SellerProducts from './pages/seller/SellerProducts';
 import SellerProductDetail from './pages/seller/SellerProductDetail';
 import SellerOrders from './pages/seller/SellerOrders';
 import SellerSettings from './pages/seller/SellerSettings';
+import SellerStoreProfile from './pages/seller/SellerStoreProfile';
+import SellerAnalytics from './pages/seller/SellerAnalytics';
+import SellerPromotions from './pages/seller/SellerPromotions';
+import SellerPayouts from './pages/seller/SellerPayouts';
 import AdminPage from './pages/admin/AdminPage';
 
 export default function App() {
@@ -60,6 +64,10 @@ export default function App() {
           <Route path="products" element={<SellerProducts />} />
           <Route path="products/:id" element={<SellerProductDetail />} />
           <Route path="orders" element={<SellerOrders />} />
+          <Route path="store-profile" element={<SellerStoreProfile />} />
+          <Route path="analytics" element={<SellerAnalytics />} />
+          <Route path="promotions" element={<SellerPromotions />} />
+          <Route path="payouts" element={<SellerPayouts />} />
           <Route path="settings" element={<SellerSettings />} />
         </Route>
         <Route path="/admin" element={<AdminPage />} />

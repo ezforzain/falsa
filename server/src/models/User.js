@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 const userSchema = new mongoose.Schema(
   {
     role: { type: String, enum: ['buyer', 'seller', 'admin'], required: true },
+    status: { type: String, enum: ['active', 'suspended'], default: 'active' },
     companyName: { type: String, required: true },
     country: { type: String, default: null },
     phone: { type: String, required: true, unique: true },

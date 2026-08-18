@@ -2,13 +2,28 @@ import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react
 import { useAuth } from '../../context/AuthContext';
 import VerifiedBadge from '../../components/VerifiedBadge';
 import OfficialBadge from '../../components/OfficialBadge';
-import { IconAlertCircle, IconBox, IconGrid, IconLogout, IconReceipt, IconSettings } from '../../components/icons';
+import {
+  IconAlertCircle,
+  IconBox,
+  IconGrid,
+  IconLogout,
+  IconReceipt,
+  IconSettings,
+  IconSparkle,
+  IconStore,
+  IconTrendingUp,
+  IconWallet,
+} from '../../components/icons';
 import logoMark from '../../assets/logo-mark.png';
 
 const TABS = [
   { to: '/seller', label: 'Dashboard', icon: IconGrid, end: true, requiresApproval: true },
   { to: '/seller/products', label: 'Products', icon: IconBox, end: false, requiresApproval: true },
   { to: '/seller/orders', label: 'Orders', icon: IconReceipt, end: false, requiresApproval: true },
+  { to: '/seller/store-profile', label: 'Store Profile', icon: IconStore, end: false, requiresApproval: true },
+  { to: '/seller/analytics', label: 'Analytics', icon: IconTrendingUp, end: false, requiresApproval: true },
+  { to: '/seller/promotions', label: 'Promotions', icon: IconSparkle, end: false, requiresApproval: true },
+  { to: '/seller/payouts', label: 'Payouts', icon: IconWallet, end: false, requiresApproval: true },
   { to: '/seller/settings', label: 'Settings', icon: IconSettings, end: false, requiresApproval: false },
 ];
 
