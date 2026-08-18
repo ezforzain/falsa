@@ -47,47 +47,18 @@ echo; echo "-- Health --"
 req GET /api/health
 check "GET /api/health" 200 "$STATUS"
 
-echo; echo "-- Auth: signin/OTP (buyer/seller/admin) --"
-req POST /api/auth/signin '{"identifier":"buyer@falsafahtot.com","password":"password123"}'
-check "POST /api/auth/signin (buyer)" 200 "$STATUS" "$BODY"
-PENDING=$(jget "$BODY" pendingToken)
-
-req POST /api/auth/otp/verify "{\"pendingToken\":\"$PENDING\",\"code\":\"000000\"}"
-check "POST /api/auth/otp/verify (wrong code -> 400)" 400 "$STATUS" "$BODY"
-
-req POST /api/auth/otp/verify "{\"pendingToken\":\"$PENDING\",\"code\":\"123456\"}"
-check "POST /api/auth/otp/verify (buyer correct code)" 200 "$STATUS" "$BODY"
+echo; echo "-- Auth: signup (buyer / individual seller / corporate seller) --"
+BUYER_EMAIL="buyer.$TS@example.com"
+req POST /api/auth/signup "{\"role\":\"buyer\",\"companyName\":\"Test Buyer $TS\",\"country\":\"Pakistan\",\"phone\":\"+92 300 55$TS\",\"email\":\"$BUYER_EMAIL\",\"password\":\"password123\"}"
+check "POST /api/auth/signup (new buyer -> token issued directly)" 200 "$STATUS" "$BODY"
 BUYER_TOKEN=$(jget "$BODY" token)
 
-req POST /api/auth/signin '{"identifier":"seller@falsafahtot.com","password":"password123"}'
-check "POST /api/auth/signin (seller)" 200 "$STATUS"
-PENDING=$(jget "$BODY" pendingToken)
-req POST /api/auth/otp/verify "{\"pendingToken\":\"$PENDING\",\"code\":\"123456\"}"
-check "POST /api/auth/otp/verify (seller)" 200 "$STATUS" "$BODY"
-SELLER_TOKEN=$(jget "$BODY" token)
-
-req POST /api/auth/signin '{"identifier":"admin@falsafahtot.com","password":"password123"}'
-check "POST /api/auth/signin (admin)" 200 "$STATUS"
-PENDING=$(jget "$BODY" pendingToken)
-req POST /api/auth/otp/verify "{\"pendingToken\":\"$PENDING\",\"code\":\"123456\"}"
-check "POST /api/auth/otp/verify (admin)" 200 "$STATUS" "$BODY"
-ADMIN_TOKEN=$(jget "$BODY" token)
-
-req POST /api/auth/signin '{"identifier":"buyer@falsafahtot.com","password":"wrong-password"}'
-check "POST /api/auth/signin (wrong password -> 401)" 401 "$STATUS"
-
-echo; echo "-- Auth: signup (buyer / individual seller / corporate seller) --"
-req POST /api/auth/signup "{\"role\":\"buyer\",\"companyName\":\"Test Buyer $TS\",\"country\":\"Pakistan\",\"phone\":\"+92 300 55$TS\",\"email\":\"buyer.$TS@example.com\",\"password\":\"password123\"}"
-check "POST /api/auth/signup (new buyer)" 200 "$STATUS" "$BODY"
-PENDING=$(jget "$BODY" pendingToken)
-req POST /api/auth/otp/verify "{\"pendingToken\":\"$PENDING\",\"code\":\"123456\"}"
-check "POST /api/auth/otp/verify (new buyer)" 200 "$STATUS" "$BODY"
-
-req POST /api/auth/signup '{"role":"buyer","companyName":"Dup","country":"Pakistan","phone":"+92 300 0000002","email":"buyer@falsafahtot.com","password":"password123"}'
+req POST /api/auth/signup '{"role":"buyer","companyName":"Dup","country":"Pakistan","phone":"+92 300 0000002","email":"'"$BUYER_EMAIL"'","password":"password123"}'
 check "POST /api/auth/signup (duplicate email -> 409)" 409 "$STATUS"
 
 req POST /api/auth/signup "{\"role\":\"seller\",\"sellerType\":\"individual\",\"companyName\":\"Test Individual Seller $TS\",\"country\":\"Pakistan\",\"phone\":\"+92 300 66$TS\",\"email\":\"seller.ind.$TS@example.com\",\"password\":\"password123\",\"category\":\"Sports Goods\",\"address\":\"Street 1, Sialkot\",\"cnicNumber\":\"$UNIQUE_CNIC\",\"cnicFront\":\"https://example.com/front.jpg\",\"cnicBack\":\"https://example.com/back.jpg\"}"
-check "POST /api/auth/signup (individual seller)" 200 "$STATUS" "$BODY"
+check "POST /api/auth/signup (individual seller -> token issued directly)" 200 "$STATUS" "$BODY"
+SELLER_TOKEN=$(jget "$BODY" token)
 
 req POST /api/auth/signup "{\"role\":\"seller\",\"sellerType\":\"corporate\",\"companyName\":\"Test Corp Seller $TS\",\"country\":\"Pakistan\",\"phone\":\"+92 300 77$TS\",\"email\":\"seller.corp.$TS@example.com\",\"password\":\"password123\",\"category\":\"Textiles & Fabrics\",\"location\":\"Lahore\",\"businessAddress\":\"Industrial Area, Lahore\",\"businessDocument\":\"https://example.com/doc.pdf\",\"legalCompanyName\":\"Test Corp Seller Ltd\",\"registrationNumber\":\"REG-1\",\"ntn\":\"1234567-8\",\"companyEmail\":\"contact@testcorp.example.com\",\"companyPhone\":\"+92 42 1112233\",\"bankName\":\"HBL\",\"accountTitle\":\"Test Corp Seller\",\"accountNumber\":\"0123456789\",\"iban\":\"PK36HABB0001234567890123\"}"
 check "POST /api/auth/signup (corporate seller)" 200 "$STATUS" "$BODY"
@@ -95,12 +66,31 @@ check "POST /api/auth/signup (corporate seller)" 200 "$STATUS" "$BODY"
 req POST /api/auth/signup '{"role":"seller","sellerType":"corporate","companyName":"Missing Fields Co","email":"missing.'"$TS"'@example.com","password":"password123"}'
 check "POST /api/auth/signup (corporate missing fields -> 400)" 400 "$STATUS"
 
-echo; echo "-- Auth: forgot password / reset --"
-req POST /api/auth/forgot-password '{"identifier":"buyer@falsafahtot.com"}'
-check "POST /api/auth/forgot-password" 200 "$STATUS" "$BODY"
-PENDING=$(jget "$BODY" pendingToken)
-req POST /api/auth/otp/verify "{\"pendingToken\":\"$PENDING\",\"code\":\"123456\"}"
-check "POST /api/auth/otp/verify (reset purpose)" 200 "$STATUS" "$BODY"
+req POST /api/auth/signup "{\"role\":\"admin\",\"companyName\":\"Rogue Admin $TS\",\"email\":\"rogue.$TS@example.com\",\"password\":\"password123\",\"phone\":\"+92 300 88$TS\"}"
+check "POST /api/auth/signup (role:admin rejected -> 400)" 400 "$STATUS" "$BODY"
+
+echo; echo "-- Auth: signin --"
+req POST /api/auth/signin "{\"identifier\":\"$BUYER_EMAIL\",\"password\":\"password123\"}"
+check "POST /api/auth/signin (correct password -> token issued directly, no OTP)" 200 "$STATUS" "$BODY"
+
+req POST /api/auth/signin "{\"identifier\":\"$BUYER_EMAIL\",\"password\":\"wrong-password\"}"
+check "POST /api/auth/signin (wrong password -> 401)" 401 "$STATUS"
+
+req POST /api/auth/signin '{"identifier":"no-such-account@example.com","password":"whatever123"}'
+check "POST /api/auth/signin (unregistered email -> 401)" 401 "$STATUS"
+
+echo; echo "-- Auth: forgot password (disabled pending a real email/SMS provider) --"
+req POST /api/auth/forgot-password "{\"identifier\":\"$BUYER_EMAIL\"}"
+check "POST /api/auth/forgot-password (not available -> 503)" 503 "$STATUS" "$BODY"
+
+echo; echo "-- Auth: admin (optional — set ADMIN_EMAIL/ADMIN_PASSWORD for an existing admin account) --"
+if [ -n "${ADMIN_EMAIL:-}" ] && [ -n "${ADMIN_PASSWORD:-}" ]; then
+  req POST /api/auth/signin "{\"identifier\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}"
+  check "POST /api/auth/signin (admin)" 200 "$STATUS" "$BODY"
+  ADMIN_TOKEN=$(jget "$BODY" token)
+else
+  echo "  SKIP  admin sign-in — admin accounts aren't self-signup-able; set ADMIN_EMAIL/ADMIN_PASSWORD to test admin-gated routes"
+fi
 
 echo; echo "-- Auth: session / profile / KYC resubmit / logout --"
 req GET /api/auth/session "" "$BUYER_TOKEN"
@@ -219,22 +209,26 @@ req PATCH "/api/seller/orders/$ORDER_ID" '{"status":"NotAStatus"}' "$SELLER_TOKE
 check "PATCH /api/seller/orders/:id (invalid status -> 404)" 404 "$STATUS"
 
 echo; echo "-- Admin --"
-req PATCH "/api/admin/sellers/$SELLER_DIR_ID/verify" '{"verified":true}' "$ADMIN_TOKEN"
-check "PATCH /api/admin/sellers/:id/verify" 200 "$STATUS" "$BODY"
-req PATCH "/api/admin/sellers/$SELLER_DIR_ID/verify" '{"verified":true}' "$SELLER_TOKEN"
-check "PATCH /api/admin/sellers/:id/verify (as seller -> 403)" 403 "$STATUS"
+if [ -n "${ADMIN_TOKEN:-}" ]; then
+  req PATCH "/api/admin/sellers/$SELLER_DIR_ID/verify" '{"verified":true}' "$ADMIN_TOKEN"
+  check "PATCH /api/admin/sellers/:id/verify" 200 "$STATUS" "$BODY"
+  req PATCH "/api/admin/sellers/$SELLER_DIR_ID/verify" '{"verified":true}' "$SELLER_TOKEN"
+  check "PATCH /api/admin/sellers/:id/verify (as seller -> 403)" 403 "$STATUS"
 
-req GET /api/admin/kyc "" "$ADMIN_TOKEN"
-check "GET /api/admin/kyc" 200 "$STATUS" "$BODY"
-KYC_USER_ID=$(jget "$BODY" "sellers" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const a=JSON.parse(d);console.log(a[0]._id)})")
+  req GET /api/admin/kyc "" "$ADMIN_TOKEN"
+  check "GET /api/admin/kyc" 200 "$STATUS" "$BODY"
+  KYC_USER_ID=$(jget "$BODY" "sellers" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const a=JSON.parse(d);console.log(a[0]._id)})")
 
-req GET "/api/admin/kyc/$KYC_USER_ID" "" "$ADMIN_TOKEN"
-check "GET /api/admin/kyc/:userId" 200 "$STATUS"
+  req GET "/api/admin/kyc/$KYC_USER_ID" "" "$ADMIN_TOKEN"
+  check "GET /api/admin/kyc/:userId" 200 "$STATUS"
 
-req PATCH "/api/admin/kyc/$KYC_USER_ID" '{"status":"rejected","rejectionReason":"Blurry CNIC image."}' "$ADMIN_TOKEN"
-check "PATCH /api/admin/kyc/:userId (reject)" 200 "$STATUS" "$BODY"
-req PATCH "/api/admin/kyc/$KYC_USER_ID" '{"status":"approved"}' "$ADMIN_TOKEN"
-check "PATCH /api/admin/kyc/:userId (approve)" 200 "$STATUS"
+  req PATCH "/api/admin/kyc/$KYC_USER_ID" '{"status":"rejected","rejectionReason":"Blurry CNIC image."}' "$ADMIN_TOKEN"
+  check "PATCH /api/admin/kyc/:userId (reject)" 200 "$STATUS" "$BODY"
+  req PATCH "/api/admin/kyc/$KYC_USER_ID" '{"status":"approved"}' "$ADMIN_TOKEN"
+  check "PATCH /api/admin/kyc/:userId (approve)" 200 "$STATUS"
+else
+  echo "  SKIP  admin-gated checks — no ADMIN_TOKEN (see auth section above)"
+fi
 
 echo; echo "-- Uploads --"
 echo "smoke test file $TS" > /tmp/upload-test.jpg

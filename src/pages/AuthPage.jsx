@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser } from '../components/icons';
@@ -10,25 +10,14 @@ import { createHeicAwareFileHandler } from '../lib/heic';
 const ROLE_BUYER = 'buyer';
 const ROLE_SELLER = 'seller';
 
-// Seeded in src/mocks/db.js — kept here too so the sign-in screen can offer one-click
-// quick-login for either demo account instead of making you retype them each time.
-const DEMO_BUYER = { identifier: 'buyer@falsafahtot.com', password: 'password123' };
-const DEMO_SELLER = { identifier: 'seller@falsafahtot.com', password: 'password123' };
-const DEMO_ADMIN = { identifier: 'admin@falsafahtot.com', password: 'password123' };
-
 export default function AuthPage() {
-  const { signIn, signUp, verifyOtp, forgotPassword, user } = useAuth();
+  const { signIn, signUp, user } = useAuth();
 
-  const [screen, setScreen] = useState('signin'); // signin | signup | otp | forgot | success
+  const [screen, setScreen] = useState('signin'); // signin | signup | forgot | success
   const [signupStep, setSignupStep] = useState(1); // 1: role, 2: details
   const [role, setRole] = useState(ROLE_BUYER);
   const [showPw, setShowPw] = useState(false);
   const [loadingKey, setLoadingKey] = useState(null);
-
-  const [pendingToken, setPendingToken] = useState(null);
-  const [otpPurpose, setOtpPurpose] = useState(null); // 'signin' | 'signup' | 'reset'
-  const [otpContact, setOtpContact] = useState('');
-  const [banner, setBanner] = useState(null); // one-off success message shown on the sign-in screen
 
   const [signinForm, setSigninForm] = useState({ identifier: '', password: '' });
   const [signinError, setSigninError] = useState(null);
@@ -59,9 +48,6 @@ export default function AuthPage() {
     iban: '',
   });
   const [signupError, setSignupError] = useState(null);
-
-  const [forgotIdentifier, setForgotIdentifier] = useState('');
-  const [forgotError, setForgotError] = useState(null);
 
   const isSeller = role === ROLE_SELLER;
 
@@ -94,20 +80,15 @@ export default function AuthPage() {
   };
   const goForgot = () => {
     setScreen('forgot');
-    setForgotError(null);
   };
 
   const handleSignin = async (identifier = signinForm.identifier, password = signinForm.password) => {
     if (loadingKey) return;
     setSigninError(null);
-    setSigninForm({ identifier, password }); // keep the visible fields in sync for quick-login too
     setLoadingKey('signin');
     try {
-      const { pendingToken: token } = await signIn(identifier, password);
-      setPendingToken(token);
-      setOtpPurpose('signin');
-      setOtpContact(identifier);
-      setScreen('otp');
+      await signIn(identifier, password);
+      setScreen('success');
     } catch (err) {
       setSigninError(err.message);
     } finally {
@@ -177,7 +158,7 @@ export default function AuthPage() {
     }
 
     try {
-      const { pendingToken: token } = await signUp({
+      await signUp({
         role,
         companyName: signupForm.companyName,
         country: 'Pakistan',
@@ -202,54 +183,9 @@ export default function AuthPage() {
         accountNumber: isCorporate ? signupForm.accountNumber : undefined,
         iban: isCorporate ? signupForm.iban : undefined,
       });
-      setPendingToken(token);
-      setOtpPurpose('signup');
-      setOtpContact(signupForm.email);
-      setScreen('otp');
+      setScreen('success');
     } catch (err) {
       setSignupError(err.message);
-    } finally {
-      setLoadingKey(null);
-    }
-  };
-
-  const handleForgot = async () => {
-    if (loadingKey) return;
-    setForgotError(null);
-    if (!forgotIdentifier.trim()) {
-      setForgotError('Enter your email or phone number.');
-      return;
-    }
-    setLoadingKey('forgot');
-    try {
-      const { pendingToken: token } = await forgotPassword(forgotIdentifier);
-      setPendingToken(token);
-      setOtpPurpose('reset');
-      setOtpContact(forgotIdentifier);
-      setScreen('otp');
-    } catch (err) {
-      setForgotError(err.message);
-    } finally {
-      setLoadingKey(null);
-    }
-  };
-
-  const [otpError, setOtpError] = useState(null);
-
-  const handleVerifyOtp = async (code) => {
-    if (loadingKey) return;
-    setOtpError(null);
-    setLoadingKey('otp');
-    try {
-      const result = await verifyOtp(pendingToken, code);
-      if (result.purpose === 'reset') {
-        setBanner('Password reset confirmed — please sign in.');
-        setScreen('signin');
-      } else {
-        setScreen('success');
-      }
-    } catch (err) {
-      setOtpError(err.message);
     } finally {
       setLoadingKey(null);
     }
@@ -280,9 +216,7 @@ export default function AuthPage() {
             setShowPw={setShowPw}
             loading={loadingKey === 'signin'}
             error={signinError}
-            banner={banner}
             onSubmit={handleSignin}
-            onQuickLogin={handleSignin}
             goForgot={goForgot}
             goSignup={goSignup}
           />
@@ -307,26 +241,7 @@ export default function AuthPage() {
           />
         )}
 
-        {screen === 'otp' && (
-          <Otp
-            contact={otpContact}
-            loading={loadingKey === 'otp'}
-            error={otpError}
-            onSubmit={handleVerifyOtp}
-            goSignin={goSignin}
-          />
-        )}
-
-        {screen === 'forgot' && (
-          <Forgot
-            identifier={forgotIdentifier}
-            setIdentifier={setForgotIdentifier}
-            loading={loadingKey === 'forgot'}
-            error={forgotError}
-            onSubmit={handleForgot}
-            goSignin={goSignin}
-          />
-        )}
+        {screen === 'forgot' && <Forgot goSignin={goSignin} />}
 
         {screen === 'success' && <Success isSeller={user?.role === 'seller'} />}
       </div>
@@ -362,7 +277,7 @@ function SubmitButton({ loading, children, ...props }) {
 
 // Facebook-style: placeholder-only fields (no labels), wide tap targets, everything
 // visible above the fold — no "Welcome back" copy, the wordmark above the card is the heading.
-function SignIn({ form, setForm, showPw, setShowPw, loading, error, banner, onSubmit, onQuickLogin, goForgot, goSignup }) {
+function SignIn({ form, setForm, showPw, setShowPw, loading, error, onSubmit, goForgot, goSignup }) {
   const fbInputClass =
     'w-full px-4 py-[14px] border border-border rounded-xl text-base font-sans bg-white text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow placeholder:text-text-muted';
 
@@ -370,7 +285,6 @@ function SignIn({ form, setForm, showPw, setShowPw, loading, error, banner, onSu
 
   return (
     <div className="animate-fade-up flex flex-col gap-3">
-      {banner && <p className="text-sm text-green bg-green-tint rounded-lg px-3.5 py-2.5 mb-1">{banner}</p>}
       <ErrorText>{error}</ErrorText>
 
       <input
@@ -423,41 +337,6 @@ function SignIn({ form, setForm, showPw, setShowPw, loading, error, banner, onSu
       >
         Create new account
       </a>
-
-      <div className="mt-1">
-        <p className="text-center text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] mb-2">
-          Quick access — demo accounts
-        </p>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => onQuickLogin(DEMO_BUYER.identifier, DEMO_BUYER.password)}
-            className="flex-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green-tint hover:bg-green-tint/70 text-green font-semibold text-[13px] py-2.5 rounded-lg transition-colors"
-          >
-            Buyer demo
-          </button>
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => onQuickLogin(DEMO_SELLER.identifier, DEMO_SELLER.password)}
-            className="flex-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-orange-tint hover:bg-orange-tint/70 text-orange-text font-semibold text-[13px] py-2.5 rounded-lg transition-colors"
-          >
-            Seller demo
-          </button>
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => onQuickLogin(DEMO_ADMIN.identifier, DEMO_ADMIN.password)}
-            className="flex-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-surface-muted hover:bg-border text-ink-soft font-semibold text-[13px] py-2.5 rounded-lg transition-colors"
-          >
-            Admin demo
-          </button>
-        </div>
-        <p className="text-center text-[11px] text-text-muted mt-2 leading-relaxed">
-          {DEMO_BUYER.identifier} / {DEMO_SELLER.identifier} / {DEMO_ADMIN.identifier} — password: {DEMO_BUYER.password}
-        </p>
-      </div>
     </div>
   );
 }
@@ -753,112 +632,18 @@ function IconShieldSmall() {
   );
 }
 
-function Otp({ contact, loading, error, onSubmit, goSignin }) {
-  const [digits, setDigits] = useState(['', '', '', '', '', '']);
-  const inputRefs = useRef([]);
-
-  useEffect(() => {
-    inputRefs.current[0]?.focus();
-  }, []);
-
-  const handleChange = (i, raw) => {
-    const clean = raw.replace(/[^0-9]/g, '').slice(-1);
-    setDigits((d) => {
-      const next = [...d];
-      next[i] = clean;
-      return next;
-    });
-    if (clean && i < 5) inputRefs.current[i + 1]?.focus();
-  };
-
-  const handleKeyDown = (i, e) => {
-    if (e.key === 'Backspace' && !digits[i] && i > 0) {
-      inputRefs.current[i - 1]?.focus();
-    }
-    if (e.key === 'Enter') submit();
-  };
-
-  const submit = () => {
-    const code = digits.join('');
-    if (code.length === 6) onSubmit(code);
-  };
-
+function Forgot({ goSignin }) {
   return (
     <div className="text-center animate-fade-up">
       <span className="w-14 h-14 rounded-[18px] bg-green-tint inline-flex items-center justify-center mb-5">
         <IconPhone width="24" height="24" className="text-green" />
       </span>
-      <h1 className="font-display text-2xl font-bold m-0 mb-2.5 tracking-tight">Verify your account</h1>
+      <h1 className="font-display text-2xl font-bold m-0 mb-2.5 tracking-tight">Password reset</h1>
       <p className="text-sm text-text mb-6 leading-relaxed">
-        Enter the demo code <strong className="text-ink">123456</strong> to continue{contact ? (
-          <>
-            {' '}
-            for <strong className="text-ink">{contact}</strong>
-          </>
-        ) : null}
-        .
+        Self-service password reset isn't available yet. Please contact support to reset your password.
       </p>
 
-      <ErrorText>{error}</ErrorText>
-
-      <div className="flex gap-2 justify-center mb-6">
-        {digits.map((d, i) => (
-          <input
-            key={i}
-            ref={(el) => (inputRefs.current[i] = el)}
-            type="text"
-            inputMode="numeric"
-            maxLength={1}
-            value={d}
-            onChange={(e) => handleChange(i, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(i, e)}
-            className="w-[44px] h-[54px] text-center font-display text-xl font-bold border-[1.5px] border-border rounded-xl bg-white text-green outline-none focus:border-green"
-          />
-        ))}
-      </div>
-
-      <SubmitButton onClick={submit} loading={loading}>
-        {loading ? 'Verifying…' : 'Verify & continue'}
-      </SubmitButton>
-      <p className="text-sm text-text mt-5">
-        Didn't get the code?{' '}
-        <a className="cursor-pointer font-bold text-green hover:underline">Resend in 0:42</a>
-      </p>
-      <p className="mt-4">
-        <a onClick={goSignin} className="cursor-pointer text-[13.5px] text-text-muted hover:text-green">
-          ← Back to sign in
-        </a>
-      </p>
-    </div>
-  );
-}
-
-function Forgot({ identifier, setIdentifier, loading, error, onSubmit, goSignin }) {
-  return (
-    <div className="animate-fade-up">
-      <h1 className="font-display text-2xl font-bold m-0 mb-2.5 tracking-tight">Reset your password</h1>
-      <p className="text-[15px] text-text mb-6 leading-relaxed">
-        Enter your email or phone and we'll send you a reset code.
-      </p>
-
-      <ErrorText>{error}</ErrorText>
-
-      <div className="mb-6">
-        <FieldLabel>Email or phone number</FieldLabel>
-        <input
-          type="text"
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
-          placeholder="name@company.com or +92 300 0000000"
-          className={inputClass}
-        />
-      </div>
-
-      <SubmitButton onClick={onSubmit} loading={loading}>
-        {loading ? 'Sending…' : 'Send reset code'}
-      </SubmitButton>
-      <p className="text-center mt-5">
+      <p className="mt-2">
         <a onClick={goSignin} className="cursor-pointer text-[13.5px] text-text-muted hover:text-green">
           ← Back to sign in
         </a>

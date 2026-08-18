@@ -81,8 +81,6 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
 export const auth = {
   signIn: (identifier, password) => request('/api/auth/signin', { method: 'POST', body: { identifier, password } }),
   signUp: (payload) => request('/api/auth/signup', { method: 'POST', body: payload }),
-  verifyOtp: (pendingToken, code) => request('/api/auth/otp/verify', { method: 'POST', body: { pendingToken, code } }),
-  forgotPassword: (identifier) => request('/api/auth/forgot-password', { method: 'POST', body: { identifier } }),
   logout: () => request('/api/auth/logout', { method: 'POST', auth: true }),
   session: () => request('/api/auth/session', { auth: true }),
   updateProfile: (payload) => request('/api/auth/profile', { method: 'PATCH', body: payload, auth: true }),

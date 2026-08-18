@@ -35,19 +35,19 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const signIn = (identifier, password) => auth.signIn(identifier, password);
+  const signIn = async (identifier, password) => {
+    const result = await auth.signIn(identifier, password);
+    tokenStore.set(result.token);
+    setUser(result.user);
+    setStatus('authenticated');
+    return result;
+  };
 
-  const signUp = (payload) => auth.signUp(payload);
-
-  const forgotPassword = (identifier) => auth.forgotPassword(identifier);
-
-  const verifyOtp = async (pendingToken, code) => {
-    const result = await auth.verifyOtp(pendingToken, code);
-    if (result.token) {
-      tokenStore.set(result.token);
-      setUser(result.user);
-      setStatus('authenticated');
-    }
+  const signUp = async (payload) => {
+    const result = await auth.signUp(payload);
+    tokenStore.set(result.token);
+    setUser(result.user);
+    setStatus('authenticated');
     return result;
   };
 
@@ -81,8 +81,6 @@ export function AuthProvider({ children }) {
     isAuthenticated: status === 'authenticated',
     signIn,
     signUp,
-    verifyOtp,
-    forgotPassword,
     updateProfile,
     resubmitKyc,
     logout,

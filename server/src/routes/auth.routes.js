@@ -2,9 +2,8 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { Seller } from '../models/Seller.js';
-import { PendingAuth } from '../models/PendingAuth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { makePendingToken, signAuthToken, DEV_OTP_CODE } from '../utils/token.js';
+import { signAuthToken } from '../utils/token.js';
 import { requireAuth } from '../middleware/auth.js';
 import { serializeUser } from '../utils/serializeUser.js';
 
@@ -40,9 +39,8 @@ router.post(
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ message: 'Invalid email/phone or password.' });
     }
-    const pendingToken = makePendingToken();
-    await PendingAuth.create({ pendingToken, userId: user._id, purpose: 'signin', otp: DEV_OTP_CODE });
-    res.json({ pendingToken });
+    const token = signAuthToken(user);
+    res.json({ token, user: await serializeUser(user) });
   })
 );
 
@@ -80,6 +78,11 @@ router.post(
 
     if (!role || !companyName || !email || !password) {
       return res.status(400).json({ message: 'Missing required fields.' });
+    }
+    // Admin accounts are provisioned directly (not self-service) — without this, anyone could
+    // hit this endpoint with role:"admin" and get a full admin JWT.
+    if (role !== 'buyer' && role !== 'seller') {
+      return res.status(400).json({ message: 'Invalid account type.' });
     }
     if (await findUserByIdentifier(email)) {
       return res.status(409).json({ message: 'An account with this email already exists.' });
@@ -167,53 +170,18 @@ router.post(
       cnicStatus: isSeller ? 'pending' : null,
     });
 
-    const pendingToken = makePendingToken();
-    await PendingAuth.create({ pendingToken, userId: user._id, purpose: 'signup', otp: DEV_OTP_CODE });
-    res.json({ pendingToken });
-  })
-);
-
-// ---------- POST /api/auth/otp/verify ----------
-router.post(
-  '/otp/verify',
-  asyncHandler(async (req, res) => {
-    const { pendingToken, code } = req.body;
-    if (!code || String(code).replace(/\s/g, '').length !== 6) {
-      return res.status(400).json({ message: 'Enter the full 6-digit code.' });
-    }
-    const pending = await PendingAuth.findOne({ pendingToken });
-    if (!pending) {
-      return res.status(400).json({ message: 'This code has expired. Please try again.' });
-    }
-    if (String(code).replace(/\s/g, '') !== pending.otp) {
-      return res.status(400).json({ message: 'Incorrect code. Please try again.' });
-    }
-    await PendingAuth.deleteOne({ _id: pending._id });
-
-    if (pending.purpose === 'reset') {
-      return res.json({ purpose: 'reset', ok: true });
-    }
-    if (!pending.userId) {
-      return res.status(400).json({ message: 'Something went wrong. Please try again.' });
-    }
-    const user = await User.findById(pending.userId);
     const token = signAuthToken(user);
-    res.json({ purpose: pending.purpose, token, user: await serializeUser(user) });
+    res.json({ token, user: await serializeUser(user) });
   })
 );
 
 // ---------- POST /api/auth/forgot-password ----------
-router.post(
-  '/forgot-password',
-  asyncHandler(async (req, res) => {
-    const { identifier } = req.body;
-    const user = await findUserByIdentifier(identifier);
-    // Always succeed, even if no account matches — don't leak account existence.
-    const pendingToken = makePendingToken();
-    await PendingAuth.create({ pendingToken, userId: user?._id || null, purpose: 'reset', otp: DEV_OTP_CODE });
-    res.json({ pendingToken });
-  })
-);
+// Self-service password reset needs a real delivery channel (email/SMS) to verify identity
+// before letting someone set a new password — not wired up yet, so this intentionally stays a
+// clear "not available" response rather than a fake/bypassable verification step.
+router.post('/forgot-password', (_req, res) => {
+  res.status(503).json({ message: "Password reset isn't available yet. Please contact support to reset your password." });
+});
 
 // ---------- POST /api/auth/logout ----------
 // Stateless JWTs aren't server-revocable here; the client is expected to discard the token.

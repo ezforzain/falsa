@@ -10,24 +10,28 @@ against MSW for now — this server is standalone until it's wired in.
 cd server
 npm install
 cp .env.example .env   # adjust if your Mongo URI/JWT secret differ
-npm run seed            # populates categories, products, sellers, and 3 demo accounts
+npm run seed            # populates categories, products, and the sellers directory
 npm run dev              # http://localhost:5000
 ```
 
 Requires a MongoDB instance reachable at `MONGODB_URI` (defaults to
 `mongodb://localhost:27017/falsafahtot`).
 
-### Demo accounts (password: `password123`)
+Seeding only populates catalog data — no user accounts. Buyer/seller accounts are created
+through the app's normal sign-up flow (`POST /api/auth/signup`, restricted to those two roles).
+Admin accounts aren't self-service — provision one with:
 
-- `buyer@falsafahtot.com` — buyer
-- `seller@falsafahtot.com` — seller, KYC pre-approved
-- `admin@falsafahtot.com` — admin
+```bash
+npm run create-admin -- --email you@company.com --password 'Str0ngPass!' --company "Falsafah HQ"
+```
 
 ## Design notes / current limitations
 
-- **OTP is fixed to `123456`** for every signin/signup/forgot-password flow (see
-  `src/utils/token.js`). Swap `DEV_OTP_CODE` for a real emailed code (e.g. via Resend) later —
-  the `PendingAuth` model already has the shape (`otp`, 15-minute TTL) for that.
+- **Sign-in and sign-up are single-step** — password verified (or account created) and a JWT is
+  issued directly, no OTP/verification-code gate.
+- **Forgot-password is disabled** (`POST /api/auth/forgot-password` returns 503) until a real
+  email/SMS provider is wired up to deliver a reset code — there was previously a fixed dev-mode
+  code here, which isn't a real verification step.
 - **Auth is JWT-based and stateless.** `POST /api/auth/logout` just tells the client to discard
   its token; there's no server-side revoke list yet.
 - **Cart and store-follows are guest-scoped**, not tied to login — matches the current frontend,
