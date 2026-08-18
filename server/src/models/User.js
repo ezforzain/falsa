@@ -13,6 +13,14 @@ const userSchema = new mongoose.Schema(
     category: { type: String, default: null },
     address: { type: String, default: null },
 
+    // Email verification — the account is only ever flipped to true by a successful
+    // /api/auth/verify-email call; nothing else sets it.
+    emailVerified: { type: Boolean, default: false },
+    emailVerificationTokenHash: { type: String, default: null },
+    emailVerificationExpires: { type: Date, default: null },
+    // Cooldown for the resend button — see /api/auth/verify-email/resend.
+    emailVerificationSentAt: { type: Date, default: null },
+
     sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller', default: null },
     sellerType: { type: String, enum: ['individual', 'corporate', null], default: null },
 
@@ -56,6 +64,7 @@ userSchema.methods.toPublicJSON = function toPublicJSON() {
   delete obj.cnicFront;
   delete obj.cnicBack;
   delete obj.businessDocument;
+  delete obj.emailVerificationTokenHash;
   delete obj.__v;
   return obj;
 };

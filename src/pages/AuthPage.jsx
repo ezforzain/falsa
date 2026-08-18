@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser } from '../components/icons';
+import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser, IconMail } from '../components/icons';
 import OfficialBadge from '../components/OfficialBadge';
 import CorporateVerificationForm from '../components/CorporateVerificationForm';
 import { fileToDataUrl, validateImageFile } from '../lib/file';
@@ -21,6 +21,8 @@ export default function AuthPage() {
 
   const [signinForm, setSigninForm] = useState({ identifier: '', password: '' });
   const [signinError, setSigninError] = useState(null);
+
+  const [verifyEmailSendFailed, setVerifyEmailSendFailed] = useState(false);
 
   const [signupForm, setSignupForm] = useState({
     companyName: '',
@@ -158,7 +160,7 @@ export default function AuthPage() {
     }
 
     try {
-      await signUp({
+      const result = await signUp({
         role,
         companyName: signupForm.companyName,
         country: 'Pakistan',
@@ -183,6 +185,7 @@ export default function AuthPage() {
         accountNumber: isCorporate ? signupForm.accountNumber : undefined,
         iban: isCorporate ? signupForm.iban : undefined,
       });
+      setVerifyEmailSendFailed(!!result.emailSendFailed);
       setScreen('success');
     } catch (err) {
       setSignupError(err.message);
@@ -243,7 +246,9 @@ export default function AuthPage() {
 
         {screen === 'forgot' && <Forgot goSignin={goSignin} />}
 
-        {screen === 'success' && <Success isSeller={user?.role === 'seller'} />}
+        {screen === 'success' && (
+          <Success isSeller={user?.role === 'seller'} email={user?.email} sendFailed={verifyEmailSendFailed} />
+        )}
       </div>
     </div>
   );
@@ -676,18 +681,69 @@ function Forgot({ goSignin }) {
   );
 }
 
-function Success({ isSeller }) {
+function Success({ isSeller, email, sendFailed }) {
+  const { resendVerificationEmail } = useAuth();
+  const [resendState, setResendState] = useState('idle'); // idle | sending | sent | error
+  const [resendError, setResendError] = useState(null);
+
+  const handleResend = async () => {
+    if (resendState === 'sending') return;
+    setResendState('sending');
+    setResendError(null);
+    try {
+      await resendVerificationEmail();
+      setResendState('sent');
+    } catch (err) {
+      setResendError(err.message);
+      setResendState('error');
+    }
+  };
+
   return (
     <div className="text-center animate-fade-up">
       <span className="w-16 h-16 rounded-full bg-green inline-flex items-center justify-center mb-5 shadow-[0_12px_30px_rgba(14,90,70,0.3)]">
         <IconCheck width="28" height="28" className="text-white" strokeWidth="2.6" />
       </span>
       <h1 className="font-display text-2xl font-bold m-0 mb-2.5 tracking-tight">You're all set!</h1>
-      <p className="text-[15px] text-text mb-6 leading-relaxed">
+      <p className="text-[15px] text-text mb-5 leading-relaxed">
         {isSeller
-          ? "Your seller account is verified. We'll email you once your listings review is complete."
+          ? "Your seller account is created. We'll email you once your listings review is complete."
           : 'You are signed in. Enjoy free shipping on your first order.'}
       </p>
+
+      {/* Email verification status — the account stays unverified until the link in this email is opened. */}
+      <div className="text-left bg-green-tint rounded-2xl p-4 mb-6 flex gap-3">
+        <span className="w-9 h-9 rounded-full bg-white inline-flex items-center justify-center shrink-0">
+          <IconMail width="16" height="16" className="text-green" />
+        </span>
+        <div className="min-w-0">
+          {sendFailed ? (
+            <>
+              <p className="text-[13.5px] font-semibold text-ink m-0">Couldn't send your verification email</p>
+              <p className="text-[12.5px] text-text-muted mt-1 mb-2 leading-snug">We'll retry when you tap resend.</p>
+            </>
+          ) : (
+            <>
+              <p className="text-[13.5px] font-semibold text-ink m-0">Verify your email</p>
+              <p className="text-[12.5px] text-text-muted mt-1 mb-2 leading-snug break-words">
+                We sent a verification link to <span className="font-medium text-ink">{email}</span>. Open it to confirm your account.
+              </p>
+            </>
+          )}
+          {resendState === 'sent' ? (
+            <p className="text-[12.5px] font-semibold text-green m-0">Email sent — check your inbox.</p>
+          ) : (
+            <a
+              onClick={handleResend}
+              className={`text-[12.5px] font-semibold text-green cursor-pointer hover:underline ${resendState === 'sending' ? 'opacity-60 pointer-events-none' : ''}`}
+            >
+              {resendState === 'sending' ? 'Sending…' : 'Resend email'}
+            </a>
+          )}
+          {resendState === 'error' && <p className="text-[12px] text-orange-text mt-1.5 mb-0">{resendError}</p>}
+        </div>
+      </div>
+
       <Link
         to="/"
         className="block text-center cursor-pointer bg-orange hover:bg-orange-hover text-white font-semibold text-[15.5px] py-4 rounded-full no-underline shadow-[0_8px_22px_rgba(201,123,45,0.3)] transition-all hover:-translate-y-0.5"

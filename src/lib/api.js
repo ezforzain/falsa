@@ -86,6 +86,8 @@ export const auth = {
   updateProfile: (payload) => request('/api/auth/profile', { method: 'PATCH', body: payload, auth: true }),
   // Self-service: a rejected seller uploads fresh CNIC images to go back into the review queue.
   resubmitKyc: (payload) => request('/api/auth/kyc/resubmit', { method: 'POST', body: payload, auth: true }),
+  verifyEmail: (token) => request('/api/auth/verify-email', { method: 'POST', body: { token } }),
+  resendVerificationEmail: () => request('/api/auth/verify-email/resend', { method: 'POST', auth: true }),
 };
 
 // ---------- Catalog ----------

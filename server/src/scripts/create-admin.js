@@ -48,6 +48,9 @@ async function main() {
       passwordHash,
       companyName: company || 'Admin',
       country: 'Pakistan',
+      // Provisioned directly by whoever runs this script — nobody's going to click a
+      // verification link for it, so there's nothing to gate on.
+      emailVerified: true,
     });
     console.log(`Created admin account: ${normalizedEmail}`);
   }

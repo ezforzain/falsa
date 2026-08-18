@@ -1,7 +1,53 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProfileDrawer } from '../context/ProfileDrawerContext';
-import { IconUser, IconMenu } from '../components/icons';
+import { IconUser, IconMenu, IconMail } from '../components/icons';
+
+// Sits under the profile card whenever the signed-in account hasn't clicked the link from its
+// verification email yet — see VerifyEmailPage / server's /api/auth/verify-email.
+function EmailVerifyNotice({ email, resend }) {
+  const [state, setState] = useState('idle'); // idle | sending | sent | error
+  const [error, setError] = useState(null);
+
+  const handleResend = async () => {
+    if (state === 'sending') return;
+    setState('sending');
+    setError(null);
+    try {
+      await resend();
+      setState('sent');
+    } catch (err) {
+      setError(err.message);
+      setState('error');
+    }
+  };
+
+  return (
+    <div className="mt-4 bg-orange-tint rounded-2xl p-4 flex gap-3 items-start">
+      <span className="w-9 h-9 rounded-full bg-white inline-flex items-center justify-center shrink-0">
+        <IconMail width="16" height="16" className="text-orange-text" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[13.5px] font-semibold text-ink m-0">Verify your email</p>
+        <p className="text-[12.5px] text-text-muted mt-1 mb-2 leading-snug break-words">
+          We sent a link to <span className="font-medium text-ink">{email}</span>. Open it to verify your account.
+        </p>
+        {state === 'sent' ? (
+          <p className="text-[12.5px] font-semibold text-green m-0">Email sent — check your inbox.</p>
+        ) : (
+          <a
+            onClick={handleResend}
+            className={`text-[12.5px] font-semibold text-orange-text cursor-pointer hover:underline ${state === 'sending' ? 'opacity-60 pointer-events-none' : ''}`}
+          >
+            {state === 'sending' ? 'Sending…' : 'Resend verification email'}
+          </a>
+        )}
+        {state === 'error' && <p className="text-[12px] text-orange-text mt-1.5 mb-0">{error}</p>}
+      </div>
+    </div>
+  );
+}
 
 // "My Profile" — just the profile itself now. Orders, seller tools, settings, support, and
 // sign-out all moved into the Facebook-style account menu — see AccountMenuContent. The
@@ -9,7 +55,7 @@ import { IconUser, IconMenu } from '../components/icons';
 // page (desktop), and this page renders bare on mobile (no Header at all — see MainLayout's
 // bare-route list), so it needs its own trigger too, rather than relying on the bottom nav.
 export default function AccountPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, resendVerificationEmail } = useAuth();
   const { open: openAccountMenu } = useProfileDrawer();
 
   const TopBar = (
@@ -70,6 +116,8 @@ export default function AccountPage() {
             {user.country && <p className="text-[13px] text-text-muted truncate mt-0.5">{user.country}</p>}
           </div>
         </div>
+
+        {!user.emailVerified && <EmailVerifyNotice email={user.email} resend={resendVerificationEmail} />}
       </div>
     </main>
   );

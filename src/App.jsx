@@ -20,6 +20,7 @@ import HelpSupportPage from './pages/HelpSupportPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsPage from './pages/TermsPage';
 import AuthPage from './pages/AuthPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import SellerLayout from './pages/seller/SellerLayout';
 import SellerDashboard from './pages/seller/SellerDashboard';
 import SellerProducts from './pages/seller/SellerProducts';
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/terms" element={<TermsPage />} />
         </Route>
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/seller" element={<SellerLayout />}>
           <Route index element={<SellerDashboard />} />
           <Route path="products" element={<SellerProducts />} />

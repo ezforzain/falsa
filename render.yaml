@@ -20,3 +20,7 @@ services:
         sync: false # paste your MongoDB Atlas connection string here
       - key: CLIENT_ORIGIN
         sync: false # paste your exact Vercel URL here, e.g. https://sa.vercel.app
+      - key: RESEND_API_KEY
+        sync: false # paste your Resend API key here — used to send verification emails
+      - key: EMAIL_FROM
+        sync: false # e.g. Falsafah <no-reply@yourdomain.com>, once you verify a domain in Resend

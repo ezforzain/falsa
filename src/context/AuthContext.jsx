@@ -64,6 +64,14 @@ export function AuthProvider({ children }) {
     return updated;
   };
 
+  const resendVerificationEmail = () => auth.resendVerificationEmail();
+
+  // Called by VerifyEmailPage after a successful /verify-email so the signed-in session (if any)
+  // reflects the new status immediately, without waiting for the next session refresh.
+  const markEmailVerified = () => {
+    setUser((prev) => (prev ? { ...prev, emailVerified: true } : prev));
+  };
+
   const logout = async () => {
     try {
       await auth.logout();
@@ -83,6 +91,8 @@ export function AuthProvider({ children }) {
     signUp,
     updateProfile,
     resubmitKyc,
+    resendVerificationEmail,
+    markEmailVerified,
     logout,
   };
 

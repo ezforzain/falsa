@@ -3,9 +3,10 @@ import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { Seller } from '../models/Seller.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { signAuthToken } from '../utils/token.js';
+import { signAuthToken, createEmailVerificationToken, hashEmailVerificationToken } from '../utils/token.js';
 import { requireAuth } from '../middleware/auth.js';
 import { serializeUser } from '../utils/serializeUser.js';
+import { sendVerificationEmail } from '../utils/mailer.js';
 
 const router = Router();
 
@@ -26,6 +27,21 @@ async function findUserByIdentifier(identifier) {
   const id = String(identifier ?? '').trim().toLowerCase();
   return User.findOne({ $or: [{ email: id }, { phone: String(identifier ?? '').trim() }] });
 }
+
+// Generates a fresh verification token, saves its hash on the user, and emails it to their
+// registered address. Shared by signup and the resend endpoint so the two can never drift.
+async function issueEmailVerification(user) {
+  const { token, tokenHash, expires } = createEmailVerificationToken();
+  user.set({
+    emailVerificationTokenHash: tokenHash,
+    emailVerificationExpires: expires,
+    emailVerificationSentAt: new Date(),
+  });
+  await user.save();
+  await sendVerificationEmail(user, token);
+}
+
+const RESEND_COOLDOWN_MS = 60 * 1000;
 
 // ---------- POST /api/auth/signin ----------
 router.post(
@@ -173,8 +189,66 @@ router.post(
       cnicStatus: isSeller ? 'pending' : null,
     });
 
+    // Best-effort — a broken/unconfigured mail provider shouldn't block account creation itself,
+    // just leave the account unverified until they hit "resend" (see /verify-email/resend).
+    let emailSendFailed = false;
+    try {
+      await issueEmailVerification(user);
+    } catch (err) {
+      console.error('Failed to send verification email on signup:', err.message);
+      emailSendFailed = true;
+    }
+
     const token = signAuthToken(user);
-    res.json({ token, user: await serializeUser(user) });
+    res.json({ token, user: await serializeUser(user), emailSendFailed });
+  })
+);
+
+// ---------- POST /api/auth/verify-email ----------
+// Public — the token itself, freshly emailed to the user's registered address, is the
+// credential here, so this deliberately doesn't require a signed-in session (the link should
+// work from any device/browser the user opens their inbox in).
+router.post(
+  '/verify-email',
+  asyncHandler(async (req, res) => {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ message: 'Verification token is required.' });
+
+    const user = await User.findOne({ emailVerificationTokenHash: hashEmailVerificationToken(token) });
+    if (!user || !user.emailVerificationExpires || user.emailVerificationExpires < new Date()) {
+      return res.status(400).json({ message: 'This verification link is invalid or has expired.' });
+    }
+
+    user.set({
+      emailVerified: true,
+      emailVerificationTokenHash: null,
+      emailVerificationExpires: null,
+    });
+    await user.save();
+    res.json({ user: await serializeUser(user) });
+  })
+);
+
+// ---------- POST /api/auth/verify-email/resend ----------
+router.post(
+  '/verify-email/resend',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    if (req.user.emailVerified) {
+      return res.status(400).json({ message: 'Your email is already verified.' });
+    }
+    const sentAt = req.user.emailVerificationSentAt;
+    if (sentAt && Date.now() - sentAt.getTime() < RESEND_COOLDOWN_MS) {
+      const waitSec = Math.ceil((RESEND_COOLDOWN_MS - (Date.now() - sentAt.getTime())) / 1000);
+      return res.status(429).json({ message: `Please wait ${waitSec}s before requesting another email.` });
+    }
+    try {
+      await issueEmailVerification(req.user);
+    } catch (err) {
+      console.error('Failed to resend verification email:', err.message);
+      return res.status(502).json({ message: "Couldn't send the verification email right now. Please try again shortly." });
+    }
+    res.json({ ok: true });
   })
 );
 
