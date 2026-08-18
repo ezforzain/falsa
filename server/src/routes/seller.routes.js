@@ -71,7 +71,7 @@ router.get(
 router.post(
   '/products',
   asyncHandler(async (req, res) => {
-    const { name, category, price, unit, moq, stock, status, images, description, sku } = req.body;
+    const { name, category, price, unit, moq, stock, status, images, description, sku, b2bEnabled, freeShipping, worldwideFreeShipping } = req.body;
     if (!name || !category || !price || !unit || !moq) {
       return res.status(400).json({ message: 'Please fill in all required fields.' });
     }
@@ -98,6 +98,9 @@ router.post(
       status: status || 'active',
       images: gallery,
       img: gallery[0],
+      b2bEnabled: Boolean(b2bEnabled),
+      freeShipping: freeShipping !== false,
+      worldwideFreeShipping: Boolean(worldwideFreeShipping),
     });
     await syncSellerProductToCatalog(product, req.user);
     res.status(201).json({ product: serializeProduct(product) });

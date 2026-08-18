@@ -4,6 +4,7 @@ import { Seller } from '../models/Seller.js';
 import { Product } from '../models/Product.js';
 import { Category, MobileTab } from '../models/Category.js';
 import { SpotlightEntry } from '../models/SpotlightEntry.js';
+import { parseMoqNumber } from '../utils/moq.js';
 import {
   categories,
   mobileCategories,
@@ -36,7 +37,7 @@ async function seed() {
   const sellerNames = [...new Set(products.map((p) => p.seller))];
   const sellerByName = new Map();
   for (const name of sellerNames) {
-    const meta = SELLER_SEED_META[name] || { verified: false, followerCount: 0, responseRate: 90 };
+    const meta = SELLER_SEED_META[name] || { verified: false, officialStore: false, country: null, followerCount: 0, responseRate: 90 };
     const sellerDoc = await Seller.create({ name, ...meta });
     sellerByName.set(name, sellerDoc);
   }
@@ -54,7 +55,9 @@ async function seed() {
       category: p.category,
       rating: p.rating,
       price: p.price,
+      priceValue: Number(String(p.price).replace(/[^\d.]/g, '')) || null,
       moq: p.moq,
+      moqValue: parseMoqNumber(p.moq),
       unit: p.unit,
       badge: p.badge,
       stock: p.stock,
@@ -70,6 +73,11 @@ async function seed() {
       spotlight: p.spotlight || false,
       spotlightType: p.spotlightType || 'featured',
       freeShipping: p.freeShipping !== false,
+      worldwideFreeShipping: p.worldwideFreeShipping || false,
+      b2bEnabled: p.b2bEnabled || false,
+      sellerCountry: sellerDoc.country || null,
+      sellerVerified: sellerDoc.verified || false,
+      sellerOfficialStore: sellerDoc.officialStore || false,
     });
     productDocs[p.id] = doc;
   }

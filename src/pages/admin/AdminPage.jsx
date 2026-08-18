@@ -388,6 +388,20 @@ export default function AdminPage() {
     }
   };
 
+  // Independent of Verify — see Seller.officialStore. Same pending/error handling shape.
+  const toggleOfficialStore = async (sellerRecord) => {
+    setPendingId(sellerRecord.id);
+    setActionError(null);
+    try {
+      const { seller: updated } = await admin.setSellerOfficialStore(sellerRecord.id, !sellerRecord.officialStore);
+      setList((current) => current.map((s) => (s.id === updated.id ? updated : s)));
+    } catch (err) {
+      setActionError(err.message);
+    } finally {
+      setPendingId(null);
+    }
+  };
+
   const toggleExpand = async (userId) => {
     if (expandedId === userId) {
       setExpandedId(null);
@@ -738,21 +752,36 @@ export default function AdminPage() {
                     </div>
                     <span className={`text-xs font-medium ${s.verified ? 'text-green' : 'text-text-muted'}`}>
                       {s.verified ? 'Verified Store' : 'Not verified'}
+                      {s.officialStore ? ' · Official Store' : ''}
                     </span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  disabled={pendingId === s.id}
-                  onClick={() => toggleVerified(s)}
-                  className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 font-semibold text-xs px-4 py-2 rounded-full transition-colors shrink-0 ${
-                    s.verified
-                      ? 'bg-white border border-border text-text hover:bg-surface-muted'
-                      : 'bg-green hover:bg-green-hover text-white'
-                  }`}
-                >
-                  {pendingId === s.id ? 'Saving…' : s.verified ? 'Remove verification' : 'Verify store'}
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    disabled={pendingId === s.id}
+                    onClick={() => toggleOfficialStore(s)}
+                    className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 font-semibold text-xs px-4 py-2 rounded-full transition-colors ${
+                      s.officialStore
+                        ? 'bg-white border border-border text-text hover:bg-surface-muted'
+                        : 'bg-orange hover:bg-orange-hover text-white'
+                    }`}
+                  >
+                    {pendingId === s.id ? 'Saving…' : s.officialStore ? 'Remove official store' : 'Mark official store'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pendingId === s.id}
+                    onClick={() => toggleVerified(s)}
+                    className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 font-semibold text-xs px-4 py-2 rounded-full transition-colors ${
+                      s.verified
+                        ? 'bg-white border border-border text-text hover:bg-surface-muted'
+                        : 'bg-green hover:bg-green-hover text-white'
+                    }`}
+                  >
+                    {pendingId === s.id ? 'Saving…' : s.verified ? 'Remove verification' : 'Verify store'}
+                  </button>
+                </div>
               </div>
             ))}
 

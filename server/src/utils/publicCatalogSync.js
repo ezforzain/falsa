@@ -1,4 +1,6 @@
 import { Product } from '../models/Product.js';
+import { Seller } from '../models/Seller.js';
+import { parseMoqNumber } from './moq.js';
 
 // The Seller Portal's "Add listing" flow writes to SellerProduct — a private, freely-editable
 // table so a seller can manage their own inventory without touching the read-only public
@@ -27,6 +29,15 @@ export async function syncSellerProductToCatalog(sellerProduct, ownerUser) {
     return;
   }
 
+  // Backfill the catalog Seller directory record's country from the owning account's signup
+  // country the first time a listing syncs — this is the only place a real (non-seed) seller's
+  // country ever reaches the storefront, so every product they publish can denormalize it below.
+  const sellerDoc = await Seller.findById(sellerRef);
+  if (sellerDoc && !sellerDoc.country && ownerUser.country) {
+    sellerDoc.country = ownerUser.country;
+    await sellerDoc.save();
+  }
+
   await Product.findByIdAndUpdate(
     id,
     {
@@ -37,12 +48,20 @@ export async function syncSellerProductToCatalog(sellerProduct, ownerUser) {
       location: ownerUser.address || ownerUser.country || null,
       category: sellerProduct.category,
       price: `Rs ${Number(sellerProduct.price).toLocaleString('en-US')}`,
+      priceValue: Number(sellerProduct.price),
       moq: sellerProduct.moq,
+      moqValue: parseMoqNumber(sellerProduct.moq),
       unit: sellerProduct.unit,
       stock: sellerProduct.stock,
       img: sellerProduct.img,
       images: sellerProduct.images,
       description: sellerProduct.description || '',
+      b2bEnabled: Boolean(sellerProduct.b2bEnabled),
+      freeShipping: sellerProduct.freeShipping !== false,
+      worldwideFreeShipping: Boolean(sellerProduct.worldwideFreeShipping),
+      sellerCountry: sellerDoc?.country || ownerUser.country || null,
+      sellerVerified: sellerDoc?.verified || false,
+      sellerOfficialStore: sellerDoc?.officialStore || false,
     },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );

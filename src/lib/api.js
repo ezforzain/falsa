@@ -111,6 +111,46 @@ export const catalog = {
     request(`/api/spotlight/featured-section${category ? `?category=${encodeURIComponent(category)}` : ''}`),
 };
 
+// ---------- Marketplace tabs (B2B / Spotlight / Worldwide / Free Shipping) ----------
+
+function buildMarketplaceParams({
+  q,
+  category,
+  country,
+  buyerCountry,
+  sellerId,
+  verified,
+  officialStore,
+  freeShipping,
+  priceMin,
+  priceMax,
+  moqMax,
+  limit,
+} = {}) {
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (category) params.set('category', category);
+  if (country) params.set('country', country);
+  if (buyerCountry) params.set('buyerCountry', buyerCountry);
+  if (sellerId) params.set('sellerId', sellerId);
+  if (verified) params.set('verified', '1');
+  if (officialStore) params.set('officialStore', '1');
+  if (freeShipping) params.set('freeShipping', '1');
+  if (priceMin !== undefined && priceMin !== '') params.set('priceMin', priceMin);
+  if (priceMax !== undefined && priceMax !== '') params.set('priceMax', priceMax);
+  if (moqMax !== undefined && moqMax !== '') params.set('moqMax', moqMax);
+  if (limit) params.set('limit', limit);
+  return params;
+}
+
+export const marketplace = {
+  b2b: (opts) => request(`/api/marketplace/b2b?${buildMarketplaceParams(opts)}`),
+  spotlight: (opts) => request(`/api/marketplace/spotlight?${buildMarketplaceParams(opts)}`),
+  worldwide: (opts) => request(`/api/marketplace/worldwide?${buildMarketplaceParams(opts)}`),
+  freeShipping: (opts) => request(`/api/marketplace/free-shipping?${buildMarketplaceParams(opts)}`),
+  countries: () => request('/api/marketplace/countries'),
+};
+
 // ---------- Cart ----------
 
 export const cartApi = {
@@ -156,6 +196,8 @@ export const sellers = {
 export const admin = {
   setSellerVerified: (id, verified) =>
     request(`/api/admin/sellers/${encodeURIComponent(id)}/verify`, { method: 'PATCH', body: { verified }, auth: true }),
+  setSellerOfficialStore: (id, officialStore) =>
+    request(`/api/admin/sellers/${encodeURIComponent(id)}/official-store`, { method: 'PATCH', body: { officialStore }, auth: true }),
   products: () => request('/api/admin/products', { auth: true }),
   createProduct: (payload) => request('/api/admin/products', { method: 'POST', body: payload, auth: true }),
   updateProduct: (id, payload) => request(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload, auth: true }),

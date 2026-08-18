@@ -7,6 +7,7 @@ import { Payout } from '../models/Payout.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { serializeUser, serializeUsers } from '../utils/serializeUser.js';
+import { parseMoqNumber } from '../utils/moq.js';
 
 const router = Router();
 router.use(requireAuth, requireRole('admin'));
@@ -17,6 +18,20 @@ router.patch(
     const { verified } = req.body;
     const sellerRecord = await Seller.findByIdAndUpdate(req.params.id, { verified: Boolean(verified) }, { new: true });
     if (!sellerRecord) return res.status(404).json({ message: 'Store not found.' });
+    // Keep the denormalized copy on every one of this seller's products in sync — the
+    // marketplace tabs filter/rank off Product.sellerVerified directly rather than populating.
+    await Product.updateMany({ sellerId: sellerRecord._id }, { sellerVerified: sellerRecord.verified });
+    res.json({ seller: sellerRecord });
+  })
+);
+
+router.patch(
+  '/sellers/:id/official-store',
+  asyncHandler(async (req, res) => {
+    const { officialStore } = req.body;
+    const sellerRecord = await Seller.findByIdAndUpdate(req.params.id, { officialStore: Boolean(officialStore) }, { new: true });
+    if (!sellerRecord) return res.status(404).json({ message: 'Store not found.' });
+    await Product.updateMany({ sellerId: sellerRecord._id }, { sellerOfficialStore: sellerRecord.officialStore });
     res.json({ seller: sellerRecord });
   })
 );
@@ -48,6 +63,12 @@ function formatPrice(price) {
   return /^rs\b/i.test(trimmed) ? trimmed : `Rs ${trimmed}`;
 }
 
+// Numeric twin of the display price string, for the marketplace tabs' price-range filter.
+function parsePriceValue(price) {
+  const n = Number(String(price).replace(/[^\d.]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
 function serializeAdminProduct(doc) {
   const p = doc.toObject();
   const sellerDoc = p.sellerId;
@@ -71,7 +92,7 @@ router.get(
 router.post(
   '/products',
   asyncHandler(async (req, res) => {
-    const { name, sellerId, category, description, price, unit, moq, stock, badge, images, img } = req.body;
+    const { name, sellerId, category, description, price, unit, moq, stock, badge, images, img, b2bEnabled, freeShipping, worldwideFreeShipping } = req.body;
     if (!name || !sellerId || !category || !price) {
       return res.status(400).json({ message: 'Please fill in all required fields.' });
     }
@@ -93,12 +114,20 @@ router.post(
       category,
       description: description || '',
       price: formatPrice(price),
+      priceValue: parsePriceValue(price),
       moq: moq || '',
+      moqValue: parseMoqNumber(moq),
       unit: unit || '',
       badge: badge || undefined,
       stock: stock === undefined || stock === null || stock === '' ? null : Number(stock),
       img: gallery[0],
       images: gallery,
+      b2bEnabled: Boolean(b2bEnabled),
+      freeShipping: freeShipping !== false,
+      worldwideFreeShipping: Boolean(worldwideFreeShipping),
+      sellerCountry: sellerDoc.country || null,
+      sellerVerified: sellerDoc.verified || false,
+      sellerOfficialStore: sellerDoc.officialStore || false,
     });
     await product.populate('sellerId', 'name verified');
     res.status(201).json({ product: serializeAdminProduct(product) });
@@ -117,11 +146,21 @@ router.patch(
       if (!sellerDoc) return res.status(400).json({ message: 'Selected store was not found.' });
       body.sellerId = sellerDoc._id;
       body.seller = sellerDoc.name;
+      body.sellerCountry = sellerDoc.country || null;
+      body.sellerVerified = sellerDoc.verified || false;
+      body.sellerOfficialStore = sellerDoc.officialStore || false;
     }
-    if (body.price !== undefined) body.price = formatPrice(body.price);
+    if (body.price !== undefined) {
+      body.priceValue = parsePriceValue(body.price);
+      body.price = formatPrice(body.price);
+    }
+    if (body.moq !== undefined) body.moqValue = parseMoqNumber(body.moq);
     if (body.stock !== undefined) {
       body.stock = body.stock === null || body.stock === '' ? null : Number(body.stock);
     }
+    if (body.b2bEnabled !== undefined) body.b2bEnabled = Boolean(body.b2bEnabled);
+    if (body.freeShipping !== undefined) body.freeShipping = body.freeShipping !== false;
+    if (body.worldwideFreeShipping !== undefined) body.worldwideFreeShipping = Boolean(body.worldwideFreeShipping);
     if (Array.isArray(body.images)) {
       body.images = body.images.length > 0 ? body.images : product.images;
       body.img = body.images[0];

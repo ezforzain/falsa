@@ -1,25 +1,76 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { normalizeQuery } from '../data/mockData';
-import { catalog } from '../lib/api';
+import { catalog, marketplace } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { getBuyerCountry } from '../lib/buyerCountry';
 import ProductCard from '../components/ProductCard';
+import MarketplaceTabs, { MARKETPLACE_TABS } from '../components/marketplace/MarketplaceTabs';
+import MarketplaceFilters, { EMPTY_MARKETPLACE_FILTERS } from '../components/marketplace/MarketplaceFilters';
 import { IconSearch } from '../components/icons';
 
+const MARKETPLACE_FETCHERS = {
+  aimode: marketplace.b2b,
+  spotlight: marketplace.spotlight,
+  worldwide: marketplace.worldwide,
+  freeshipping: marketplace.freeShipping,
+};
+
 export default function SearchPage() {
-  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const query = normalizeQuery(searchParams.get('q'));
+  // Persisted in the URL (?tab=) so navigating here from a Home marketplace tab keeps the same
+  // section active, and so a search made while a tab is active still reads as "search within
+  // that section" rather than resetting to plain global search.
+  const activeTab = searchParams.get('tab');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [results, setResults] = useState([]);
+  const [filters, setFilters] = useState(EMPTY_MARKETPLACE_FILTERS);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    catalog
+      .categories()
+      .then(({ categories: fetched }) => setCategories(fetched))
+      .catch(() => {
+        /* category filter option list just stays empty on failure — not fatal */
+      });
+  }, []);
+
+  const setActiveTab = (tab) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (tab) next.set('tab', tab);
+      else next.delete('tab');
+      return next;
+    });
+  };
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    catalog
-      .products({ q: query })
+    const fetcher = activeTab && MARKETPLACE_FETCHERS[activeTab] ? MARKETPLACE_FETCHERS[activeTab] : null;
+    const request = fetcher
+      ? fetcher({
+          q: query,
+          buyerCountry: getBuyerCountry(user),
+          category: filters.category || undefined,
+          country: filters.country || undefined,
+          verified: filters.verified,
+          officialStore: filters.officialStore,
+          freeShipping: filters.freeShipping,
+          priceMin: filters.priceMin,
+          priceMax: filters.priceMax,
+          moqMax: filters.moqMax,
+        })
+      : catalog.products({ q: query });
+
+    request
       .then(({ products }) => {
         if (!cancelled) setResults(products);
       })
@@ -36,16 +87,30 @@ export default function SearchPage() {
     return () => {
       cancelled = true;
     };
-  }, [query]);
+  }, [query, activeTab, filters, user]);
 
   return (
     <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20 animate-fade-up">
+      <div className="mb-5 border-b border-border">
+        <MarketplaceTabs activeTab={activeTab} onChange={setActiveTab} />
+      </div>
+
       <h1 className="font-display text-[28px] font-bold m-0 mb-1.5 tracking-tight">
-        {query ? <>Results for &ldquo;{query}&rdquo;</> : 'All products'}
+        {activeTab
+          ? MARKETPLACE_TABS.find((t) => t.key === activeTab)?.label
+          : query
+            ? <>Results for &ldquo;{query}&rdquo;</>
+            : 'All products'}
       </h1>
-      <p className="text-sm text-text-muted mb-7">
+      <p className={`text-sm text-text-muted ${activeTab ? 'mb-4' : 'mb-7'}`}>
         {loading ? 'Searching…' : `${results.length} product${results.length === 1 ? '' : 's'} found`}
       </p>
+
+      {activeTab && (
+        <div className="mb-7">
+          <MarketplaceFilters categories={categories} value={filters} onChange={setFilters} />
+        </div>
+      )}
 
       {loading && (
         <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>

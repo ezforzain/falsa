@@ -16,6 +16,13 @@ const sellerProductSchema = new mongoose.Schema(
     status: { type: String, default: 'active' },
     images: { type: [String], default: [] },
     img: { type: String, default: null },
+    // Explicit opt-in for the B2B marketplace tab.
+    b2bEnabled: { type: Boolean, default: false },
+    // Defaults true to preserve the storefront's existing always-on "Free shipping" badge look
+    // for sellers who've never touched this control (see Product.freeShipping).
+    freeShipping: { type: Boolean, default: true },
+    // Qualifies freeShipping: false = free shipping within the seller's own country only.
+    worldwideFreeShipping: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

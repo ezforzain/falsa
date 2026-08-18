@@ -1,8 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { catalog } from '../lib/api';
+import { catalog, marketplace } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { getBuyerCountry } from '../lib/buyerCountry';
 import ProductCard from '../components/ProductCard';
+import MarketplaceTabs, { MARKETPLACE_TABS } from '../components/marketplace/MarketplaceTabs';
+import MarketplaceFilters, { EMPTY_MARKETPLACE_FILTERS } from '../components/marketplace/MarketplaceFilters';
 import { IconArrowRight, IconCheck, IconShield, IconTrendingUp, IconTruck } from '../components/icons';
+
+const MARKETPLACE_FETCHERS = {
+  aimode: marketplace.b2b,
+  spotlight: marketplace.spotlight,
+  worldwide: marketplace.worldwide,
+  freeshipping: marketplace.freeShipping,
+};
 
 // Single source of truth for what the "Trending Now" section is showing — replaces two
 // separate state variables (an active-category key + an "all products" boolean) that could
@@ -12,10 +23,52 @@ const ALL_VIEW = { type: 'all' };
 const categoryView = (key) => ({ type: 'category', key });
 
 export default function DesktopHome() {
+  const { user } = useAuth();
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   const [view, setView] = useState(TRENDING_VIEW);
+
+  // null = today's default Trending/category browsing, unchanged. Any other value swaps the
+  // section below for that marketplace tab's real, filtered results.
+  const [activeMarketplaceTab, setActiveMarketplaceTab] = useState(null);
+  const [marketplaceFilters, setMarketplaceFilters] = useState(EMPTY_MARKETPLACE_FILTERS);
+  const [marketplaceProducts, setMarketplaceProducts] = useState([]);
+  const [marketplaceLoading, setMarketplaceLoading] = useState(false);
+  const [marketplaceError, setMarketplaceError] = useState(null);
+
+  useEffect(() => {
+    if (!activeMarketplaceTab) return undefined;
+    let cancelled = false;
+    setMarketplaceLoading(true);
+    setMarketplaceError(null);
+
+    const fetcher = MARKETPLACE_FETCHERS[activeMarketplaceTab];
+    fetcher({
+      buyerCountry: getBuyerCountry(user),
+      category: marketplaceFilters.category || undefined,
+      country: marketplaceFilters.country || undefined,
+      verified: marketplaceFilters.verified,
+      officialStore: marketplaceFilters.officialStore,
+      freeShipping: marketplaceFilters.freeShipping,
+      priceMin: marketplaceFilters.priceMin,
+      priceMax: marketplaceFilters.priceMax,
+      moqMax: marketplaceFilters.moqMax,
+    })
+      .then((data) => {
+        if (!cancelled) setMarketplaceProducts(data.products);
+      })
+      .catch((err) => {
+        if (!cancelled) setMarketplaceError(err.message || 'Could not load results right now.');
+      })
+      .finally(() => {
+        if (!cancelled) setMarketplaceLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeMarketplaceTab, marketplaceFilters, user]);
 
   const [displayedProducts, setDisplayedProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -93,6 +146,13 @@ export default function DesktopHome() {
 
   return (
     <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pb-20 animate-fade-up">
+      {/* Marketplace tabs — B2B / Spotlight / Worldwide / Free Shipping. Selecting one swaps the
+          Trending/category section below for that tab's real results; nothing else on this page
+          changes, and clicking the active tab again returns to today's default view. */}
+      <div className="pt-5 border-b border-border">
+        <MarketplaceTabs activeTab={activeMarketplaceTab} onChange={setActiveMarketplaceTab} />
+      </div>
+
       {/* Category chips */}
       <div className="flex flex-wrap gap-2.5 py-5 pb-6">
         {categoriesLoading
@@ -198,76 +258,131 @@ export default function DesktopHome() {
         </div>
       </div>
 
-      {/* Trending Now / category results */}
+      {/* Trending Now / category results — or, when a marketplace tab is active, that tab's
+          real filtered/ranked results instead. */}
       <section id="trending" className="pt-11 scroll-mt-24">
-        <div className="flex items-baseline justify-between mb-6 flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <h2 className="font-display text-[28px] font-bold m-0 tracking-tight">{sectionTitle}</h2>
-            {isDefaultView && (
-              <span className="flex items-center gap-1 bg-orange-tint text-orange-text text-xs font-semibold px-3 py-1.5 rounded-full">
-                <IconTrendingUp />
-                Live
-              </span>
-            )}
-            {view.type === 'all' && !productsLoading && (
-              <span className="text-xs font-medium text-text-muted">{displayedProducts.length} products</span>
-            )}
-          </div>
-          {isDefaultView ? (
-            <button
-              type="button"
-              onClick={viewAllProducts}
-              className="cursor-pointer text-sm font-semibold text-green flex items-center gap-1.5 group hover:gap-2.5 transition-all"
-            >
-              View all
-              <IconArrowRight width="14" height="14" strokeWidth="2.2" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={resetToTrending}
-              className="cursor-pointer text-sm font-semibold text-green flex items-center gap-1.5 hover:underline"
-            >
-              {selectedCategory ? 'Clear filter' : 'Show trending only'}
-            </button>
-          )}
-        </div>
+        {activeMarketplaceTab ? (
+          <>
+            <div className="flex items-baseline justify-between mb-5 flex-wrap gap-3">
+              <h2 className="font-display text-[28px] font-bold m-0 tracking-tight">
+                {MARKETPLACE_TABS.find((t) => t.key === activeMarketplaceTab)?.label}
+              </h2>
+              {!marketplaceLoading && (
+                <span className="text-xs font-medium text-text-muted">{marketplaceProducts.length} products</span>
+              )}
+            </div>
 
-        {productsLoading && (
-          <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="animate-pulse bg-white border border-border rounded-2xl overflow-hidden">
-                <div className="h-[180px] bg-surface-muted" />
-                <div className="px-[18px] pt-4 pb-[18px] flex flex-col gap-2">
-                  <div className="h-4 bg-surface-muted rounded w-3/4" />
-                  <div className="h-3 bg-surface-muted rounded w-1/2" />
-                  <div className="h-4 bg-surface-muted rounded w-1/3 mt-2" />
-                </div>
+            <div className="mb-6">
+              <MarketplaceFilters categories={categories} value={marketplaceFilters} onChange={setMarketplaceFilters} />
+            </div>
+
+            {marketplaceLoading && (
+              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="animate-pulse bg-white border border-border rounded-2xl overflow-hidden">
+                    <div className="h-[180px] bg-surface-muted" />
+                    <div className="px-[18px] pt-4 pb-[18px] flex flex-col gap-2">
+                      <div className="h-4 bg-surface-muted rounded w-3/4" />
+                      <div className="h-3 bg-surface-muted rounded w-1/2" />
+                      <div className="h-4 bg-surface-muted rounded w-1/3 mt-2" />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {!productsLoading && productsError && (
-          <div className="text-center py-12 px-5 bg-white border border-dashed border-border-strong rounded-2xl">
-            <p className="text-[15px] text-orange-text m-0">{productsError}</p>
-          </div>
-        )}
+            {!marketplaceLoading && marketplaceError && (
+              <div className="text-center py-12 px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+                <p className="text-[15px] text-orange-text m-0">{marketplaceError}</p>
+              </div>
+            )}
 
-        {!productsLoading && !productsError && displayedProducts.length > 0 && (
-          <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
-            {displayedProducts.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        )}
+            {!marketplaceLoading && !marketplaceError && marketplaceProducts.length > 0 && (
+              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+                {marketplaceProducts.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+            )}
 
-        {!productsLoading && !productsError && displayedProducts.length === 0 && (
-          <div className="text-center py-12 px-5 bg-white border border-dashed border-border-strong rounded-2xl">
-            <p className="text-[15px] text-text m-0">
-              No products in {selectedCategory ? selectedCategory.name : 'this view'} yet. Check back soon.
-            </p>
-          </div>
+            {!marketplaceLoading && !marketplaceError && marketplaceProducts.length === 0 && (
+              <div className="text-center py-12 px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+                <p className="text-[15px] text-text m-0">No products match this section yet. Try different filters.</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex items-baseline justify-between mb-6 flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <h2 className="font-display text-[28px] font-bold m-0 tracking-tight">{sectionTitle}</h2>
+                {isDefaultView && (
+                  <span className="flex items-center gap-1 bg-orange-tint text-orange-text text-xs font-semibold px-3 py-1.5 rounded-full">
+                    <IconTrendingUp />
+                    Live
+                  </span>
+                )}
+                {view.type === 'all' && !productsLoading && (
+                  <span className="text-xs font-medium text-text-muted">{displayedProducts.length} products</span>
+                )}
+              </div>
+              {isDefaultView ? (
+                <button
+                  type="button"
+                  onClick={viewAllProducts}
+                  className="cursor-pointer text-sm font-semibold text-green flex items-center gap-1.5 group hover:gap-2.5 transition-all"
+                >
+                  View all
+                  <IconArrowRight width="14" height="14" strokeWidth="2.2" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={resetToTrending}
+                  className="cursor-pointer text-sm font-semibold text-green flex items-center gap-1.5 hover:underline"
+                >
+                  {selectedCategory ? 'Clear filter' : 'Show trending only'}
+                </button>
+              )}
+            </div>
+
+            {productsLoading && (
+              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="animate-pulse bg-white border border-border rounded-2xl overflow-hidden">
+                    <div className="h-[180px] bg-surface-muted" />
+                    <div className="px-[18px] pt-4 pb-[18px] flex flex-col gap-2">
+                      <div className="h-4 bg-surface-muted rounded w-3/4" />
+                      <div className="h-3 bg-surface-muted rounded w-1/2" />
+                      <div className="h-4 bg-surface-muted rounded w-1/3 mt-2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!productsLoading && productsError && (
+              <div className="text-center py-12 px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+                <p className="text-[15px] text-orange-text m-0">{productsError}</p>
+              </div>
+            )}
+
+            {!productsLoading && !productsError && displayedProducts.length > 0 && (
+              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+                {displayedProducts.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+            )}
+
+            {!productsLoading && !productsError && displayedProducts.length === 0 && (
+              <div className="text-center py-12 px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+                <p className="text-[15px] text-text m-0">
+                  No products in {selectedCategory ? selectedCategory.name : 'this view'} yet. Check back soon.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </section>
 

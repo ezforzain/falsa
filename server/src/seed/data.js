@@ -287,14 +287,14 @@ function withDetails(product) {
 
 export const products = [
   { id: 'cotton-twill-fabric', name: 'Cotton Twill Fabric 280 GSM', seller: 'Anwar Textile Mills', location: 'Faisalabad, Pakistan', category: 'Textiles & Fabrics', rating: '4.8', price: 'Rs 670', moq: '500m', unit: 'metre', badge: 'Best seller', stock: 2400, sold: 860, spotlight: true, spotlightType: 'featured', img: unsplash('photo-1523381210434-271e8be1f52b') },
-  { id: 'surgical-instrument-set', name: 'Stainless Surgical Instrument Set', seller: 'Sialkot Surgical Co.', location: 'Sialkot, Pakistan', category: 'Surgical Instruments', rating: '4.9', price: 'Rs 2,480', moq: '100pc', unit: 'set', badge: 'Top rated', stock: 340, sold: 540, spotlight: true, spotlightType: 'featured', img: unsplash('photo-1583911860205-72f8ac8ddcbe') },
+  { id: 'surgical-instrument-set', name: 'Stainless Surgical Instrument Set', seller: 'Sialkot Surgical Co.', location: 'Sialkot, Pakistan', category: 'Surgical Instruments', rating: '4.9', price: 'Rs 2,480', moq: '100pc', unit: 'set', badge: 'Top rated', stock: 340, sold: 540, spotlight: true, spotlightType: 'featured', b2bEnabled: true, worldwideFreeShipping: true, img: unsplash('photo-1583911860205-72f8ac8ddcbe') },
   { id: 'leather-work-gloves', name: 'Full-Grain Leather Work Gloves', seller: 'Karachi Leatherworks', location: 'Karachi, Pakistan', category: 'Leather Goods', rating: '4.7', price: 'Rs 865', moq: '300pr', unit: 'pair', badge: 'Verified', stock: 980, sold: 1200, spotlight: true, spotlightType: 'sponsored', img: unsplash('photo-1473188588951-666fce8e7c68') },
   { id: 'match-grade-footballs', name: 'Match-Grade Footballs', seller: 'Star Sports Mfg.', location: 'Sialkot, Pakistan', category: 'Sports Goods', rating: '4.8', price: 'Rs 1,560', moq: '200pc', unit: 'piece', badge: 'Hot', stock: 18, sold: 210, img: unsplash('photo-1575361204480-aadea25e6e68') },
-  { id: 'corrugated-shipping-boxes', name: 'Corrugated Shipping Boxes', seller: 'PakPack Industries', location: 'Lahore, Pakistan', category: 'Packaging', rating: '4.6', price: 'Rs 340', moq: '1000pc', unit: 'piece', badge: 'Verified', stock: 5200, sold: 670, img: unsplash('photo-1607166452427-7e4477079cb9') },
-  { id: 'hand-tools-hardware-set', name: 'Hand Tools & Hardware Set', seller: 'Gujranwala Metals', location: 'Gujranwala, Pakistan', category: 'Hardware & Tools', rating: '4.7', price: 'Rs 1,120', moq: '150pc', unit: 'set', badge: 'Verified', stock: 610, sold: 305, img: unsplash('photo-1504148455328-c376907d081c') },
-  { id: 'basmati-rice-25kg', name: 'Basmati Rice 25kg Bags', seller: 'Al-Barkat Rice Mills', location: 'Sheikhupura, Pakistan', category: 'Rice & Grains', rating: '4.7', price: 'Rs 3,200', moq: '50bag', unit: 'bag', badge: 'Trending', stock: 240, sold: 430, spotlight: true, spotlightType: 'sponsored', img: unsplash('photo-1586201375761-83865001e31c') },
+  { id: 'corrugated-shipping-boxes', name: 'Corrugated Shipping Boxes', seller: 'PakPack Industries', location: 'Lahore, Pakistan', category: 'Packaging', rating: '4.6', price: 'Rs 340', moq: '1000pc', unit: 'piece', badge: 'Verified', stock: 5200, sold: 670, b2bEnabled: true, img: unsplash('photo-1607166452427-7e4477079cb9') },
+  { id: 'hand-tools-hardware-set', name: 'Hand Tools & Hardware Set', seller: 'Gujranwala Metals', location: 'Gujranwala, Pakistan', category: 'Hardware & Tools', rating: '4.7', price: 'Rs 1,120', moq: '150pc', unit: 'set', badge: 'Verified', stock: 610, sold: 305, b2bEnabled: true, img: unsplash('photo-1504148455328-c376907d081c') },
+  { id: 'basmati-rice-25kg', name: 'Basmati Rice 25kg Bags', seller: 'Al-Barkat Rice Mills', location: 'Sheikhupura, Pakistan', category: 'Rice & Grains', rating: '4.7', price: 'Rs 3,200', moq: '50bag', unit: 'bag', badge: 'Trending', stock: 240, sold: 430, spotlight: true, spotlightType: 'sponsored', b2bEnabled: true, img: unsplash('photo-1586201375761-83865001e31c') },
   { id: 'denim-fabric-rolls', name: 'Denim Fabric Rolls', seller: 'Faisalabad Denim Co.', location: 'Faisalabad, Pakistan', category: 'Textiles & Fabrics', rating: '4.5', price: 'Rs 590', moq: '400m', unit: 'metre', badge: 'Trending', stock: 0, sold: 150, img: unsplash('photo-1565084888279-aca607ecce0c') },
-  { id: 'warehouse-racking-systems', name: 'Warehouse Racking Systems', seller: 'PakPack Industries', location: 'Lahore, Pakistan', category: 'Hardware & Tools', rating: '4.6', price: 'Rs 8,400', moq: '10set', unit: 'set', badge: 'Verified', stock: 42, sold: 95, spotlight: true, spotlightType: 'featured', freeShipping: false, img: unsplash('photo-1553413077-190dd305871c') },
+  { id: 'warehouse-racking-systems', name: 'Warehouse Racking Systems', seller: 'PakPack Industries', location: 'Lahore, Pakistan', category: 'Hardware & Tools', rating: '4.6', price: 'Rs 8,400', moq: '10set', unit: 'set', badge: 'Verified', stock: 42, sold: 95, spotlight: true, spotlightType: 'featured', freeShipping: false, b2bEnabled: true, img: unsplash('photo-1553413077-190dd305871c') },
 ].map(withDetails);
 
 // Color-family variants only make sense for goods that actually come in dyeable colors — showing
@@ -347,14 +347,20 @@ export const spotlightTrend = [
   { growth: '12%', productId: 'match-grade-footballs' },
 ];
 
+// `country` seeds Seller.country (see server/src/models/Seller.js) — every current seed seller
+// is Pakistan-based, matching the real product `location` strings above; there's no foreign
+// inventory to seed honestly yet, so Worldwide legitimately falls back to local results until
+// real sellers from other countries sign up (see marketplace.routes.js).
+// `officialStore` is deliberately NOT just a copy of `verified` on a couple of entries below, so
+// the "Verified Sellers" and "Mall / Official Store" filters are provably independent.
 export const SELLER_SEED_META = {
-  'Anwar Textile Mills': { verified: true, followerCount: 1240, responseRate: 97, responseTime: 'Within 1 hour' },
-  'Karachi Leatherworks': { verified: true, followerCount: 860, responseRate: 95, responseTime: 'Within 2 hours' },
-  'PakPack Industries': { verified: true, followerCount: 640, responseRate: 93, responseTime: 'Within 3 hours' },
-  'Sialkot Surgical Co.': { verified: false, followerCount: 410, responseRate: 89, responseTime: 'Within 6 hours' },
-  'Star Sports Mfg.': { verified: false, followerCount: 520, responseRate: 91, responseTime: 'Within 4 hours' },
-  'Gujranwala Metals': { verified: false, followerCount: 310, responseRate: 88, responseTime: 'Within a day' },
-  'Al-Barkat Rice Mills': { verified: false, followerCount: 275, responseRate: 90, responseTime: 'Within 8 hours' },
-  'Faisalabad Denim Co.': { verified: false, followerCount: 380, responseRate: 87, responseTime: 'Within a day' },
+  'Anwar Textile Mills': { verified: true, officialStore: true, country: 'Pakistan', followerCount: 1240, responseRate: 97, responseTime: 'Within 1 hour' },
+  'Karachi Leatherworks': { verified: true, officialStore: false, country: 'Pakistan', followerCount: 860, responseRate: 95, responseTime: 'Within 2 hours' },
+  'PakPack Industries': { verified: true, officialStore: true, country: 'Pakistan', followerCount: 640, responseRate: 93, responseTime: 'Within 3 hours' },
+  'Sialkot Surgical Co.': { verified: false, officialStore: true, country: 'Pakistan', followerCount: 410, responseRate: 89, responseTime: 'Within 6 hours' },
+  'Star Sports Mfg.': { verified: false, officialStore: false, country: 'Pakistan', followerCount: 520, responseRate: 91, responseTime: 'Within 4 hours' },
+  'Gujranwala Metals': { verified: false, officialStore: false, country: 'Pakistan', followerCount: 310, responseRate: 88, responseTime: 'Within a day' },
+  'Al-Barkat Rice Mills': { verified: false, officialStore: false, country: 'Pakistan', followerCount: 275, responseRate: 90, responseTime: 'Within 8 hours' },
+  'Faisalabad Denim Co.': { verified: false, officialStore: false, country: 'Pakistan', followerCount: 380, responseRate: 87, responseTime: 'Within a day' },
 };
 

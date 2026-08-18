@@ -8,6 +8,7 @@ import { attachUser } from './middleware/auth.js';
 import { getLanAddress } from './utils/network.js';
 import authRoutes from './routes/auth.routes.js';
 import catalogRoutes from './routes/catalog.routes.js';
+import marketplaceRoutes from './routes/marketplace.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import checkoutRoutes from './routes/checkout.routes.js';
 import sellersRoutes from './routes/sellers.routes.js';
@@ -93,6 +94,7 @@ export function createApp() {
 
   app.use('/api/auth', authRoutes);
   app.use('/api', catalogRoutes);
+  app.use('/api/marketplace', marketplaceRoutes);
   app.use('/api/cart', cartRoutes);
   app.use('/api/checkout', checkoutRoutes);
   app.use('/api/sellers', sellersRoutes);

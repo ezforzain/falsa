@@ -5,7 +5,21 @@ import { IconClose } from './icons';
 
 const MAX_IMAGES = 6;
 
-const emptyForm = { name: '', category: '', description: '', sku: '', price: '', unit: '', moq: '', stock: '', status: 'active', images: [] };
+const emptyForm = {
+  name: '',
+  category: '',
+  description: '',
+  sku: '',
+  price: '',
+  unit: '',
+  moq: '',
+  stock: '',
+  status: 'active',
+  images: [],
+  b2bEnabled: false,
+  freeShipping: true,
+  worldwideFreeShipping: false,
+};
 
 export default function ProductFormModal({ open, product, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
@@ -26,6 +40,9 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             stock: String(product.stock),
             status: product.status,
             images: product.images && product.images.length > 0 ? product.images : product.img ? [product.img] : [],
+            b2bEnabled: Boolean(product.b2bEnabled),
+            freeShipping: product.freeShipping !== false,
+            worldwideFreeShipping: Boolean(product.worldwideFreeShipping),
           }
         : emptyForm
     );
@@ -41,6 +58,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
   if (!open) return null;
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const toggle = (key) => () => setForm((f) => ({ ...f, [key]: !f[key], ...(key === 'freeShipping' && f.freeShipping ? { worldwideFreeShipping: false } : {}) }));
   const setImages = (images) => setForm((f) => ({ ...f, images }));
 
   const submit = () => {
@@ -55,6 +73,9 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       stock: Number(form.stock),
       status: form.status,
       images: form.images,
+      b2bEnabled: form.b2bEnabled,
+      freeShipping: form.freeShipping,
+      worldwideFreeShipping: form.freeShipping && form.worldwideFreeShipping,
     });
   };
 
@@ -141,6 +162,28 @@ export default function ProductFormModal({ open, product, loading, error, onClos
           <div>
             <label className={labelClass}>SKU (optional)</label>
             <input type="text" value={form.sku} onChange={set('sku')} placeholder="Auto-generated if left blank" className={fieldClass} />
+          </div>
+
+          <div className="flex flex-col gap-2.5 border border-border rounded-lg p-3.5">
+            <label className="flex items-center gap-2.5 text-[13.5px] font-medium text-ink cursor-pointer">
+              <input type="checkbox" checked={form.b2bEnabled} onChange={toggle('b2bEnabled')} className="w-4 h-4 accent-green cursor-pointer" />
+              List this product on the B2B marketplace
+            </label>
+            <label className="flex items-center gap-2.5 text-[13.5px] font-medium text-ink cursor-pointer">
+              <input type="checkbox" checked={form.freeShipping} onChange={toggle('freeShipping')} className="w-4 h-4 accent-green cursor-pointer" />
+              Free shipping
+            </label>
+            {form.freeShipping && (
+              <label className="flex items-center gap-2.5 text-[13px] text-ink-soft cursor-pointer pl-6">
+                <input
+                  type="checkbox"
+                  checked={form.worldwideFreeShipping}
+                  onChange={toggle('worldwideFreeShipping')}
+                  className="w-4 h-4 accent-green cursor-pointer"
+                />
+                Offer it worldwide, not just within my own country
+              </label>
+            )}
           </div>
 
           <div>

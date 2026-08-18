@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { normalizeQuery, searchHints, mobileTabs as fallbackTabs } from '../data/mockData';
-import { catalog } from '../lib/api';
+import { catalog, marketplace } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { getBuyerCountry } from '../lib/buyerCountry';
 import useRotatingHints from '../hooks/useRotatingHints';
 import useInfiniteFeed from '../hooks/useInfiniteFeed';
 import usePullToRefresh from '../hooks/usePullToRefresh';
 import SearchHintOverlay from '../components/SearchHintOverlay';
 import MobileTopBar from '../components/MobileTopBar';
-import FeaturedSpotlight from '../components/spotlight/FeaturedSpotlight';
+import MarketplaceFilters, { EMPTY_MARKETPLACE_FILTERS } from '../components/marketplace/MarketplaceFilters';
 import MobileProductCard from '../components/product/MobileProductCard';
-import { IconSearch, IconBox, IconSparkle, IconGlobe, IconTruck } from '../components/icons';
+import { IconSearch, IconBox, IconSparkle, IconGlobe, IconTruck, IconSliders } from '../components/icons';
 
 // Icon per tab key — the backend only knows key/label/banner, so the visual mark lives here,
 // keyed the same way as the seeded tabs (see server/src/seed/data.js).
@@ -20,7 +22,17 @@ const TAB_ICONS = {
   freeshipping: IconTruck,
 };
 
+// Each tab now drives a real, distinct query instead of just swapping a banner string — same
+// keys as TAB_ICONS/the seeded MobileTab list.
+const MARKETPLACE_FETCHERS = {
+  aimode: marketplace.b2b,
+  spotlight: marketplace.spotlight,
+  worldwide: marketplace.worldwide,
+  freeshipping: marketplace.freeShipping,
+};
+
 export default function MobileHome() {
+  const { user } = useAuth();
   const [categories, setCategories] = useState([]);
   const [tabs, setTabs] = useState([]);
   const [metaLoading, setMetaLoading] = useState(true);
@@ -31,6 +43,9 @@ export default function MobileHome() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+
+  const [marketplaceFilters, setMarketplaceFilters] = useState(EMPTY_MARKETPLACE_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -66,19 +81,32 @@ export default function MobileHome() {
 
   const activeCatDef = categories.find((c) => c.key === activeCategory);
 
-  // Fetch the product grid from the server whenever the category or (debounced) search changes —
-  // filtering by name/category/seller happens in the mock API, not in this component. Pulled out
-  // to a stable callback (rather than inline in the effect) so pull-to-refresh can re-trigger the
-  // same fetch on demand; a request-id ref discards stale responses the same way the old
-  // effect-local `cancelled` flag did.
+  // Fetch the product grid from the server whenever the tab, its filters, the category, or the
+  // (debounced) search changes. Each tab now hits its own real marketplace endpoint (B2B,
+  // country-aware Spotlight/Worldwide, or Free Shipping eligibility) instead of the tabs only
+  // ever swapping a banner string over the same generic catalog query. Pulled out to a stable
+  // callback (rather than inline in the effect) so pull-to-refresh can re-trigger the same fetch
+  // on demand; a request-id ref discards stale responses the same way the old effect-local
+  // `cancelled` flag did.
   const fetchIdRef = useRef(0);
   const fetchProducts = useCallback(() => {
     const requestId = ++fetchIdRef.current;
     setProductsLoading(true);
     setProductsError(null);
 
-    return catalog
-      .products({ category: activeCatDef?.fullName, q: debouncedQuery })
+    const fetcher = MARKETPLACE_FETCHERS[activeTab] || catalog.products;
+    return fetcher({
+      category: activeCatDef?.fullName,
+      q: debouncedQuery,
+      buyerCountry: getBuyerCountry(user),
+      country: marketplaceFilters.country || undefined,
+      verified: marketplaceFilters.verified,
+      officialStore: marketplaceFilters.officialStore,
+      freeShipping: marketplaceFilters.freeShipping,
+      priceMin: marketplaceFilters.priceMin,
+      priceMax: marketplaceFilters.priceMax,
+      moqMax: marketplaceFilters.moqMax,
+    })
       .then(({ products: fetched }) => {
         if (fetchIdRef.current === requestId) setProducts(fetched);
       })
@@ -88,7 +116,7 @@ export default function MobileHome() {
       .finally(() => {
         if (fetchIdRef.current === requestId) setProductsLoading(false);
       });
-  }, [activeCatDef?.fullName, debouncedQuery]);
+  }, [activeTab, activeCatDef?.fullName, debouncedQuery, marketplaceFilters, user]);
 
   useEffect(() => {
     fetchProducts();
@@ -189,10 +217,28 @@ export default function MobileHome() {
         </div>
       )}
 
+      {/* Marketplace filters — collapsed by default so the compact mobile header doesn't get
+          crowded; every field here actually narrows the fetch above (see fetchProducts). */}
+      <div className="px-[18px] pb-1">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          className="flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-soft cursor-pointer py-1"
+        >
+          <IconSliders width="14" height="14" />
+          Filters
+        </button>
+      </div>
+      {filtersOpen && (
+        <div className="px-[18px] pb-3">
+          <MarketplaceFilters categories={categories} value={marketplaceFilters} onChange={setMarketplaceFilters} />
+        </div>
+      )}
+
       {/* Search bar */}
-      <div className="px-[18px] pt-1.5 pb-3.5">
-        <div className="relative flex items-center gap-2.5 border-[1.5px] border-orange rounded-[14px] py-2.5 pl-3.5 pr-2.5 bg-white">
-          <IconSearch width="19" height="19" className="text-ink-soft shrink-0" strokeWidth="1.8" />
+      <div className="px-[18px] pt-2 pb-4">
+        <div className="relative flex items-center gap-3 rounded-2xl border border-border bg-white pl-4 pr-2 py-2 shadow-[0_1px_3px_rgba(27,31,29,0.05)] transition-all duration-150 focus-within:border-orange/40 focus-within:shadow-[0_0_0_3px_rgba(201,123,45,0.12)]">
+          <IconSearch width="18" height="18" className="text-text-muted shrink-0" strokeWidth="1.8" />
           <span className="flex-1 relative min-w-0">
             <input
               ref={searchInputRef}
@@ -202,7 +248,7 @@ export default function MobileHome() {
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               onKeyDown={(e) => e.key === 'Enter' && runSearch()}
-              className="w-full border-none outline-none bg-transparent text-sm text-ink font-sans relative z-10"
+              className="w-full border-none outline-none bg-transparent text-[14.5px] text-ink font-sans relative z-10 py-1.5"
             />
             <SearchHintOverlay hint={currentHint} visible={!searchFocused && !searchQuery} />
           </span>
@@ -210,15 +256,15 @@ export default function MobileHome() {
             type="button"
             onClick={runSearch}
             aria-label="Search"
-            className="w-[38px] h-[38px] rounded-[10px] bg-orange hover:bg-orange-hover active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer"
+            className="w-10 h-10 rounded-xl bg-orange hover:bg-orange-hover active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer shadow-[0_2px_8px_rgba(201,123,45,0.35)]"
           >
-            <IconSearch width="17" height="17" className="text-white" strokeWidth="2.4" />
+            <IconSearch width="16" height="16" className="text-white" strokeWidth="2.4" />
           </button>
         </div>
       </div>
 
       {/* Quick actions */}
-      <div className="flex gap-2.5 px-[18px] pb-4">
+      <div className="flex gap-3 px-[18px] pb-4">
         {[
           { label: 'Start exploring', bg: 'bg-green-tint', icon: <IconGrid />, onClick: () => navigate('/categories') },
           { label: 'Request for Quotation', bg: 'bg-orange-tint', icon: <IconTarget />, onClick: () => navigate('/messenger') },
@@ -236,45 +282,40 @@ export default function MobileHome() {
             key={a.label}
             type="button"
             onClick={a.onClick}
-            className="flex-1 bg-cream rounded-[14px] px-2.5 py-3 flex flex-col items-start gap-2 text-left cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-95 active:shadow-none"
+            className="group flex-1 bg-white border border-border rounded-2xl px-3 py-3.5 flex flex-col items-start gap-2.5 text-left cursor-pointer transition-all duration-150 hover:border-green/20 hover:shadow-[0_10px_24px_rgba(27,31,29,0.08)] hover:-translate-y-0.5 active:scale-[0.97] active:shadow-none"
           >
-            <span className={`w-[30px] h-[30px] rounded-[9px] ${a.bg} flex items-center justify-center`}>{a.icon}</span>
-            <span className="text-[12.5px] font-semibold text-ink leading-snug">{a.label}</span>
+            <span className={`w-9 h-9 rounded-xl ${a.bg} flex items-center justify-center transition-transform duration-150 group-hover:scale-105`}>
+              {a.icon}
+            </span>
+            <span className="font-display text-[12.5px] font-semibold text-ink leading-snug tracking-[-0.01em]">{a.label}</span>
           </button>
         ))}
       </div>
 
       {/* Trust banner — labels wrap onto a second line instead of forcing single-line width, so
           a long line like "Money-back protection" never overflows past the card. */}
-      <div className="mx-[18px] mb-1 bg-orange-tint rounded-[14px] px-3 py-3.5 flex items-center">
-        <div className="flex-1 flex items-center gap-2.5 min-w-0">
-          <span className="w-8 h-8 rounded-[9px] bg-white flex items-center justify-center shrink-0">
+      <div className="mx-[18px] mb-1.5 rounded-2xl border border-orange/15 bg-gradient-to-br from-orange-tint to-[#FBF2E4] px-4 py-3.5 flex items-center shadow-[0_1px_3px_rgba(27,31,29,0.03)]">
+        <div className="flex-1 flex items-center gap-3 min-w-0">
+          <span className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-[0_1px_4px_rgba(122,74,20,0.16)]">
             <IconShipFast />
           </span>
           <span className="min-w-0">
-            <span className="block text-[12.5px] font-bold text-ink leading-snug">FREE shipping</span>
-            <span className="block text-[11px] text-orange-text-dark leading-snug">on your first order</span>
+            <span className="font-display block text-[12.5px] font-bold text-ink leading-snug tracking-[-0.01em]">FREE shipping</span>
+            <span className="block text-[11px] text-orange-text-dark/80 leading-snug">on your first order</span>
           </span>
         </div>
-        <span className="w-[1.5px] self-stretch bg-[#E9C9A0] mx-3 shrink-0" />
-        <div className="flex-1 flex items-center gap-2.5 min-w-0">
-          <span className="w-8 h-8 rounded-[9px] bg-white flex items-center justify-center shrink-0">
+        <span className="w-px self-stretch bg-orange/20 mx-3.5 shrink-0" />
+        <div className="flex-1 flex items-center gap-3 min-w-0">
+          <span className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-[0_1px_4px_rgba(122,74,20,0.16)]">
             <IconMoneyBack />
           </span>
           <span className="min-w-0">
-            <span className="block text-[12.5px] font-bold text-ink leading-snug">Money-back protection</span>
-            <span className="block text-[11px] text-orange-text-dark leading-snug">for up to 60 days</span>
+            <span className="font-display block text-[12.5px] font-bold text-ink leading-snug tracking-[-0.01em]">Money-back protection</span>
+            <span className="block text-[11px] text-orange-text-dark/80 leading-snug">for up to 60 days</span>
           </span>
         </div>
       </div>
 
-      {/* Spotlight tab gets its own curated, admin-driven section instead of the generic grid —
-          but an active search always wins, since typing a query means the user wants results,
-          not curated picks. */}
-      {activeTab === 'spotlight' && !debouncedQuery ? (
-        <FeaturedSpotlight />
-      ) : (
-      <>
       {/* Category circles */}
       <div className="grid grid-cols-4 gap-x-2 gap-y-4 px-[18px] pt-4 pb-1.5">
         {metaLoading
@@ -393,15 +434,13 @@ export default function MobileHome() {
           </button>
         </div>
       )}
-      </>
-      )}
     </div>
   );
 }
 
 function IconGrid() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="7" height="7" rx="1" />
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -411,7 +450,7 @@ function IconGrid() {
 }
 function IconTarget() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A05E17" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A05E17" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="9" />
       <circle cx="12" cy="12" r="4.5" />
       <circle cx="12" cy="12" r="0.8" fill="#A05E17" />
@@ -420,7 +459,7 @@ function IconTarget() {
 }
 function IconTrophy() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M8 21h8" />
       <path d="M12 17v4" />
       <path d="M7 4h10v5a5 5 0 0 1-10 0z" />

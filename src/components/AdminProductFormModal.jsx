@@ -16,6 +16,9 @@ const emptyForm = {
   stock: '',
   badge: '',
   images: [],
+  b2bEnabled: false,
+  freeShipping: true,
+  worldwideFreeShipping: false,
 };
 
 // Mirrors ProductFormModal (seller portal), but targets the public `Product` catalog directly:
@@ -41,6 +44,9 @@ export default function AdminProductFormModal({ open, product, sellersList, load
             stock: product.stock === null || product.stock === undefined ? '' : String(product.stock),
             badge: product.badge || '',
             images: product.images && product.images.length > 0 ? product.images : product.img ? [product.img] : [],
+            b2bEnabled: Boolean(product.b2bEnabled),
+            freeShipping: product.freeShipping !== false,
+            worldwideFreeShipping: Boolean(product.worldwideFreeShipping),
           }
         : emptyForm
     );
@@ -56,6 +62,7 @@ export default function AdminProductFormModal({ open, product, sellersList, load
   if (!open) return null;
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const toggle = (key) => () => setForm((f) => ({ ...f, [key]: !f[key], ...(key === 'freeShipping' && f.freeShipping ? { worldwideFreeShipping: false } : {}) }));
   const setImages = (images) => setForm((f) => ({ ...f, images }));
 
   const submit = () => {
@@ -70,6 +77,9 @@ export default function AdminProductFormModal({ open, product, sellersList, load
       stock: form.stock.trim() === '' ? null : Number(form.stock),
       badge: form.badge.trim(),
       images: form.images,
+      b2bEnabled: form.b2bEnabled,
+      freeShipping: form.freeShipping,
+      worldwideFreeShipping: form.freeShipping && form.worldwideFreeShipping,
     });
   };
 
@@ -164,6 +174,28 @@ export default function AdminProductFormModal({ open, product, sellersList, load
               <label className={labelClass}>Stock (optional)</label>
               <input type="text" inputMode="numeric" value={form.stock} onChange={set('stock')} placeholder="2400" className={fieldClass} />
             </div>
+          </div>
+
+          <div className="flex flex-col gap-2.5 border border-border rounded-lg p-3.5">
+            <label className="flex items-center gap-2.5 text-[13.5px] font-medium text-ink cursor-pointer">
+              <input type="checkbox" checked={form.b2bEnabled} onChange={toggle('b2bEnabled')} className="w-4 h-4 accent-green cursor-pointer" />
+              List this product on the B2B marketplace
+            </label>
+            <label className="flex items-center gap-2.5 text-[13.5px] font-medium text-ink cursor-pointer">
+              <input type="checkbox" checked={form.freeShipping} onChange={toggle('freeShipping')} className="w-4 h-4 accent-green cursor-pointer" />
+              Free shipping
+            </label>
+            {form.freeShipping && (
+              <label className="flex items-center gap-2.5 text-[13px] text-ink-soft cursor-pointer pl-6">
+                <input
+                  type="checkbox"
+                  checked={form.worldwideFreeShipping}
+                  onChange={toggle('worldwideFreeShipping')}
+                  className="w-4 h-4 accent-green cursor-pointer"
+                />
+                Offer it worldwide, not just within the seller's own country
+              </label>
+            )}
           </div>
 
           <div>

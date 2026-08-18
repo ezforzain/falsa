@@ -1,16 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { catalog } from '../lib/api';
+import { marketplace } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { getBuyerCountry } from '../lib/buyerCountry';
 import VerifiedBadge from '../components/VerifiedBadge';
 import MobileTopBar from '../components/MobileTopBar';
 import useIsMobile from '../hooks/useIsMobile';
 import useInfiniteFeed from '../hooks/useInfiniteFeed';
-import { IconPin, IconSparkle, IconTrendingUp, IconTruck } from '../components/icons';
+import { IconPin, IconSparkle, IconGlobe, IconTruck } from '../components/icons';
 
+// This page used to be driven by admin-curated "near"/"trending" rails (SpotlightEntry). It's
+// now the same country-aware 70% local / 30% international ranked feed as the Spotlight
+// marketplace tab (see server/src/routes/marketplace.routes.js) — same visual shape (a single
+// featured hero + a secondary grid on desktop, one endless feed on mobile), real data underneath.
 export default function SpotlightPage() {
   const isMobile = useIsMobile();
-  const [spotlightNear, setSpotlightNear] = useState([]);
-  const [spotlightTrend, setSpotlightTrend] = useState([]);
+  const { user } = useAuth();
+  const buyerCountry = getBuyerCountry(user);
+
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -19,11 +27,10 @@ export default function SpotlightPage() {
     setLoading(true);
     setError(null);
 
-    Promise.all([catalog.spotlightNear(), catalog.spotlightTrending()])
-      .then(([near, trend]) => {
-        if (cancelled) return;
-        setSpotlightNear(near.items);
-        setSpotlightTrend(trend.items);
+    marketplace
+      .spotlight({ buyerCountry, limit: 48 })
+      .then((res) => {
+        if (!cancelled) setProducts(res.products);
       })
       .catch((err) => {
         if (!cancelled) setError(err.message || 'Could not load Spotlight right now.');
@@ -35,32 +42,13 @@ export default function SpotlightPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [buyerCountry]);
 
-  // Mobile is a single endless product feed (near + trending merged into one pool) — the
-  // desktop page below keeps the curated, sectioned layout with its shipping/growth context.
-  const feedPool = useMemo(() => {
-    const byId = new Map();
-    [...spotlightNear, ...spotlightTrend].forEach((entry) => byId.set(entry.product.id, entry.product));
-    return [...byId.values()];
-  }, [spotlightNear, spotlightTrend]);
-  const { items: feedProducts, loadingMore, sentinelRef } = useInfiniteFeed(feedPool, { batchSize: 6 });
+  const { items: feedProducts, loadingMore, sentinelRef } = useInfiniteFeed(products, { batchSize: 6 });
 
-  // Desktop leads with a single Daraz-style featured product (the #1 nearest match, or the top
-  // trending item if there's no near data yet) instead of a grid — everything else still gets a
-  // lighter secondary strip below it so the page isn't just one lone card.
-  const featuredEntry = spotlightNear[0] ? { kind: 'near', ...spotlightNear[0] } : spotlightTrend[0] ? { kind: 'trend', ...spotlightTrend[0] } : null;
-  const restEntries = useMemo(() => {
-    const seen = new Set(featuredEntry ? [featuredEntry.product.id] : []);
-    const rest = [];
-    [...spotlightNear, ...spotlightTrend].forEach((entry) => {
-      if (seen.has(entry.product.id)) return;
-      seen.add(entry.product.id);
-      rest.push(entry);
-    });
-    return rest;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spotlightNear, spotlightTrend]);
+  const featured = products[0] || null;
+  const rest = useMemo(() => products.slice(1), [products]);
+  const isLocal = (p) => p && p.sellerCountry === buyerCountry;
 
   if (isMobile) {
     return (
@@ -72,39 +60,39 @@ export default function SpotlightPage() {
             <IconSparkle width="14" height="14" />
             Spotlight
           </div>
-          <h1 className="font-display text-xl font-bold text-ink m-0">Curated for Pakistan</h1>
+          <h1 className="font-display text-xl font-bold text-ink m-0">Curated for {buyerCountry}</h1>
         </div>
 
-        {/* Same Daraz-style featured product as desktop, just stacked for a phone screen — the
-            endless feed below is unaffected, so this is additive rather than a replacement. */}
-        {!loading && !error && featuredEntry && (
+        {!loading && !error && featured && (
           <div className="mx-[18px] mb-5 bg-white border border-border rounded-[18px] overflow-hidden">
             <div className="relative h-[190px]">
-              <img
-                src={featuredEntry.product.img}
-                alt={featuredEntry.product.name}
-                className="w-full h-full object-cover"
-              />
+              <img src={featured.img} alt={featured.name} className="w-full h-full object-cover" />
               <span className="absolute top-3 left-3 bg-green text-white text-[11px] font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5">
                 <IconSparkle width="11" height="11" />
                 Featured
               </span>
             </div>
             <div className="p-4">
-              <div className="font-mono text-[10px] tracking-[0.12em] uppercase text-orange mb-1.5">
-                {featuredEntry.kind === 'near' ? 'Nearest seller · lowest shipping' : 'Trending this week'}
+              <div className="font-mono text-[10px] tracking-[0.12em] uppercase text-orange mb-1.5 flex items-center gap-1.5">
+                {isLocal(featured) ? (
+                  <>
+                    <IconPin width="11" height="11" /> Near you
+                  </>
+                ) : (
+                  <>
+                    <IconGlobe width="11" height="11" /> From {featured.sellerCountry || 'abroad'}
+                  </>
+                )}
               </div>
-              <div className="text-[15px] font-semibold text-ink leading-snug mb-1.5 line-clamp-2">
-                {featuredEntry.product.name}
-              </div>
+              <div className="text-[15px] font-semibold text-ink leading-snug mb-1.5 line-clamp-2">{featured.name}</div>
               <div className="flex items-center gap-1.5 text-[12px] text-text-muted mb-3 flex-wrap">
                 <IconPin width="11" height="11" />
-                {featuredEntry.product.seller}
-                {featuredEntry.product.verified && <VerifiedBadge size={12} />}
+                {featured.seller}
+                {featured.verified && <VerifiedBadge size={12} />}
               </div>
-              <div className="font-display font-bold text-[19px] text-green mb-3">{featuredEntry.product.price}</div>
+              <div className="font-display font-bold text-[19px] text-green mb-3">{featured.price}</div>
               <Link
-                to={`/product/${featuredEntry.product.id}`}
+                to={`/product/${featured.id}`}
                 className="block text-center cursor-pointer bg-orange hover:bg-orange-hover text-white font-semibold text-[13.5px] py-2.5 rounded-full no-underline transition-colors"
               >
                 View Product
@@ -133,7 +121,7 @@ export default function SpotlightPage() {
           </div>
         )}
 
-        {!loading && !error && feedPool.length > 0 && (
+        {!loading && !error && feedProducts.length > 0 && (
           <>
             <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-3">
               {feedProducts.map((p) => (
@@ -192,19 +180,16 @@ export default function SpotlightPage() {
             <IconSparkle />
             Spotlight
           </div>
-          <h2 className="font-display text-[30px] sm:text-4xl font-bold m-0 tracking-tight">Curated for Pakistan</h2>
+          <h2 className="font-display text-[30px] sm:text-4xl font-bold m-0 tracking-tight">Curated for {buyerCountry}</h2>
           <p className="text-[15px] text-text max-w-[560px] leading-relaxed mt-3 text-balance">
-            Products from the sellers nearest to you, ranked by lowest shipping cost — plus what's trending in your
-            country right now.
+            Mostly products from sellers in your country, ranked by relevance, quality, and popularity — plus a mix
+            from other countries so there's always something new to discover.
           </p>
         </div>
-        <div className="flex items-center gap-2.5 bg-white border-[1.5px] border-border rounded-xl px-[18px] py-3 cursor-pointer hover:border-green transition-colors">
+        <div className="flex items-center gap-2.5 bg-white border-[1.5px] border-border rounded-xl px-[18px] py-3">
           <IconPin className="text-text-muted" />
           <span className="text-[13px] text-text-muted">Your country</span>
-          <span className="font-semibold text-sm">🇵🇰 Pakistan</span>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
-            <path d="m6 9 6 6 6-6" />
-          </svg>
+          <span className="font-semibold text-sm">{buyerCountry}</span>
         </div>
       </div>
 
@@ -230,15 +215,11 @@ export default function SpotlightPage() {
 
       {/* Featured product — Daraz-style single hero card instead of a grid: one large image,
           full details, and a clear CTA, rather than competing for attention with a dozen tiles. */}
-      {!loading && !error && featuredEntry && (
+      {!loading && !error && featured && (
         <section className="pt-8">
           <div className="grid lg:grid-cols-2 bg-white border border-border rounded-[24px] overflow-hidden">
             <div className="relative h-[300px] lg:h-full min-h-[380px] bg-surface-muted order-1">
-              <img
-                src={featuredEntry.product.img}
-                alt={featuredEntry.product.name}
-                className="w-full h-full object-cover"
-              />
+              <img src={featured.img} alt={featured.name} className="w-full h-full object-cover" />
               <span className="absolute top-4 left-4 bg-green text-white text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
                 <IconSparkle width="12" height="12" />
                 Featured
@@ -247,36 +228,30 @@ export default function SpotlightPage() {
 
             <div className="p-7 lg:p-10 flex flex-col justify-center order-2">
               <div className="font-mono text-[11px] tracking-[0.14em] uppercase text-orange mb-3">
-                {featuredEntry.kind === 'near' ? 'Nearest seller · lowest shipping' : 'Trending this week'}
+                {isLocal(featured) ? 'From a seller in your country' : `From ${featured.sellerCountry || 'abroad'}`}
               </div>
               <h2 className="font-display text-2xl sm:text-[32px] font-bold text-ink m-0 mb-3 tracking-tight text-balance">
-                {featuredEntry.product.name}
+                {featured.name}
               </h2>
               <div className="flex items-center gap-1.5 text-[13.5px] text-text-muted mb-4 flex-wrap">
                 <IconPin width="13" height="13" />
-                {featuredEntry.product.seller}
-                {featuredEntry.product.verified && <VerifiedBadge size={14} />}
-                {featuredEntry.kind === 'near' && <span>· {featuredEntry.distance}</span>}
+                {featured.seller}
+                {featured.verified && <VerifiedBadge size={14} />}
               </div>
-              <div className="font-display font-bold text-[28px] text-green mb-1">{featuredEntry.product.price}</div>
+              <div className="font-display font-bold text-[28px] text-green mb-1">{featured.price}</div>
               <div className="text-[13px] text-text-muted mb-5">
-                MOQ {featuredEntry.product.moq} / {featuredEntry.product.unit}
+                MOQ {featured.moq} / {featured.unit}
               </div>
 
-              {featuredEntry.kind === 'near' ? (
+              {featured.freeShipping && (
                 <div className="inline-flex items-center gap-1.5 self-start bg-green-tint text-green text-[12.5px] font-bold px-3 py-1.5 rounded-full mb-6">
                   <IconTruck width="13" height="13" strokeWidth="2.2" />
-                  Shipping {featuredEntry.shipping} · #{featuredEntry.rank} nearest
-                </div>
-              ) : (
-                <div className="inline-flex items-center gap-1.5 self-start bg-orange-tint text-orange-text text-[12.5px] font-bold px-3 py-1.5 rounded-full mb-6">
-                  <IconTrendingUp width="13" height="13" />
-                  {featuredEntry.growth} growth this week
+                  Free shipping{featured.worldwideFreeShipping ? ' worldwide' : ` within ${featured.sellerCountry || 'origin country'}`}
                 </div>
               )}
 
               <Link
-                to={`/product/${featuredEntry.product.id}`}
+                to={`/product/${featured.id}`}
                 className="block text-center cursor-pointer bg-orange hover:bg-orange-hover text-white font-semibold text-[15px] py-3.5 rounded-full no-underline shadow-[0_8px_22px_rgba(201,123,45,0.3)] transition-all hover:-translate-y-0.5"
               >
                 View Product
@@ -288,22 +263,22 @@ export default function SpotlightPage() {
 
       {/* Everything else Spotlight has to offer, as a lighter secondary strip beneath the
           featured product rather than a second competing grid. */}
-      {!loading && !error && restEntries.length > 0 && (
+      {!loading && !error && rest.length > 0 && (
         <section className="pt-12">
           <h2 className="font-display text-[20px] font-bold m-0 mb-5">More from Spotlight</h2>
           <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
-            {restEntries.map((entry) => (
+            {rest.map((p) => (
               <Link
-                key={entry.product.id}
-                to={`/product/${entry.product.id}`}
+                key={p.id}
+                to={`/product/${p.id}`}
                 className="block bg-white border border-border rounded-2xl overflow-hidden no-underline text-inherit transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(20,40,32,0.12)]"
               >
                 <div className="h-36 overflow-hidden">
-                  <img src={entry.product.img} alt={entry.product.name} className="w-full h-full object-cover" />
+                  <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
                 </div>
                 <div className="px-4 pt-3.5 pb-3.5">
-                  <div className="text-sm font-semibold mb-1.5 line-clamp-1">{entry.product.name}</div>
-                  <div className="font-display font-bold text-green text-[15px]">{entry.product.price}</div>
+                  <div className="text-sm font-semibold mb-1.5 line-clamp-1">{p.name}</div>
+                  <div className="font-display font-bold text-green text-[15px]">{p.price}</div>
                 </div>
               </Link>
             ))}
@@ -324,8 +299,8 @@ export default function SpotlightPage() {
           <div className="flex-1 min-w-[280px]">
             <h3 className="font-display text-lg font-bold m-0 mb-1.5 text-white">Few sellers near you?</h3>
             <p className="text-sm text-teal-softer leading-relaxed m-0 text-balance">
-              When your country has limited sellers for a product, Spotlight shows the closest matches — similar
-              products from the nearest available regions.
+              When your country has limited sellers for a product, Spotlight fills the remaining slots with the
+              best matches from other countries instead of leaving them empty.
             </p>
           </div>
           <Link
