@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { normalizeQuery, searchHints } from '../data/mockData';
+import { normalizeQuery, searchHints, mobileTabs as fallbackTabs } from '../data/mockData';
 import { catalog } from '../lib/api';
 import useRotatingHints from '../hooks/useRotatingHints';
 import useInfiniteFeed from '../hooks/useInfiniteFeed';
@@ -9,7 +9,16 @@ import SearchHintOverlay from '../components/SearchHintOverlay';
 import MobileTopBar from '../components/MobileTopBar';
 import FeaturedSpotlight from '../components/spotlight/FeaturedSpotlight';
 import MobileProductCard from '../components/product/MobileProductCard';
-import { IconSearch } from '../components/icons';
+import { IconSearch, IconBox, IconSparkle, IconGlobe, IconTruck } from '../components/icons';
+
+// Icon per tab key — the backend only knows key/label/banner, so the visual mark lives here,
+// keyed the same way as the seeded tabs (see server/src/seed/data.js).
+const TAB_ICONS = {
+  aimode: IconBox,
+  spotlight: IconSparkle,
+  worldwide: IconGlobe,
+  freeshipping: IconTruck,
+};
 
 export default function MobileHome() {
   const [categories, setCategories] = useState([]);
@@ -31,21 +40,19 @@ export default function MobileHome() {
   const productGridRef = useRef(null);
   const navigate = useNavigate();
 
-  // Fetch the tabs + curated category circles once on mount.
+  // Fetch the tabs + curated category circles once on mount. The B2B/Spotlight/Worldwide/Free
+  // Shipping row is core navigation chrome, not optional decoration — so unlike the category
+  // circles (which just stay empty on failure), it always falls back to the local static list
+  // rather than silently disappearing if the backend is unseeded or unreachable.
   useEffect(() => {
     let cancelled = false;
-    Promise.all([catalog.mobileCategories(), catalog.mobileTabs()])
-      .then(([catRes, tabRes]) => {
-        if (cancelled) return;
-        setCategories(catRes.categories);
-        setTabs(tabRes.tabs);
-      })
-      .catch(() => {
-        /* non-fatal — page still works without the chrome around the product grid */
-      })
-      .finally(() => {
-        if (!cancelled) setMetaLoading(false);
-      });
+    Promise.allSettled([catalog.mobileCategories(), catalog.mobileTabs()]).then(([catRes, tabRes]) => {
+      if (cancelled) return;
+      setCategories(catRes.status === 'fulfilled' ? catRes.value.categories : []);
+      const fetchedTabs = tabRes.status === 'fulfilled' ? tabRes.value.tabs : [];
+      setTabs(fetchedTabs && fetchedTabs.length > 0 ? fetchedTabs : fallbackTabs);
+      setMetaLoading(false);
+    });
     return () => {
       cancelled = true;
     };
@@ -140,25 +147,37 @@ export default function MobileHome() {
 
       <MobileTopBar />
 
-      {/* Top tabs */}
-      <div className="flex items-center gap-[22px] px-[18px] pt-3.5 pb-2.5 overflow-x-auto no-scrollbar">
+      {/* Top tabs — pill chips (own icon + label per option) rather than an underlined text row,
+          so B2B/Spotlight/Worldwide/Free Shipping read as distinct, tappable entry points. */}
+      <div className="flex items-center gap-2 px-[18px] pt-3.5 pb-2.5 overflow-x-auto no-scrollbar">
         {metaLoading
           ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="animate-pulse h-[18px] w-[60px] shrink-0 rounded bg-surface-muted" />
+              <div key={i} className="animate-pulse h-9 w-[104px] shrink-0 rounded-full bg-surface-muted" />
             ))
           : tabs.map((tab) => {
               const isActive = tab.key === activeTab;
+              const Icon = TAB_ICONS[tab.key];
               return (
-                <span
+                <button
                   key={tab.key}
+                  type="button"
                   onClick={() => setActiveTab(tab.key)}
-                  className="flex flex-col items-center gap-1.5 whitespace-nowrap cursor-pointer"
+                  className={`flex items-center gap-1.5 shrink-0 whitespace-nowrap rounded-full pl-2.5 pr-3.5 py-2 text-[13px] font-semibold cursor-pointer transition-colors border ${
+                    isActive
+                      ? 'bg-green text-white border-green shadow-[0_4px_12px_rgba(14,90,70,0.25)]'
+                      : 'bg-white text-ink-soft border-border hover:border-green/40 hover:text-ink'
+                  }`}
                 >
-                  <span className={`${isActive ? 'text-base font-bold text-ink' : 'text-[15px] font-medium text-text-muted'}`}>
-                    {tab.label}
-                  </span>
-                  <span className={`w-[26px] h-[3px] rounded-sm ${isActive ? 'bg-orange' : 'bg-transparent'}`} />
-                </span>
+                  {Icon && (
+                    <Icon
+                      width="15"
+                      height="15"
+                      className={isActive ? 'text-white' : 'text-green'}
+                      strokeWidth={isActive ? 2.4 : 2}
+                    />
+                  )}
+                  {tab.label}
+                </button>
               );
             })}
       </div>
