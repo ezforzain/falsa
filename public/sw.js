@@ -2,9 +2,9 @@
 // page navigation fails because there's no network. It does NOT cache or intercept API calls,
 // JS/CSS bundles, or images — those always go straight to the network exactly as they did
 // before this file existed, so there's no risk of serving stale catalog/cart/auth data.
-const CACHE_NAME = 'falsafahtot-shell-v1';
+const CACHE_NAME = 'falsafahtot-shell-v2';
 const OFFLINE_URL = '/offline.html';
-const PRECACHE_URLS = [OFFLINE_URL, '/icons/icon-192.png'];
+const PRECACHE_URLS = [OFFLINE_URL, '/icons/icon-192-v2.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
