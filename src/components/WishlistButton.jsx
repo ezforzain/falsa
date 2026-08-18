@@ -3,7 +3,7 @@ import { IconHeart } from './icons';
 
 // Sits on top of a card <Link> (product cards) or standalone (product-detail header) — always
 // stops the click from bubbling into a parent link/navigation.
-export default function WishlistButton({ productId, size = 18, className = '' }) {
+export default function WishlistButton({ productId, productName, size = 18, className = '' }) {
   const { has, toggle } = useWishlist();
   const active = has(productId);
 
@@ -13,7 +13,7 @@ export default function WishlistButton({ productId, size = 18, className = '' })
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        toggle(productId);
+        toggle(productId, productName);
       }}
       aria-label={active ? 'Remove from wishlist' : 'Save to wishlist'}
       aria-pressed={active}

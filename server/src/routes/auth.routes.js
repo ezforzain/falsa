@@ -288,6 +288,63 @@ router.patch(
   })
 );
 
+// ---------- PATCH /api/auth/preferences ----------
+// Separate from /profile on purpose — that route requires companyName and is about identity
+// fields, while this is just Settings-page state (language, notification toggles) that should
+// be patchable independently and never blocked by profile validation.
+const NOTIFICATION_PREF_KEYS = ['master', 'orders', 'wishlist', 'account'];
+router.patch(
+  '/preferences',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { language, notificationPreferences } = req.body;
+    const update = {};
+
+    if (language !== undefined) {
+      if (!['en', 'ur'].includes(language)) {
+        return res.status(400).json({ message: 'Unsupported language.' });
+      }
+      update.language = language;
+    }
+
+    if (notificationPreferences !== undefined) {
+      if (typeof notificationPreferences !== 'object' || notificationPreferences === null) {
+        return res.status(400).json({ message: 'Invalid notification preferences.' });
+      }
+      const merged = req.user.notificationPreferences
+        ? req.user.notificationPreferences.toObject()
+        : { master: true, orders: true, wishlist: true, account: true };
+      for (const key of NOTIFICATION_PREF_KEYS) {
+        if (typeof notificationPreferences[key] === 'boolean') merged[key] = notificationPreferences[key];
+      }
+      update.notificationPreferences = merged;
+    }
+
+    req.user.set(update);
+    await req.user.save();
+    res.json({ user: await serializeUser(req.user) });
+  })
+);
+
+// ---------- PATCH /api/auth/avatar ----------
+// Separate from /profile for the same reason /preferences is: that route requires companyName,
+// and an avatar change shouldn't be blocked by unrelated identity-field validation. `avatarUrl`
+// must be null (remove) or a path this app itself just handed back from POST /api/uploads/avatars
+// — never an arbitrary string — so this can't be used to plant an unrelated/external image URL.
+router.patch(
+  '/avatar',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { avatarUrl } = req.body;
+    if (avatarUrl !== null && !(typeof avatarUrl === 'string' && avatarUrl.startsWith('/uploads/avatars/'))) {
+      return res.status(400).json({ message: 'Invalid profile picture.' });
+    }
+    req.user.set({ avatarUrl });
+    await req.user.save();
+    res.json({ user: await serializeUser(req.user) });
+  })
+);
+
 // ---------- POST /api/auth/kyc/resubmit ----------
 router.post(
   '/kyc/resubmit',

@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { IconMenu } from './icons';
+import { Link } from 'react-router-dom';
+import { IconMenu, IconBell } from './icons';
 import InformationDrawer from './InformationDrawer';
+import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationsContext';
 import logoMark from '../assets/logo-mark.png';
 
 // Lightweight top bar for the "bare" mobile screens (Home, Spotlight) that skip the desktop
@@ -9,6 +12,8 @@ import logoMark from '../assets/logo-mark.png';
 // not here — real navigation otherwise lives in the bottom tab bar.
 export default function MobileTopBar() {
   const [infoOpen, setInfoOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const { unreadCount } = useNotifications();
 
   return (
     <>
@@ -17,6 +22,20 @@ export default function MobileTopBar() {
         <span className="font-display text-lg font-bold text-green tracking-tight flex-1">
           Falsafah
         </span>
+        {isAuthenticated && (
+          <Link
+            to="/notifications"
+            aria-label="Notifications"
+            className="relative cursor-pointer w-9 h-9 rounded-full flex items-center justify-center text-ink-soft hover:bg-surface-muted active:scale-95 transition-all shrink-0"
+          >
+            <IconBell width="20" height="20" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1.5 bg-orange text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Link>
+        )}
         <button
           type="button"
           onClick={() => setInfoOpen(true)}

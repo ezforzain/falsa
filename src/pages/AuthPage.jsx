@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationsContext';
 import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser, IconMail } from '../components/icons';
 import OfficialBadge from '../components/OfficialBadge';
 import CorporateVerificationForm from '../components/CorporateVerificationForm';
@@ -12,6 +13,7 @@ const ROLE_SELLER = 'seller';
 
 export default function AuthPage() {
   const { signIn, signUp, user } = useAuth();
+  const { notify } = useNotifications();
 
   const [screen, setScreen] = useState('signin'); // signin | signup | forgot | success
   const [signupStep, setSignupStep] = useState(1); // 1: role, 2: details
@@ -89,7 +91,8 @@ export default function AuthPage() {
     setSigninError(null);
     setLoadingKey('signin');
     try {
-      await signIn(identifier, password);
+      const { user: signedInUser } = await signIn(identifier, password);
+      notify('account', 'Signed in', `Welcome back, ${signedInUser.companyName}.`);
       setScreen('success');
     } catch (err) {
       setSigninError(err.message);

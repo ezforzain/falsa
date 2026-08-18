@@ -3,10 +3,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { normalizeQuery, searchHints } from '../data/mockData';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useNotifications } from '../context/NotificationsContext';
 import useRotatingHints from '../hooks/useRotatingHints';
 import SearchHintOverlay from './SearchHintOverlay';
 import ProfileDropdown from './ProfileDropdown';
-import { IconSearch, IconCart, IconUser, IconLogout, IconSparkle, IconBox, IconShield } from './icons';
+import { IconSearch, IconCart, IconUser, IconLogout, IconSparkle, IconBox, IconShield, IconBell } from './icons';
 import logoMark from '../assets/logo-mark.png';
 
 export default function Header() {
@@ -16,6 +18,8 @@ export default function Header() {
   const location = useLocation();
   const { count: cartCount } = useCart();
   const { user, status, isAuthenticated, logout } = useAuth();
+  const { t } = useLanguage();
+  const { unreadCount } = useNotifications();
 
   const handleLogout = async () => {
     await logout();
@@ -75,17 +79,17 @@ export default function Header() {
             onClick={submitSearch}
             className="bg-green hover:bg-green-hover text-white text-xs font-semibold px-[18px] py-2 rounded-full cursor-pointer whitespace-nowrap transition-colors"
           >
-            Search
+            {t('common.search')}
           </span>
         </div>
 
         <nav className="hidden md:flex items-center gap-0.5 ml-auto">
           <Link to="/" className={navLinkClass(isHome)}>
-            Home
+            {t('nav.home')}
           </Link>
           <Link to="/spotlight" className={`${navLinkClass(isSpotlight)} flex items-center gap-1.5`}>
             <IconSparkle />
-            Spotlight
+            {t('nav.spotlight')}
           </Link>
           <Link
             to="/cart"
@@ -98,13 +102,27 @@ export default function Header() {
               </span>
             )}
           </Link>
+          {isAuthenticated && (
+            <Link
+              to="/notifications"
+              aria-label={t('accountMenu.notifications')}
+              className="cursor-pointer px-3 py-2 rounded-lg text-text hover:bg-surface-muted relative flex items-center transition-colors"
+            >
+              <IconBell />
+              {unreadCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 bg-orange text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Link>
+          )}
           {isAuthenticated && user?.role === 'seller' && (
             <Link
               to="/seller"
               className="cursor-pointer px-3 py-2 rounded-lg text-text hover:bg-surface-muted flex items-center gap-1.5 no-underline text-sm font-semibold"
             >
               <IconBox width="18" height="18" />
-              <span className="hidden lg:inline">Seller Portal</span>
+              <span className="hidden lg:inline">{t('nav.sellerPortal')}</span>
             </Link>
           )}
           {isAuthenticated && user?.role === 'admin' && (
@@ -113,7 +131,7 @@ export default function Header() {
               className="cursor-pointer px-3 py-2 rounded-lg text-text hover:bg-surface-muted flex items-center gap-1.5 no-underline text-sm font-semibold"
             >
               <IconShield width="18" height="18" />
-              <span className="hidden lg:inline">Admin Panel</span>
+              <span className="hidden lg:inline">{t('nav.adminPanel')}</span>
             </Link>
           )}
           {status === 'loading' ? (
@@ -132,7 +150,7 @@ export default function Header() {
                 className="cursor-pointer px-3 py-2 rounded-lg text-text hover:bg-surface-muted flex items-center gap-1.5 text-sm font-semibold transition-colors"
               >
                 <IconLogout />
-                Logout
+                {t('nav.logout')}
               </button>
             </div>
           ) : (
@@ -141,7 +159,7 @@ export default function Header() {
               className="cursor-pointer px-3 py-2 rounded-lg text-text hover:bg-surface-muted flex items-center gap-1.5 no-underline text-sm font-semibold"
             >
               <IconUser />
-              Sign in
+              {t('common.signIn')}
             </Link>
           )}
 

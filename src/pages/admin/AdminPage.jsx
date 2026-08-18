@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { sellers, admin, adminUsers, kyc } from '../../lib/api';
 import VerifiedBadge from '../../components/VerifiedBadge';
 import OfficialBadge from '../../components/OfficialBadge';
+import Avatar from '../../components/Avatar';
 import AdminProductFormModal from '../../components/AdminProductFormModal';
 import AdminUserFormModal from '../../components/AdminUserFormModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -19,7 +20,6 @@ import {
   IconShield,
   IconSparkle,
   IconTrash,
-  IconUser,
 } from '../../components/icons';
 import logoMark from '../../assets/logo-mark.png';
 
@@ -1182,9 +1182,7 @@ export default function AdminPage() {
                   <div key={u.id} className={i !== usersList.length - 1 ? 'border-b border-border' : ''}>
                     <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-9 h-9 rounded-lg bg-green-tint flex items-center justify-center shrink-0">
-                          <IconUser width="16" height="16" className="text-green" strokeWidth="2.2" />
-                        </span>
+                        <Avatar src={u.avatarUrl} size={36} iconSize={16} />
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-[14.5px] text-ink truncate">{u.companyName}</span>

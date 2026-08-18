@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useNotifications } from './NotificationsContext';
 
 const WishlistContext = createContext(null);
 const STORAGE_KEY = 'falsafahtot_wishlist';
@@ -26,20 +27,28 @@ function writeStored(ids) {
 // approach in lib/recentlyViewed.js) because the heart icon needs to re-render live across
 // every card/detail page showing the same product, not just read once per page load.
 export function WishlistProvider({ children }) {
+  const { notify } = useNotifications();
   const [ids, setIds] = useState(() => readStored());
 
   useEffect(() => {
     writeStored(ids);
   }, [ids]);
 
-  const toggle = useCallback((productId) => {
-    setIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(productId)) next.delete(productId);
-      else next.add(productId);
-      return next;
-    });
-  }, []);
+  const toggle = useCallback(
+    (productId, productName) => {
+      setIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(productId)) {
+          next.delete(productId);
+        } else {
+          next.add(productId);
+          notify('wishlist', 'Saved to wishlist', productName ? `${productName} was added to your wishlist.` : 'Item added to your wishlist.');
+        }
+        return next;
+      });
+    },
+    [notify]
+  );
 
   const has = useCallback((productId) => ids.has(productId), [ids]);
 

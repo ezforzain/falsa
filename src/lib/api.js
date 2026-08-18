@@ -84,6 +84,8 @@ export const auth = {
   logout: () => request('/api/auth/logout', { method: 'POST', auth: true }),
   session: () => request('/api/auth/session', { auth: true }),
   updateProfile: (payload) => request('/api/auth/profile', { method: 'PATCH', body: payload, auth: true }),
+  updatePreferences: (payload) => request('/api/auth/preferences', { method: 'PATCH', body: payload, auth: true }),
+  updateAvatar: (avatarUrl) => request('/api/auth/avatar', { method: 'PATCH', body: { avatarUrl }, auth: true }),
   // Self-service: a rejected seller uploads fresh CNIC images to go back into the review queue.
   resubmitKyc: (payload) => request('/api/auth/kyc/resubmit', { method: 'POST', body: payload, auth: true }),
   verifyEmail: (token) => request('/api/auth/verify-email', { method: 'POST', body: { token } }),

@@ -12,6 +12,9 @@ const userSchema = new mongoose.Schema(
     passwordHash: { type: String, required: true },
     category: { type: String, default: null },
     address: { type: String, default: null },
+    // Set via PATCH /api/auth/avatar (server/src/routes/auth.routes.js) — always either null or a
+    // path under /uploads/avatars/ returned by POST /api/uploads/avatars, never an arbitrary URL.
+    avatarUrl: { type: String, default: null },
 
     // Email verification — the account is only ever flipped to true by a successful
     // /api/auth/verify-email call; nothing else sets it.
@@ -48,6 +51,20 @@ const userSchema = new mongoose.Schema(
     cnicRejectionReason: { type: String, default: null },
     reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     reviewedAt: { type: Date, default: null },
+
+    // App preferences (Settings page) — theme/reduce-motion stay device-local (localStorage),
+    // but language and notification preferences follow the account across devices.
+    language: { type: String, enum: ['en', 'ur'], default: 'en' },
+    notificationPreferences: {
+      type: {
+        master: { type: Boolean, default: true },
+        orders: { type: Boolean, default: true },
+        wishlist: { type: Boolean, default: true },
+        account: { type: Boolean, default: true },
+      },
+      _id: false,
+      default: () => ({ master: true, orders: true, wishlist: true, account: true }),
+    },
   },
   { timestamps: true }
 );

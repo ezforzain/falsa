@@ -7,6 +7,9 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import { CartProvider } from './context/CartContext.jsx'
 import { WishlistProvider } from './context/WishlistContext.jsx'
 import { ProfileDrawerProvider } from './context/ProfileDrawerContext.jsx'
+import { AppSettingsProvider } from './context/AppSettingsContext.jsx'
+import { LanguageProvider } from './context/LanguageContext.jsx'
+import { NotificationsProvider } from './context/NotificationsContext.jsx'
 
 // Clears out any leftover service worker that isn't our own (e.g. the mock API worker earlier
 // builds registered, back when the app talked to a mocked backend in-browser instead of the
@@ -40,13 +43,19 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <CartProvider>
-          <WishlistProvider>
-            <ProfileDrawerProvider>
-              <App />
-            </ProfileDrawerProvider>
-          </WishlistProvider>
-        </CartProvider>
+        <AppSettingsProvider>
+          <LanguageProvider>
+            <NotificationsProvider>
+              <CartProvider>
+                <WishlistProvider>
+                  <ProfileDrawerProvider>
+                    <App />
+                  </ProfileDrawerProvider>
+                </WishlistProvider>
+              </CartProvider>
+            </NotificationsProvider>
+          </LanguageProvider>
+        </AppSettingsProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

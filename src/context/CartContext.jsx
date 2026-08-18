@@ -1,9 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { cartApi } from '../lib/api';
+import { useNotifications } from './NotificationsContext';
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
+  const { notify } = useNotifications();
   const [items, setItems] = useState([]); // [{ product, qty }]
   const [subtotal, setSubtotal] = useState(0);
   const [count, setCount] = useState(0);
@@ -60,8 +62,13 @@ export function CartProvider({ children }) {
     setItems([]);
     setSubtotal(0);
     setCount(0);
+    notify(
+      'orders',
+      'Order placed',
+      `Order ${order.orderId} for ${order.itemCount} item${order.itemCount === 1 ? '' : 's'} has been placed successfully.`
+    );
     return order;
-  }, []);
+  }, [notify]);
 
   const value = { items, addToCart, removeFromCart, updateQty, clearCart, checkout, count, subtotal, loading, error };
 

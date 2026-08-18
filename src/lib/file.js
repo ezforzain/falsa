@@ -39,6 +39,19 @@ export function validateProductImageFile(file) {
   return null;
 }
 
+// Profile picture uploads go through the same real backend/limits as product photos — mirrored
+// here (rather than reusing validateProductImageFile directly) so a rejected file gets a message
+// that actually says "profile picture" instead of "image", matching where the user is.
+export const ALLOWED_AVATAR_IMAGE_TYPES = ALLOWED_PRODUCT_IMAGE_TYPES;
+export const MAX_AVATAR_IMAGE_BYTES = MAX_PRODUCT_IMAGE_BYTES;
+
+export function validateAvatarImageFile(file) {
+  if (!file) return 'Please choose a photo.';
+  if (!ALLOWED_AVATAR_IMAGE_TYPES.includes(file.type)) return 'Only JPG, PNG, or WEBP images are allowed.';
+  if (file.size > MAX_AVATAR_IMAGE_BYTES) return 'Profile picture must be 8MB or smaller.';
+  return null;
+}
+
 export function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

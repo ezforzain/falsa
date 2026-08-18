@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProfileDrawer } from '../context/ProfileDrawerContext';
 import { IconUser, IconMenu, IconMail } from '../components/icons';
+import AvatarUploader from '../components/AvatarUploader';
 
 // Sits under the profile card whenever the signed-in account hasn't clicked the link from its
 // verification email yet — see VerifyEmailPage / server's /api/auth/verify-email.
@@ -106,10 +107,8 @@ export default function AccountPage() {
           — tap it above.
         </p>
 
-        <div className="bg-white border border-border rounded-2xl p-6 flex items-center gap-4">
-          <span className="w-16 h-16 rounded-full bg-green-tint inline-flex items-center justify-center shrink-0">
-            <IconUser width="26" height="26" className="text-green" />
-          </span>
+        <div className="bg-white border border-border rounded-2xl p-6 flex items-center gap-5 flex-wrap">
+          <AvatarUploader size={72} />
           <div className="min-w-0">
             <p className="text-[17px] font-semibold text-ink truncate">{user.companyName}</p>
             <p className="text-sm text-text-muted truncate">{user.email || user.phone}</p>

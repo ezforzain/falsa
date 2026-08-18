@@ -2,6 +2,7 @@ import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react
 import { useAuth } from '../../context/AuthContext';
 import VerifiedBadge from '../../components/VerifiedBadge';
 import OfficialBadge from '../../components/OfficialBadge';
+import Avatar from '../../components/Avatar';
 import {
   IconAlertCircle,
   IconBox,
@@ -94,7 +95,8 @@ export default function SellerLayout() {
 
           <div className="flex-1" />
 
-          <span className="hidden md:flex items-center gap-1.5 text-sm text-teal-mist truncate max-w-[220px]">
+          <span className="hidden md:flex items-center gap-2 text-sm text-teal-mist truncate max-w-[220px]">
+            <Avatar src={user.avatarUrl} size={26} iconSize={13} bgClassName="bg-white/15" iconClassName="text-white" />
             {user.companyName}
             {user.verified && <VerifiedBadge size={16} tooltipPosition="bottom" />}
           </span>

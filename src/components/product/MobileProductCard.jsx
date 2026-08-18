@@ -27,6 +27,7 @@ export default function MobileProductCard({ product }) {
         )}
         <WishlistButton
           productId={product.id}
+          productName={product.name}
           size={16}
           className="absolute top-1.5 right-1.5 w-7 h-7 bg-white/90 backdrop-blur-sm"
         />

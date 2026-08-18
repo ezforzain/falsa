@@ -57,6 +57,16 @@ export function AuthProvider({ children }) {
     return updated;
   };
 
+  // avatarUrl is either a "/uploads/avatars/..." path just returned by the upload endpoint, or
+  // null to remove the picture — see PATCH /api/auth/avatar. Updates context state immediately so
+  // every screen reading user.avatarUrl (account menu, seller portal header, admin list, ...)
+  // reflects the change without a page reload.
+  const updateAvatar = async (avatarUrl) => {
+    const { user: updated } = await auth.updateAvatar(avatarUrl);
+    setUser(updated);
+    return updated;
+  };
+
   // A rejected seller uploads fresh CNIC images — resets their status back to "pending" server-side.
   const resubmitKyc = async (payload) => {
     const { user: updated } = await auth.resubmitKyc(payload);
@@ -90,6 +100,7 @@ export function AuthProvider({ children }) {
     signIn,
     signUp,
     updateProfile,
+    updateAvatar,
     resubmitKyc,
     resendVerificationEmail,
     markEmailVerified,

@@ -37,6 +37,57 @@
   --color-footer: #0F1F19;
 }
 
+/* Dark theme — see AppSettingsContext, which sets data-theme on <html> from the Settings page's
+   Theme control (Light/Dark/System). Redefining these as the SAME custom properties Tailwind's
+   utilities already compile to (`.bg-cream{background-color:var(--color-cream)}` etc.) re-themes
+   every semantic color already in use across the app with no per-component changes needed.
+   Deliberately NOT overriding `--color-white`/`--color-black` — those are also used as literal
+   white (e.g. button label text on a colored background), not just "card surface", so flipping
+   them would break contrast everywhere they mean literal white. Components use `bg-surface`
+   (themed) instead of `bg-white` for anything that should actually invert in dark mode; a few
+   deeper screens still hardcode `bg-white` for cards and are a known, disclosed gap. */
+:root[data-theme='dark'] {
+  --color-cream: #14181a;
+  --color-cream-dark: #1b211f;
+  --color-green-deep: #06140f;
+  --color-green: #34a67f;
+  --color-green-hover: #2c8f6d;
+  --color-green-tint: #16241e;
+  --color-green-tint-border: #2c4a3d;
+  --color-teal-soft: #6fbe9e;
+  --color-teal-softer: #588c77;
+  --color-teal-mist: #1e2e28;
+
+  --color-orange: #e29a52;
+  --color-orange-hover: #d0813a;
+  --color-orange-tint: #2b2117;
+  --color-orange-text: #e7b076;
+  --color-orange-text-dark: #c99562;
+  --color-gold: #e8be85;
+
+  --color-ink: #f1eee7;
+  --color-ink-soft: #d3cfc4;
+  --color-text: #aca79a;
+  --color-text-muted: #7d7a70;
+
+  --color-border: #2a2f2c;
+  --color-border-strong: #3b4038;
+  --color-surface: #1e2422;
+  --color-surface-muted: #232a27;
+
+  --color-footer: #05100c;
+}
+
+/* Reduce motion (Settings > App Settings) — near-zero rather than `none` so animationend/
+   transitionend listeners (e.g. the account-menu ripple, badge pop) still fire and clean up. */
+.reduce-motion,
+.reduce-motion * {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
 html,
 body {
   margin: 0;

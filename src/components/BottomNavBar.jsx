@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useUnreadMessageCount } from '../hooks/useUnreadMessageCount';
+import { useLanguage } from '../context/LanguageContext';
 import { IconHome, IconGrid, IconMessageCircle, IconCart, IconUser } from './icons';
 
 const ACTIVE_COLOR = '#FF6A00';
@@ -7,19 +8,23 @@ const ACTIVE_COLOR = '#FF6A00';
 // "account" just navigates to /account like every other tab — the account menu itself only
 // opens from that page (see the trigger inside AccountPage), matching desktop exactly, where
 // the equivalent hamburger only appears in Header while viewing /account.
-const TABS = [
-  { key: 'home', label: 'Home', to: '/', icon: IconHome, match: (path) => path === '/' },
-  { key: 'categories', label: 'Categories', to: '/categories', icon: IconGrid, match: (path) => path.startsWith('/categories') },
-  { key: 'messenger', label: 'Messenger', to: '/messenger', icon: IconMessageCircle, match: (path) => path.startsWith('/messenger') },
-  { key: 'cart', label: 'Cart', to: '/cart', icon: IconCart, match: (path) => path.startsWith('/cart') },
-  { key: 'account', label: 'Account', to: '/account', icon: IconUser, match: (path) => path.startsWith('/account') },
-];
+function buildTabs(t) {
+  return [
+    { key: 'home', label: t('nav.home'), to: '/', icon: IconHome, match: (path) => path === '/' },
+    { key: 'categories', label: t('nav.categories'), to: '/categories', icon: IconGrid, match: (path) => path.startsWith('/categories') },
+    { key: 'messenger', label: t('nav.messenger'), to: '/messenger', icon: IconMessageCircle, match: (path) => path.startsWith('/messenger') },
+    { key: 'cart', label: t('nav.cart'), to: '/cart', icon: IconCart, match: (path) => path.startsWith('/cart') },
+    { key: 'account', label: t('nav.account'), to: '/account', icon: IconUser, match: (path) => path.startsWith('/account') },
+  ];
+}
 
 // Fixed mobile tab bar for the buyer storefront — hidden at the md breakpoint, where the
 // desktop Header/Footer take over primary navigation instead.
 export default function BottomNavBar() {
   const { pathname } = useLocation();
   const unreadMessageCount = useUnreadMessageCount();
+  const { t } = useLanguage();
+  const TABS = buildTabs(t);
 
   return (
     <nav

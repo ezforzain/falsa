@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { normalizeQuery, searchHints, mobileTabs as fallbackTabs } from '../data/mockData';
 import { catalog, marketplace } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { getBuyerCountry } from '../lib/buyerCountry';
 import useRotatingHints from '../hooks/useRotatingHints';
 import useInfiniteFeed from '../hooks/useInfiniteFeed';
@@ -33,6 +34,7 @@ const MARKETPLACE_FETCHERS = {
 
 export default function MobileHome() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [categories, setCategories] = useState([]);
   const [tabs, setTabs] = useState([]);
   const [metaLoading, setMetaLoading] = useState(true);
@@ -124,7 +126,7 @@ export default function MobileHome() {
 
   const { pullDistance, refreshing, threshold } = usePullToRefresh(fetchProducts);
 
-  let label = activeCatDef ? activeCatDef.name : 'All categories';
+  let label = activeCatDef ? activeCatDef.name : t('home.allCategories');
   if (debouncedQuery) label = `Results for "${debouncedQuery}"`;
 
   // "Low MOQ" reads the leading number off the moq string (e.g. "150pc" -> 150) regardless of unit,
@@ -155,7 +157,7 @@ export default function MobileHome() {
   const activeTabDef = tabs.find((t) => t.key === activeTab);
 
   return (
-    <div className="min-h-screen bg-white font-sans">
+    <div className="min-h-screen bg-surface font-sans">
       {/* Pull-to-refresh indicator — height tracks the live pull distance, spins while refreshing */}
       {(pullDistance > 0 || refreshing) && (
         <div
@@ -193,7 +195,7 @@ export default function MobileHome() {
                   className={`flex items-center gap-1.5 shrink-0 whitespace-nowrap rounded-full pl-2.5 pr-3.5 py-2 text-[13px] font-semibold cursor-pointer transition-colors border ${
                     isActive
                       ? 'bg-green text-white border-green shadow-[0_4px_12px_rgba(14,90,70,0.25)]'
-                      : 'bg-white text-ink-soft border-border hover:border-green/40 hover:text-ink'
+                      : 'bg-surface text-ink-soft border-border hover:border-green/40 hover:text-ink'
                   }`}
                 >
                   {Icon && (

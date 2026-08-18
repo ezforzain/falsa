@@ -8,6 +8,17 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#0E5A46" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script>
+      // Applies the saved/system theme before first paint so there's no light-mode flash for
+      // users who've picked dark (see AppSettingsContext, which owns this after React mounts).
+      (function () {
+        try {
+          var stored = localStorage.getItem('falsafahtot_theme');
+          var dark = stored === 'dark' || (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

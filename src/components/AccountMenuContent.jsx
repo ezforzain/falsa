@@ -1,5 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useNotifications } from '../context/NotificationsContext';
+import Avatar from './Avatar';
 import {
   IconUser,
   IconHome,
@@ -11,6 +14,7 @@ import {
   IconStore,
   IconSettings,
   IconSliders,
+  IconBell,
   IconHelpCircle,
   IconShield,
   IconLogout,
@@ -26,46 +30,59 @@ const TINTS = {
   red: 'bg-red-50 text-red-500',
 };
 
-const PRIMARY_ITEMS = [
-  { label: 'Home', to: '/', icon: IconHome, tint: 'green' },
-  { label: 'My Profile', to: '/account', icon: IconUser, tint: 'green' },
-  { label: 'My Orders', to: '/cart', icon: IconReceipt, tint: 'green' },
-  { label: 'Wishlist', to: '/wishlist', icon: IconHeart, tint: 'rose' },
-  { label: 'Cart', to: '/cart', icon: IconCart, tint: 'green' },
-  { label: 'Messages', to: '/messenger', icon: IconMessageCircle, tint: 'blue' },
-];
+function primaryItems(t) {
+  return [
+    { label: t('nav.home'), to: '/', icon: IconHome, tint: 'green' },
+    { label: t('accountMenu.myProfile'), to: '/account', icon: IconUser, tint: 'green' },
+    { label: t('accountMenu.myOrders'), to: '/cart', icon: IconReceipt, tint: 'green' },
+    { label: t('accountMenu.wishlist'), to: '/wishlist', icon: IconHeart, tint: 'rose' },
+    { label: t('nav.cart'), to: '/cart', icon: IconCart, tint: 'green' },
+    { label: t('accountMenu.messages'), to: '/messenger', icon: IconMessageCircle, tint: 'blue' },
+  ];
+}
 
 // Seller/admin accounts already have a store or panel of their own — showing them a "become a
 // seller" upsell would be nonsensical, so this swaps to their actual portal link instead. Both
 // still sit in this same "Growth" slot, at the same position in the menu.
-function growthItems(role) {
+function growthItems(role, t) {
   if (role === 'seller') {
-    return [{ label: 'Seller Portal', to: '/seller', icon: IconStore, tint: 'orange' }];
+    return [{ label: t('nav.sellerPortal'), to: '/seller', icon: IconStore, tint: 'orange' }];
   }
   if (role === 'admin') {
-    return [{ label: 'Admin Panel', to: '/admin', icon: IconShield, tint: 'orange' }];
+    return [{ label: t('nav.adminPanel'), to: '/admin', icon: IconShield, tint: 'orange' }];
   }
   return [
     {
-      label: 'Become a Partner',
-      subtitle: 'Earn money by becoming our partner.',
+      label: t('accountMenu.becomePartner'),
+      subtitle: t('accountMenu.becomePartnerSubtitle'),
       to: '/auth?screen=signup&role=seller',
       icon: IconGift,
       tint: 'orange',
     },
-    { label: 'Customer Sign Up', to: '/auth?screen=signup&role=buyer', icon: IconUser, tint: 'green' },
+    { label: t('accountMenu.customerSignUp'), to: '/auth?screen=signup&role=buyer', icon: IconUser, tint: 'green' },
   ];
 }
 
-const SETTINGS_ITEMS = [
-  { label: 'Account Center', to: '/account-center', icon: IconSettings, tint: 'slate' },
-  { label: 'Settings', to: '/settings', icon: IconSliders, tint: 'slate' },
-];
+function settingsItems(t, unreadCount) {
+  return [
+    { label: t('accountMenu.accountCenter'), to: '/account-center', icon: IconSettings, tint: 'slate' },
+    {
+      label: t('accountMenu.notifications'),
+      subtitle: unreadCount > 0 ? `${unreadCount} unread` : undefined,
+      to: '/notifications',
+      icon: IconBell,
+      tint: 'slate',
+    },
+    { label: t('accountMenu.settings'), to: '/settings', icon: IconSliders, tint: 'slate' },
+  ];
+}
 
-const SUPPORT_ITEMS = [
-  { label: 'Help & Support', to: '/help', icon: IconHelpCircle, tint: 'slate' },
-  { label: 'Privacy Policy', to: '/privacy', icon: IconShield, tint: 'slate' },
-];
+function supportItems(t) {
+  return [
+    { label: t('accountMenu.helpSupport'), to: '/help', icon: IconHelpCircle, tint: 'slate' },
+    { label: t('accountMenu.privacyPolicy'), to: '/privacy', icon: IconShield, tint: 'slate' },
+  ];
+}
 
 // Lightweight, dependency-free Material/Facebook-style ripple: spawns a fading circle at the
 // pointer position on the row that was pressed, removing itself once its animation ends.
@@ -127,6 +144,8 @@ function MenuSection({ items, onNavigate }) {
 // presentations can never drift out of sync with each other.
 export default function AccountMenuContent({ onNavigate }) {
   const { user, isAuthenticated, logout } = useAuth();
+  const { t } = useLanguage();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -139,21 +158,21 @@ export default function AccountMenuContent({ onNavigate }) {
     <>
       {/* Profile header */}
       <div className="relative px-5 pb-5 pt-6 bg-green-tint shrink-0">
-        <span className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-sm mb-3">
-          <IconUser width="28" height="28" className="text-green" />
+        <span className="inline-block rounded-full shadow-sm mb-3">
+          <Avatar src={isAuthenticated ? user?.avatarUrl : null} size={64} iconSize={28} bgClassName="bg-white" />
         </span>
         <p className="text-[16px] font-bold text-ink m-0 truncate pr-10">
-          {isAuthenticated ? user.companyName : 'Welcome'}
+          {isAuthenticated ? user.companyName : t('common.welcome')}
         </p>
         <p className="text-[13px] text-text-muted mt-0.5 truncate pr-10">
-          {isAuthenticated ? user.email || user.phone : 'Sign in to unlock your account'}
+          {isAuthenticated ? user.email || user.phone : t('accountMenu.signInToUnlock')}
         </p>
         <Link
           to={isAuthenticated ? '/account' : '/auth'}
           onClick={onNavigate}
           className="inline-block mt-3.5 bg-green hover:bg-green-hover text-white text-[13px] font-semibold px-4 py-2 rounded-full no-underline transition-colors"
         >
-          {isAuthenticated ? 'View Profile' : 'Sign in'}
+          {isAuthenticated ? t('accountMenu.viewProfile') : t('common.signIn')}
         </Link>
       </div>
 
@@ -163,17 +182,17 @@ export default function AccountMenuContent({ onNavigate }) {
         aria-label="Account"
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
       >
-        <MenuSection items={PRIMARY_ITEMS} onNavigate={onNavigate} />
+        <MenuSection items={primaryItems(t)} onNavigate={onNavigate} />
         <div className="border-t border-border my-3" />
-        <MenuSection items={growthItems(user?.role)} onNavigate={onNavigate} />
-        <MenuSection items={SETTINGS_ITEMS} onNavigate={onNavigate} />
+        <MenuSection items={growthItems(user?.role, t)} onNavigate={onNavigate} />
+        <MenuSection items={settingsItems(t, unreadCount)} onNavigate={onNavigate} />
         <div className="border-t border-border my-3" />
-        <MenuSection items={SUPPORT_ITEMS} onNavigate={onNavigate} />
+        <MenuSection items={supportItems(t)} onNavigate={onNavigate} />
         <div className="border-t border-border my-3" />
         {isAuthenticated ? (
-          <MenuRow icon={IconLogout} label="Logout" tint="red" danger onClick={handleLogout} />
+          <MenuRow icon={IconLogout} label={t('nav.logout')} tint="red" danger onClick={handleLogout} />
         ) : (
-          <MenuRow icon={IconKey} label="Sign in" tint="green" to="/auth" onNavigate={onNavigate} />
+          <MenuRow icon={IconKey} label={t('common.signIn')} tint="green" to="/auth" onNavigate={onNavigate} />
         )}
       </nav>
     </>

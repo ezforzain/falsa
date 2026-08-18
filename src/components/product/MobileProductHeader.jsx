@@ -33,7 +33,7 @@ export default function MobileProductHeader({ product }) {
       </button>
 
       <ShareButton title={product?.name} iconOnly className={iconBtnClass} />
-      {product && <WishlistButton productId={product.id} size={19} className={iconBtnClass} />}
+      {product && <WishlistButton productId={product.id} productName={product.name} size={19} className={iconBtnClass} />}
 
       <button type="button" onClick={() => navigate('/cart')} aria-label="Cart" className={`relative ${iconBtnClass}`}>
         <IconCart width="19" height="19" />
