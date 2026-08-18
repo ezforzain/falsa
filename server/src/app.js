@@ -14,6 +14,7 @@ import sellersRoutes from './routes/sellers.routes.js';
 import sellerPortalRoutes from './routes/seller.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
+import claudeRoutes from './routes/claude.routes.js';
 
 // True for any private-network/localhost address, on ANY port — covers a phone or another
 // machine reaching this API via the same LAN IP the dev-server QR code points them to (whatever
@@ -98,6 +99,7 @@ export function createApp() {
   app.use('/api/seller', sellerPortalRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/uploads', uploadRoutes);
+  app.use('/api/claude', claudeRoutes);
 
   app.use((req, res) => {
     res.status(404).json({ message: 'Not found.' });

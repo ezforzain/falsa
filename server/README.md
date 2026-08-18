@@ -53,3 +53,25 @@ src/
   seed/                 seed data ported from the frontend mock + seed script
   app.js / index.js    Express app wiring / entrypoint
 ```
+
+## Claude integration (optional)
+
+1. Add Claude credentials to your environment (see `.env.example`):
+
+```
+CLAUDE_API_KEY=your_claude_api_key_here
+CLAUDE_API_URL=https://api.anthropic.com/v1/complete
+```
+
+2. Start the server and call the proxy route from your frontend or a client:
+
+```
+POST /api/claude/generate
+Content-Type: application/json
+
+{ /* body forwarded to the configured CLAUDE_API_URL */ }
+```
+
+The server forwards whatever JSON you post directly to `CLAUDE_API_URL` with the
+`Authorization: Bearer <CLAUDE_API_KEY>` header and returns the provider response.
+
