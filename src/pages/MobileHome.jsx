@@ -228,7 +228,7 @@ export default function MobileHome() {
           className="flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-soft cursor-pointer py-1"
         >
           <IconSliders width="14" height="14" />
-          Filters
+          {t('common.filters')}
         </button>
       </div>
       {filtersOpen && (
@@ -239,7 +239,7 @@ export default function MobileHome() {
 
       {/* Search bar */}
       <div className="px-[18px] pt-2 pb-4">
-        <div className="relative flex items-center gap-3 rounded-2xl border border-border bg-white pl-4 pr-2 py-2 shadow-[0_1px_3px_rgba(27,31,29,0.05)] transition-all duration-150 focus-within:border-orange/40 focus-within:shadow-[0_0_0_3px_rgba(201,123,45,0.12)]">
+        <div className="relative flex items-center gap-3 rounded-2xl border border-border bg-surface pl-4 pr-2 py-2 shadow-[0_1px_3px_rgba(27,31,29,0.05)] transition-all duration-150 focus-within:border-orange/40 focus-within:shadow-[0_0_0_3px_rgba(201,123,45,0.12)]">
           <IconSearch width="18" height="18" className="text-text-muted shrink-0" strokeWidth="1.8" />
           <span className="flex-1 relative min-w-0">
             <input
@@ -268,10 +268,10 @@ export default function MobileHome() {
       {/* Quick actions */}
       <div className="flex gap-3 px-[18px] pb-4">
         {[
-          { label: 'Start exploring', bg: 'bg-green-tint', icon: <IconGrid />, onClick: () => navigate('/categories') },
-          { label: 'Request for Quotation', bg: 'bg-orange-tint', icon: <IconTarget />, onClick: () => navigate('/messenger') },
+          { label: t('home.startExploring'), bg: 'bg-green-tint', icon: <IconGrid />, onClick: () => navigate('/categories') },
+          { label: t('home.requestQuotation'), bg: 'bg-orange-tint', icon: <IconTarget />, onClick: () => navigate('/messenger') },
           {
-            label: 'Top Sellers',
+            label: t('home.topSellers'),
             bg: 'bg-green-tint',
             icon: <IconTrophy />,
             onClick: () => {
@@ -284,7 +284,7 @@ export default function MobileHome() {
             key={a.label}
             type="button"
             onClick={a.onClick}
-            className="group flex-1 bg-white border border-border rounded-2xl px-3 py-3.5 flex flex-col items-start gap-2.5 text-left cursor-pointer transition-all duration-150 hover:border-green/20 hover:shadow-[0_10px_24px_rgba(27,31,29,0.08)] hover:-translate-y-0.5 active:scale-[0.97] active:shadow-none"
+            className="group flex-1 bg-surface border border-border rounded-2xl px-3 py-3.5 flex flex-col items-start gap-2.5 text-left cursor-pointer transition-all duration-150 hover:border-green/20 hover:shadow-[0_10px_24px_rgba(27,31,29,0.08)] hover:-translate-y-0.5 active:scale-[0.97] active:shadow-none"
           >
             <span className={`w-9 h-9 rounded-xl ${a.bg} flex items-center justify-center transition-transform duration-150 group-hover:scale-105`}>
               {a.icon}
@@ -298,22 +298,22 @@ export default function MobileHome() {
           a long line like "Money-back protection" never overflows past the card. */}
       <div className="mx-[18px] mb-1.5 rounded-2xl border border-orange/15 bg-gradient-to-br from-orange-tint to-[#FBF2E4] px-4 py-3.5 flex items-center shadow-[0_1px_3px_rgba(27,31,29,0.03)]">
         <div className="flex-1 flex items-center gap-3 min-w-0">
-          <span className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-[0_1px_4px_rgba(122,74,20,0.16)]">
+          <span className="w-9 h-9 rounded-xl bg-surface flex items-center justify-center shrink-0 shadow-[0_1px_4px_rgba(122,74,20,0.16)]">
             <IconShipFast />
           </span>
           <span className="min-w-0">
-            <span className="font-display block text-[12.5px] font-bold text-ink leading-snug tracking-[-0.01em]">FREE shipping</span>
-            <span className="block text-[11px] text-orange-text-dark/80 leading-snug">on your first order</span>
+            <span className="font-display block text-[12.5px] font-bold text-ink leading-snug tracking-[-0.01em]">{t('home.freeShipping')}</span>
+            <span className="block text-[11px] text-orange-text-dark/80 leading-snug">{t('home.freeShippingSub')}</span>
           </span>
         </div>
         <span className="w-px self-stretch bg-orange/20 mx-3.5 shrink-0" />
         <div className="flex-1 flex items-center gap-3 min-w-0">
-          <span className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-[0_1px_4px_rgba(122,74,20,0.16)]">
+          <span className="w-9 h-9 rounded-xl bg-surface flex items-center justify-center shrink-0 shadow-[0_1px_4px_rgba(122,74,20,0.16)]">
             <IconMoneyBack />
           </span>
           <span className="min-w-0">
-            <span className="font-display block text-[12.5px] font-bold text-ink leading-snug tracking-[-0.01em]">Money-back protection</span>
-            <span className="block text-[11px] text-orange-text-dark/80 leading-snug">for up to 60 days</span>
+            <span className="font-display block text-[12.5px] font-bold text-ink leading-snug tracking-[-0.01em]">{t('home.moneyBack')}</span>
+            <span className="block text-[11px] text-orange-text-dark/80 leading-snug">{t('home.moneyBackSub')}</span>
           </span>
         </div>
       </div>
@@ -337,7 +337,7 @@ export default function MobileHome() {
                   <span
                     className="w-[62px] h-[62px] rounded-full overflow-hidden transition-colors"
                     style={{
-                      border: isActive ? '2.5px solid #0E5A46' : '2px solid #EFEBE2',
+                      border: isActive ? '2.5px solid var(--color-green)' : '2px solid var(--color-border)',
                       boxShadow: isActive ? '0 4px 10px rgba(14,90,70,0.25)' : 'none',
                     }}
                   >
@@ -345,7 +345,7 @@ export default function MobileHome() {
                   </span>
                   <span
                     className="text-[11.5px] text-center leading-tight"
-                    style={{ fontWeight: isActive ? 700 : 600, color: isActive ? '#0E5A46' : '#3A362D' }}
+                    style={{ fontWeight: isActive ? 700 : 600, color: isActive ? 'var(--color-green)' : 'var(--color-ink-soft)' }}
                   >
                     {cat.name}
                   </span>
@@ -357,9 +357,9 @@ export default function MobileHome() {
       {/* Filter pills */}
       <div className="flex gap-2 px-[18px] pt-2.5 pb-3.5">
         {[
-          { key: 'all', label: 'All' },
-          { key: 'verified', label: 'Verified' },
-          { key: 'lowMoq', label: 'Low MOQ' },
+          { key: 'all', label: t('common.all') },
+          { key: 'verified', label: t('common.verified') },
+          { key: 'lowMoq', label: t('common.lowMoq') },
         ].map((f) => (
           <span
             key={f.key}
@@ -376,10 +376,10 @@ export default function MobileHome() {
 
       {/* Active label */}
       <div ref={productGridRef} className="px-[18px] pb-2.5 text-[13px] text-text scroll-mt-4">
-        Showing <strong className="text-ink">{label}</strong>
+        {t('home.showing')} <strong className="text-ink">{label}</strong>
         {activeFilter !== 'all' && (
           <>
-            {' '}· <strong className="text-ink">{activeFilter === 'verified' ? 'Verified sellers' : 'Low MOQ'}</strong>
+            {' '}· <strong className="text-ink">{activeFilter === 'verified' ? t('common.verified') : t('common.lowMoq')}</strong>
           </>
         )}
       </div>
@@ -388,7 +388,7 @@ export default function MobileHome() {
       {productsLoading && (
         <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-8">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="animate-pulse bg-white border border-[#EFEBE2] rounded-[14px] overflow-hidden">
+            <div key={i} className="animate-pulse bg-surface border border-border rounded-[14px] overflow-hidden">
               <div className="h-[130px] bg-surface-muted" />
               <div className="px-2.5 pt-2.5 pb-3 flex flex-col gap-1.5">
                 <div className="h-3 bg-surface-muted rounded w-full" />

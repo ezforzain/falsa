@@ -16,7 +16,7 @@ export default function MobileProductCard({ product }) {
   return (
     <Link
       to={`/product/${product.id}`}
-      className="group block bg-white border border-[#EFEBE2] rounded-[14px] overflow-hidden no-underline text-inherit transition-all duration-200 active:scale-[0.98]"
+      className="group block bg-surface border border-border rounded-[14px] overflow-hidden no-underline text-inherit transition-all duration-200 active:scale-[0.98]"
     >
       <div className="relative h-[150px] overflow-hidden bg-surface-muted">
         <img src={product.img} alt={product.name} className="w-full h-full object-cover" loading="lazy" />

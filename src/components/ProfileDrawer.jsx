@@ -43,7 +43,7 @@ export default function ProfileDrawer({ open, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-label="Account menu"
-        className={`absolute inset-y-0 left-0 w-[85%] max-w-[320px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
+        className={`absolute inset-y-0 left-0 w-[85%] max-w-[320px] bg-surface shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
@@ -53,7 +53,7 @@ export default function ProfileDrawer({ open, onClose }) {
           ref={closeBtnRef}
           onClick={onClose}
           aria-label="Close menu"
-          className="absolute right-4 top-4 w-9 h-9 rounded-full bg-white/70 hover:bg-white flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green z-10"
+          className="absolute right-4 top-4 w-9 h-9 rounded-full bg-surface/70 hover:bg-surface flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green z-10"
           style={{ top: 'calc(env(safe-area-inset-top) + 16px)' }}
         >
           <IconClose width="16" height="16" className="text-ink-soft" />

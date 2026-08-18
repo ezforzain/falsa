@@ -69,7 +69,7 @@ export default function ProfileDropdown() {
               role="dialog"
               aria-modal="true"
               aria-label="Account menu"
-              className={`fixed w-[360px] max-h-[calc(100vh-96px)] bg-white rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col z-[120] origin-top-right transition-all duration-200 ease-out ${
+              className={`fixed w-[360px] max-h-[calc(100vh-96px)] bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col z-[120] origin-top-right transition-all duration-200 ease-out ${
                 open ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
               }`}
               style={{ top: anchorRect.bottom + 8, left: anchorRect.right - 360 }}
@@ -78,7 +78,7 @@ export default function ProfileDropdown() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close menu"
-                className="absolute right-4 top-4 w-9 h-9 rounded-full bg-white/70 hover:bg-white flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green z-10"
+                className="absolute right-4 top-4 w-9 h-9 rounded-full bg-surface/70 hover:bg-surface flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green z-10"
               >
                 <IconClose width="16" height="16" className="text-ink-soft" />
               </button>

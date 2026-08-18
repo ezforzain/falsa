@@ -22,7 +22,7 @@ export default function MainLayout() {
   const isMobileProductDetail = isMobile && pathname.startsWith('/product/');
   if (isMobileProductDetail) {
     return (
-      <div className="font-sans text-ink bg-white min-h-screen">
+      <div className="font-sans text-ink bg-surface min-h-screen">
         <Outlet />
       </div>
     );
@@ -36,7 +36,7 @@ export default function MainLayout() {
   if (isMobileBare) {
     return (
       <div
-        className="font-sans text-ink bg-white min-h-screen"
+        className="font-sans text-ink bg-surface min-h-screen"
         style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: bottomNavClearance }}
       >
         <Outlet />

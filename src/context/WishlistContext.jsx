@@ -34,20 +34,28 @@ export function WishlistProvider({ children }) {
     writeStored(ids);
   }, [ids]);
 
+  // Reads `ids` directly (rather than deciding add-vs-remove inside the setIds updater) so the
+  // notify() call — which updates NotificationsContext's state — never fires from inside a
+  // different context's state-updater function; React flags that as an unsafe cross-component
+  // setState during render.
   const toggle = useCallback(
     (productId, productName) => {
+      const isRemoving = ids.has(productId);
       setIds((prev) => {
         const next = new Set(prev);
-        if (next.has(productId)) {
-          next.delete(productId);
-        } else {
-          next.add(productId);
-          notify('wishlist', 'Saved to wishlist', productName ? `${productName} was added to your wishlist.` : 'Item added to your wishlist.');
-        }
+        if (next.has(productId)) next.delete(productId);
+        else next.add(productId);
         return next;
       });
+      if (!isRemoving) {
+        notify(
+          'wishlist',
+          'Saved to wishlist',
+          productName ? `${productName} was added to your wishlist.` : 'Item added to your wishlist.'
+        );
+      }
     },
-    [notify]
+    [ids, notify]
   );
 
   const has = useCallback((productId) => ids.has(productId), [ids]);

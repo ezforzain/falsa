@@ -49,7 +49,7 @@ export default function Header() {
     }`;
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-border">
+    <header className="sticky top-0 z-50 bg-surface/95 backdrop-blur-md border-b border-border">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5 px-4 sm:px-6 lg:px-10 py-2.5">
         <Link to="/" className="flex items-center gap-2.5 no-underline shrink-0">
           <img src={logoMark} alt="" className="w-[42px] h-[42px] object-contain" />
@@ -61,7 +61,7 @@ export default function Header() {
         </Link>
 
         {/* Search — desktop */}
-        <div className="hidden md:flex flex-1 max-w-[540px] min-w-[220px] items-center gap-2.5 bg-surface-muted border border-border rounded-full py-2 pl-[18px] pr-2 focus-within:border-green focus-within:bg-white transition-colors">
+        <div className="hidden md:flex flex-1 max-w-[540px] min-w-[220px] items-center gap-2.5 bg-surface-muted border border-border rounded-full py-2 pl-[18px] pr-2 focus-within:border-green focus-within:bg-surface transition-colors">
           <IconSearch className="text-text-muted shrink-0" />
           <span className="relative flex-1 min-w-0">
             <input

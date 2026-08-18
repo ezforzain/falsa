@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
 import SplashScreen from './components/SplashScreen';
+import NotificationToastHost from './components/NotificationToastHost';
 import { useAuth } from './context/AuthContext';
 import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
@@ -40,6 +41,7 @@ export default function App() {
     <>
       <SplashScreen visible={status === 'loading'} />
       <ScrollToTop />
+      <NotificationToastHost />
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />

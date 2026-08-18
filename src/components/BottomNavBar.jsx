@@ -29,7 +29,7 @@ export default function BottomNavBar() {
   return (
     <nav
       aria-label="Primary"
-      className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-white border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
+      className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-surface border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
       // `env(safe-area-inset-bottom)` alone isn't enough — Android Chrome commonly reports 0
       // for it even with 3-button/gesture navigation showing (unlike iOS Safari), which was
       // clipping the label text under the system nav bar. `max()` guarantees real clearance
@@ -51,7 +51,7 @@ export default function BottomNavBar() {
                 <Icon
                   className="transition-all duration-200 ease-out"
                   style={{
-                    color: active ? ACTIVE_COLOR : '#4B5563',
+                    color: active ? ACTIVE_COLOR : 'var(--color-text-muted)',
                     transform: active ? 'scale(1.12)' : 'scale(1)',
                   }}
                   strokeWidth={active ? 2.25 : 2}
@@ -64,7 +64,7 @@ export default function BottomNavBar() {
               </span>
               <span
                 className="text-[11px] font-medium leading-none whitespace-nowrap transition-colors duration-200 ease-out"
-                style={{ color: active ? ACTIVE_COLOR : '#4B5563' }}
+                style={{ color: active ? ACTIVE_COLOR : 'var(--color-text-muted)' }}
               >
                 {label}
               </span>
