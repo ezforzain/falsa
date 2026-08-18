@@ -46,8 +46,8 @@ export default defineConfig({
       // Forwards to the real backend (see /server) as if it were same-origin — this is what
       // lets the guest-cart cookie and CORS work in dev without any extra config, and keeps
       // every relative '/api/...' call in src/lib/api.js unchanged.
-      '/api': { target: 'http://localhost:5000', changeOrigin: true },
-      '/uploads': { target: 'http://localhost:5000', changeOrigin: true },
+      '/api': { target: 'http://localhost:5081', changeOrigin: true },
+      '/uploads': { target: 'http://localhost:5081', changeOrigin: true },
     },
   },
 })
