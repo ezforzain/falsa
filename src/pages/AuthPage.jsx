@@ -289,6 +289,11 @@ function SignIn({ form, setForm, showPw, setShowPw, loading, error, onSubmit, go
 
       <input
         type="text"
+        inputMode="email"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck="false"
+        autoComplete="username"
         value={form.identifier}
         onChange={(e) => setForm((f) => ({ ...f, identifier: e.target.value }))}
         onKeyDown={(e) => e.key === 'Enter' && submit()}
@@ -299,6 +304,10 @@ function SignIn({ form, setForm, showPw, setShowPw, loading, error, onSubmit, go
       <div className="relative">
         <input
           type={showPw ? 'text' : 'password'}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck="false"
+          autoComplete="current-password"
           value={form.password}
           onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
           onKeyDown={(e) => e.key === 'Enter' && submit()}
@@ -550,7 +559,18 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
 
       <div className="mb-[18px]">
         <FieldLabel>{isSeller ? 'Account email (for signing in)' : 'Business email'}</FieldLabel>
-        <input type="text" value={form.email} onChange={set('email')} placeholder="name@company.com" className={inputClass} />
+        <input
+          type="text"
+          inputMode="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck="false"
+          autoComplete="email"
+          value={form.email}
+          onChange={set('email')}
+          placeholder="name@company.com"
+          className={inputClass}
+        />
       </div>
 
       <div className="mb-6">
@@ -558,6 +578,10 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
         <div className="relative">
           <input
             type={showPw ? 'text' : 'password'}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck="false"
+            autoComplete="new-password"
             value={form.password}
             onChange={set('password')}
             placeholder="At least 8 characters"
