@@ -1,3 +1,5 @@
+import path from 'node:path';
+import fs from 'node:fs/promises';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
@@ -9,6 +11,7 @@ import { serializeUser } from '../utils/serializeUser.js';
 import { sendVerificationEmail } from '../utils/mailer.js';
 
 const router = Router();
+const UPLOAD_ROOT = path.resolve('uploads');
 
 function slugify(str) {
   return String(str)
@@ -326,6 +329,20 @@ router.patch(
   })
 );
 
+// Matches exactly what POST /api/uploads/avatars hands back (see server/src/middleware/upload.js:
+// nanoid(16) + the original extension) — anchored end-to-end so no path-traversal segment or
+// extra slash can sneak in ahead of the "starts with" check.
+const AVATAR_URL_RE = /^\/uploads\/avatars\/[A-Za-z0-9_-]{1,64}\.[a-z0-9]{1,8}$/i;
+
+// Best-effort cleanup of the file an avatar URL used to point at, so repeated change/remove
+// cycles don't quietly fill up disk with orphaned uploads. Never blocks the response on this —
+// a delete failure (e.g. already gone) shouldn't turn a successful profile update into an error.
+async function deleteAvatarFile(avatarUrl) {
+  if (!avatarUrl || !AVATAR_URL_RE.test(avatarUrl)) return;
+  const filePath = path.join(UPLOAD_ROOT, 'avatars', path.basename(avatarUrl));
+  await fs.unlink(filePath).catch(() => {});
+}
+
 // ---------- PATCH /api/auth/avatar ----------
 // Separate from /profile for the same reason /preferences is: that route requires companyName,
 // and an avatar change shouldn't be blocked by unrelated identity-field validation. `avatarUrl`
@@ -336,11 +353,15 @@ router.patch(
   requireAuth,
   asyncHandler(async (req, res) => {
     const { avatarUrl } = req.body;
-    if (avatarUrl !== null && !(typeof avatarUrl === 'string' && avatarUrl.startsWith('/uploads/avatars/'))) {
+    if (avatarUrl !== null && !(typeof avatarUrl === 'string' && AVATAR_URL_RE.test(avatarUrl))) {
       return res.status(400).json({ message: 'Invalid profile picture.' });
     }
+    const previousAvatarUrl = req.user.avatarUrl;
     req.user.set({ avatarUrl });
     await req.user.save();
+    if (previousAvatarUrl && previousAvatarUrl !== avatarUrl) {
+      await deleteAvatarFile(previousAvatarUrl);
+    }
     res.json({ user: await serializeUser(req.user) });
   })
 );

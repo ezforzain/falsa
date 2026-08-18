@@ -222,6 +222,20 @@ router.patch(
       reviewedAt: new Date(),
     });
     await user.save();
+
+    // Approving a seller's ID documents IS what "getting verified" means from their side — flip
+    // the store's public "Verified Store" badge (and the denormalized copy on their products,
+    // same as PATCH /sellers/:id/verify) in lockstep so approval always shows up immediately,
+    // rather than requiring the admin to separately toggle it in the Verified Stores tab.
+    // Rejection deliberately leaves an existing verified badge alone — a failed resubmission
+    // shouldn't silently unverify a store that was already legitimately verified.
+    if (status === 'approved' && user.sellerId) {
+      const sellerRecord = await Seller.findByIdAndUpdate(user.sellerId, { verified: true }, { new: true });
+      if (sellerRecord) {
+        await Product.updateMany({ sellerId: sellerRecord._id }, { sellerVerified: true });
+      }
+    }
+
     res.json({ seller: await serializeUser(user) });
   })
 );

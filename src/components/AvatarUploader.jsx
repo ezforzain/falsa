@@ -13,7 +13,7 @@ const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.hei
 // screen just displays whatever context/user.avatarUrl already says via <Avatar>; updating it
 // here through AuthContext's updateAvatar propagates everywhere automatically because they all
 // read from the same user object.
-export default function AvatarUploader({ size = 96 }) {
+export default function AvatarUploader({ size = 96, avatarClassName = '' }) {
   const { user, updateAvatar } = useAuth();
   const inputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -76,7 +76,7 @@ export default function AvatarUploader({ size = 96 }) {
   return (
     <div className="flex flex-col items-center gap-2.5">
       <div className="relative">
-        <Avatar src={displaySrc} size={size} iconSize={Math.round(size * 0.4)} />
+        <Avatar src={displaySrc} size={size} iconSize={Math.round(size * 0.4)} className={avatarClassName} />
         {uploading && (
           <span className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
             <span
@@ -91,7 +91,7 @@ export default function AvatarUploader({ size = 96 }) {
           disabled={uploading}
           aria-label="Edit profile picture"
           title="Edit profile picture"
-          className="absolute bottom-0 right-0 cursor-pointer disabled:cursor-not-allowed w-8 h-8 rounded-full bg-green hover:bg-green-hover text-white flex items-center justify-center border-2 border-white shadow-sm transition-colors"
+          className="absolute bottom-0 right-0 cursor-pointer disabled:cursor-not-allowed w-8 h-8 rounded-full bg-green hover:bg-green-hover text-white flex items-center justify-center border-[3px] border-surface shadow-md transition-colors"
         >
           <IconCamera width="14" height="14" />
         </button>
