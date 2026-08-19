@@ -18,7 +18,6 @@ export default function AvatarUploader({ size = 96, avatarClassName = '' }) {
   const inputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState(null);
 
   // Revoke the last object URL whenever it's replaced or the component unmounts, so we don't
   // leak memory across repeated picks.
@@ -27,20 +26,14 @@ export default function AvatarUploader({ size = 96, avatarClassName = '' }) {
   const pickFile = () => inputRef.current?.click();
 
   const handleFile = async (rawFile) => {
-    setError(null);
     let displayable;
     try {
       displayable = await toDisplayableImage(rawFile);
     } catch {
-      setError('Could not process that photo. Please try a different file.');
       return;
     }
 
-    const validationError = validateAvatarImageFile(displayable);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    if (validateAvatarImageFile(displayable)) return;
 
     const localUrl = URL.createObjectURL(displayable);
     setPreviewUrl(localUrl);
@@ -48,8 +41,8 @@ export default function AvatarUploader({ size = 96, avatarClassName = '' }) {
     try {
       const { url } = await uploadFile('avatars', displayable);
       await updateAvatar(url);
-    } catch (err) {
-      setError(err.message || 'Could not upload that photo. Please try again.');
+    } catch {
+      // Swallowed — no inline error UI here; the picture just stays as it was.
     } finally {
       setUploading(false);
       setPreviewUrl((current) => {
@@ -60,12 +53,11 @@ export default function AvatarUploader({ size = 96, avatarClassName = '' }) {
   };
 
   const handleRemove = async () => {
-    setError(null);
     setUploading(true);
     try {
       await updateAvatar(null);
-    } catch (err) {
-      setError(err.message || 'Could not remove your profile picture. Please try again.');
+    } catch {
+      // Swallowed — no inline error UI here; the picture just stays as it was.
     } finally {
       setUploading(false);
     }
@@ -130,9 +122,6 @@ export default function AvatarUploader({ size = 96, avatarClassName = '' }) {
         }}
         className="sr-only"
       />
-
-      {error && <p className="text-xs text-orange-text text-center max-w-[240px]">{error}</p>}
-      <p className="text-[11px] text-text-muted text-center">JPG, PNG, or WEBP · up to 8MB</p>
     </div>
   );
 }
