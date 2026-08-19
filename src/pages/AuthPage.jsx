@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
-import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser, IconMail, IconShield, IconGlobe, IconTruck } from '../components/icons';
+import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser, IconMail, IconShield, IconGlobe, IconTruck, IconStore } from '../components/icons';
 import OfficialBadge from '../components/OfficialBadge';
 import CorporateVerificationForm from '../components/CorporateVerificationForm';
 import { fileToDataUrl, validateImageFile } from '../lib/file';
@@ -10,6 +10,24 @@ import { createHeicAwareFileHandler } from '../lib/heic';
 
 const ROLE_BUYER = 'buyer';
 const ROLE_SELLER = 'seller';
+
+// Real, login-capable demo accounts — provisioned directly in the dev database (not by a
+// separate seed script that has to be re-run per deployment, which is why an earlier version of
+// this was removed). Clicking a demo button below runs the exact same signIn() → POST
+// /api/auth/signin round trip as typing credentials in by hand: real password check, real JWT,
+// real role on the account. Override via env vars if you provision different demo accounts.
+const DEMO_ACCOUNTS = {
+  admin: {
+    email: import.meta.env.VITE_DEMO_ADMIN_EMAIL || 'qatest.admin@falsafah.test',
+    password: import.meta.env.VITE_DEMO_ADMIN_PASSWORD || 'TestAdmin123!',
+    redirectTo: '/admin',
+  },
+  seller: {
+    email: import.meta.env.VITE_DEMO_SELLER_EMAIL || 'qatest.seller@falsafah.test',
+    password: import.meta.env.VITE_DEMO_SELLER_PASSWORD || 'TestSeller123!',
+    redirectTo: '/seller',
+  },
+};
 
 // The left brand panel's trust bullets (desktop only — see the lg:grid split below).
 const TRUST_POINTS = [
@@ -106,6 +124,28 @@ export default function AuthPage() {
       else navigate('/');
     } catch (err) {
       setSigninError(err.message);
+    } finally {
+      setLoadingKey(null);
+    }
+  };
+
+  // Demo buttons jump straight into the relevant dashboard rather than sitting through the
+  // normal post-signin flow — a one-click preview.
+  const handleDemoLogin = async (key) => {
+    if (loadingKey) return;
+    setSigninError(null);
+    setLoadingKey(`demo-${key}`);
+    const { email, password, redirectTo } = DEMO_ACCOUNTS[key];
+    try {
+      const { user: signedInUser } = await signIn(email, password);
+      notify('account', 'Signed in', `Welcome back, ${signedInUser.companyName}.`);
+      navigate(redirectTo);
+    } catch (err) {
+      setSigninError(
+        err.status === 401
+          ? "This demo account isn't set up on this server yet."
+          : err.message
+      );
     } finally {
       setLoadingKey(null);
     }
@@ -256,17 +296,20 @@ export default function AuthPage() {
 
         <div className="w-full max-w-[400px] bg-surface rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_20px_44px_-16px_rgba(0,0,0,0.16)] border border-border/60 p-6 sm:p-8">
           {screen === 'signin' && (
-            <SignIn
-              form={signinForm}
-              setForm={setSigninForm}
-              showPw={showPw}
-              setShowPw={setShowPw}
-              loading={loadingKey === 'signin'}
-              error={signinError}
-              onSubmit={handleSignin}
-              goForgot={goForgot}
-              goSignup={goSignup}
-            />
+            <>
+              <SignIn
+                form={signinForm}
+                setForm={setSigninForm}
+                showPw={showPw}
+                setShowPw={setShowPw}
+                loading={loadingKey === 'signin'}
+                error={signinError}
+                onSubmit={handleSignin}
+                goForgot={goForgot}
+                goSignup={goSignup}
+              />
+              <DemoAccounts loadingKey={loadingKey} onDemoLogin={handleDemoLogin} />
+            </>
           )}
 
           {screen === 'signup' && signupStep === 1 && (
@@ -328,6 +371,62 @@ function SubmitButton({ loading, children, ...props }) {
       )}
       {children}
     </a>
+  );
+}
+
+const DEMO_ROLE_META = {
+  admin: { icon: IconShield, title: 'Login as Admin', subtitle: DEMO_ACCOUNTS.admin.email },
+  seller: { icon: IconStore, title: 'Login as Seller', subtitle: DEMO_ACCOUNTS.seller.email },
+};
+
+function DemoButton({ roleKey, loadingKey, onDemoLogin }) {
+  const { icon: Icon, title, subtitle } = DEMO_ROLE_META[roleKey];
+  const isLoading = loadingKey === `demo-${roleKey}`;
+  const disabled = Boolean(loadingKey);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onDemoLogin(roleKey)}
+      disabled={disabled}
+      className="w-full flex items-center gap-3 px-4 py-3.5 border-[1.5px] border-border rounded-xl text-left cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 hover:border-orange-text/40 hover:bg-orange-tint/40 transition-colors"
+    >
+      <span className="w-10 h-10 rounded-full bg-orange-tint flex items-center justify-center shrink-0 text-orange-text">
+        <Icon width="18" height="18" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14px] font-semibold text-ink">{title}</span>
+        <span className="block text-[12px] text-text-muted mt-0.5 truncate">{subtitle}</span>
+      </span>
+      {isLoading && (
+        <span
+          className="w-4 h-4 border-2 border-orange-text/30 rounded-full inline-block shrink-0"
+          style={{ borderTopColor: 'currentColor', animation: 'spin 0.8s linear infinite' }}
+        />
+      )}
+    </button>
+  );
+}
+
+// One-click preview of the admin/seller experience — signs in with a real, pre-provisioned
+// account through the exact same signIn() call as the form above, so role-based access,
+// redirects, and permissions all behave exactly like a real account because it is one.
+function DemoAccounts({ loadingKey, onDemoLogin }) {
+  return (
+    <div className="mt-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-px bg-border flex-1" />
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-text-muted shrink-0">Or explore a demo</span>
+        <div className="h-px bg-border flex-1" />
+      </div>
+      <div className="flex flex-col gap-2.5">
+        <DemoButton roleKey="admin" loadingKey={loadingKey} onDemoLogin={onDemoLogin} />
+        <DemoButton roleKey="seller" loadingKey={loadingKey} onDemoLogin={onDemoLogin} />
+      </div>
+      <p className="text-[11px] text-text-muted text-center mt-3">
+        {DEMO_ACCOUNTS.admin.email} / {DEMO_ACCOUNTS.admin.password} &nbsp;·&nbsp; {DEMO_ACCOUNTS.seller.email} / {DEMO_ACCOUNTS.seller.password}
+      </p>
+    </div>
   );
 }
 
