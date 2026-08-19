@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
-import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser, IconMail, IconShield, IconStore } from '../components/icons';
+import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser, IconMail } from '../components/icons';
 import OfficialBadge from '../components/OfficialBadge';
 import CorporateVerificationForm from '../components/CorporateVerificationForm';
 import { fileToDataUrl, validateImageFile } from '../lib/file';
@@ -11,29 +11,9 @@ import { createHeicAwareFileHandler } from '../lib/heic';
 const ROLE_BUYER = 'buyer';
 const ROLE_SELLER = 'seller';
 
-// Real, login-capable demo accounts — provisioned by `npm run seed-demo` in /server (see
-// server/src/scripts/seed-demo-accounts.js). Clicking a demo button below runs the exact same
-// signIn() → POST /api/auth/signin round trip as typing credentials in by hand: real password
-// hash check, real JWT, real role on the account. Nothing about authentication is bypassed —
-// these are just well-known credentials for a pre-seeded account. Override on both sides
-// together (VITE_DEMO_* here, DEMO_* in the seed script) if you change them.
-const DEMO_ACCOUNTS = {
-  admin: {
-    email: import.meta.env.VITE_DEMO_ADMIN_EMAIL || 'demo-admin@falsafah.com',
-    password: import.meta.env.VITE_DEMO_ADMIN_PASSWORD || 'Demo@Admin123',
-    redirectTo: '/admin',
-  },
-  seller: {
-    email: import.meta.env.VITE_DEMO_SELLER_EMAIL || 'demo-seller@falsafah.com',
-    password: import.meta.env.VITE_DEMO_SELLER_PASSWORD || 'Demo@Seller123',
-    redirectTo: '/seller',
-  },
-};
-
 export default function AuthPage() {
   const { signIn, signUp, user } = useAuth();
   const { notify } = useNotifications();
-  const navigate = useNavigate();
 
   const [screen, setScreen] = useState('signin'); // signin | signup | forgot | success
   const [signupStep, setSignupStep] = useState(1); // 1: role, 2: details
@@ -116,29 +96,6 @@ export default function AuthPage() {
       setScreen('success');
     } catch (err) {
       setSigninError(err.message);
-    } finally {
-      setLoadingKey(null);
-    }
-  };
-
-  // Demo buttons skip the normal post-signin "Success" interstitial and jump straight into the
-  // relevant dashboard, per how they're meant to work — a one-click preview, not a sign-in flow
-  // to sit through.
-  const handleDemoLogin = async (key) => {
-    if (loadingKey) return;
-    setSigninError(null);
-    setLoadingKey(`demo-${key}`);
-    const { email, password, redirectTo } = DEMO_ACCOUNTS[key];
-    try {
-      const { user: signedInUser } = await signIn(email, password);
-      notify('account', 'Signed in', `Welcome back, ${signedInUser.companyName}.`);
-      navigate(redirectTo);
-    } catch (err) {
-      setSigninError(
-        err.status === 401
-          ? "This demo account isn't set up on this server yet. Run `npm run seed-demo` in /server to create it."
-          : err.message
-      );
     } finally {
       setLoadingKey(null);
     }
@@ -258,23 +215,17 @@ export default function AuthPage() {
       {/* Login card */}
       <div className="w-full max-w-[400px] bg-white rounded-2xl shadow-xl shadow-black/[0.08] border border-border/60 p-6 sm:p-8">
         {screen === 'signin' && (
-          <>
-            <SignIn
-              form={signinForm}
-              setForm={setSigninForm}
-              showPw={showPw}
-              setShowPw={setShowPw}
-              loading={loadingKey === 'signin'}
-              error={signinError}
-              onSubmit={handleSignin}
-              goForgot={goForgot}
-              goSignup={goSignup}
-            />
-            <DemoAccounts
-              loadingKey={loadingKey}
-              onDemoLogin={handleDemoLogin}
-            />
-          </>
+          <SignIn
+            form={signinForm}
+            setForm={setSigninForm}
+            showPw={showPw}
+            setShowPw={setShowPw}
+            loading={loadingKey === 'signin'}
+            error={signinError}
+            onSubmit={handleSignin}
+            goForgot={goForgot}
+            goSignup={goSignup}
+          />
         )}
 
         {screen === 'signup' && signupStep === 1 && (
@@ -329,60 +280,6 @@ function SubmitButton({ loading, children, ...props }) {
       )}
       {children}
     </a>
-  );
-}
-
-const DEMO_ROLE_META = {
-  admin: { icon: IconShield, title: 'Login as Admin', subtitle: 'Explore the admin dashboard' },
-  seller: { icon: IconStore, title: 'Login as Seller', subtitle: 'Explore the seller portal' },
-};
-
-function DemoButton({ roleKey, loadingKey, onDemoLogin }) {
-  const { icon: Icon, title, subtitle } = DEMO_ROLE_META[roleKey];
-  const isLoading = loadingKey === `demo-${roleKey}`;
-  const disabled = Boolean(loadingKey);
-
-  return (
-    <button
-      type="button"
-      onClick={() => onDemoLogin(roleKey)}
-      disabled={disabled}
-      className="w-full flex items-center gap-3 px-4 py-3.5 border-[1.5px] border-border rounded-xl text-left cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 hover:border-orange-text/40 hover:bg-orange-tint/40 transition-colors"
-    >
-      <span className="w-10 h-10 rounded-full bg-orange-tint flex items-center justify-center shrink-0 text-orange-text">
-        <Icon width="18" height="18" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[14px] font-semibold text-ink">{title}</span>
-        <span className="block text-[12px] text-text-muted mt-0.5">{subtitle}</span>
-      </span>
-      {isLoading && (
-        <span
-          className="w-4 h-4 border-2 border-orange-text/30 rounded-full inline-block shrink-0"
-          style={{ borderTopColor: 'currentColor', animation: 'spin 0.8s linear infinite' }}
-        />
-      )}
-    </button>
-  );
-}
-
-// One-click preview of the admin/seller experience without signing up — signs in with a real,
-// pre-seeded account (server/src/scripts/seed-demo-accounts.js) through the exact same
-// signIn() call as the form above, so role-based access, redirects, and permissions all behave
-// exactly like a real account because it is one.
-function DemoAccounts({ loadingKey, onDemoLogin }) {
-  return (
-    <div className="mt-6">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="h-px bg-border flex-1" />
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-text-muted shrink-0">Or explore a demo</span>
-        <div className="h-px bg-border flex-1" />
-      </div>
-      <div className="flex flex-col gap-2.5">
-        <DemoButton roleKey="admin" loadingKey={loadingKey} onDemoLogin={onDemoLogin} />
-        <DemoButton roleKey="seller" loadingKey={loadingKey} onDemoLogin={onDemoLogin} />
-      </div>
-    </div>
   );
 }
 
