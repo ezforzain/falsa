@@ -2129,6 +2129,7 @@ export default function AdminPage() {
         open={productFormOpen}
         product={editingProduct}
         sellersList={list}
+        categoriesList={categoriesList}
         loading={productFormLoading}
         error={productFormError}
         onClose={() => setProductFormOpen(false)}

@@ -51,7 +51,10 @@ router.get(
       const re = new RegExp(String(q).trim().replace(/\s+/g, ' '), 'i');
       filter.$or = [{ name: re }, { category: re }, { seller: re }];
     }
-    const products = await Product.find(filter).populate('sellerId', 'verified');
+    // Newest first — otherwise a just-added product sits wherever Mongo's natural order happens
+    // to place it (this collection keys `_id` off a human-readable slug, not an ObjectId, so
+    // natural order isn't creation order) and can look like it "didn't show up".
+    const products = await Product.find(filter).sort({ createdAt: -1 }).populate('sellerId', 'verified');
     res.json({ products: products.map(serializeProduct) });
   })
 );
@@ -59,10 +62,16 @@ router.get(
 router.get(
   '/products/trending',
   asyncHandler(async (_req, res) => {
-    const products = await Product.find({ trendingOrder: { $ne: null } })
-      .sort({ trendingOrder: 1 })
-      .populate('sellerId', 'verified');
-    res.json({ products: products.map(serializeProduct) });
+    // Admin/seller product creation has no UI for setting `trendingOrder` (unlike `spotlight`,
+    // which has an explicit admin toggle) — it's a hand-curated ranking boost, not a publish gate.
+    // Requiring it here silently hid every newly created product from the homepage's default
+    // section. Curated items still lead, in their curated order; everything else follows, newest
+    // first, so nothing needs manual curation just to be visible.
+    const [curated, rest] = await Promise.all([
+      Product.find({ trendingOrder: { $ne: null } }).sort({ trendingOrder: 1 }).populate('sellerId', 'verified'),
+      Product.find({ trendingOrder: null }).sort({ createdAt: -1 }).populate('sellerId', 'verified'),
+    ]);
+    res.json({ products: [...curated, ...rest].map(serializeProduct) });
   })
 );
 

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { categories } from '../data/mockData';
 import ProductImagesUploader from './ProductImagesUploader';
 import { IconClose } from './icons';
 
@@ -25,7 +24,11 @@ const emptyForm = {
 // price is a plain number here (formatted as "Rs <n>" server-side) and every listing needs an
 // owning store, since Product.sellerId is required — so this form adds a seller picker instead
 // of a status/sku pair, neither of which exist on the Product model.
-export default function AdminProductFormModal({ open, product, sellersList, loading, error, onClose, onSubmit }) {
+// `categoriesList` comes from the live Category collection (the same one buyer-facing category
+// filters query against) rather than a hardcoded local copy — a category added via the admin's
+// own Categories tab needs to be pickable here immediately, and a product's `category` string
+// needs to always match something a buyer-facing filter actually recognizes.
+export default function AdminProductFormModal({ open, product, sellersList, categoriesList, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
   const isEdit = Boolean(product);
 
@@ -137,12 +140,12 @@ export default function AdminProductFormModal({ open, product, sellersList, load
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Category</label>
-              <select value={form.category} onChange={set('category')} className={fieldClass}>
+              <select value={form.category} onChange={set('category')} className={fieldClass} disabled={categoriesList.length === 0}>
                 <option value="" disabled>
-                  Select…
+                  {categoriesList.length === 0 ? 'Add a category first…' : 'Select…'}
                 </option>
-                {categories.map((c) => (
-                  <option key={c.key} value={c.name}>
+                {categoriesList.map((c) => (
+                  <option key={c.key || c.id} value={c.name}>
                     {c.name}
                   </option>
                 ))}
