@@ -4,6 +4,9 @@ import { User } from '../models/User.js';
 import { Product } from '../models/Product.js';
 import { PromotionRequest } from '../models/PromotionRequest.js';
 import { Payout } from '../models/Payout.js';
+import { SellerOrder, ORDER_STATUSES } from '../models/SellerOrder.js';
+import { Category } from '../models/Category.js';
+import { MarketplaceSettings } from '../models/MarketplaceSettings.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { serializeUser, serializeUsers } from '../utils/serializeUser.js';
@@ -11,6 +14,59 @@ import { parseMoqNumber } from '../utils/moq.js';
 
 const router = Router();
 router.use(requireAuth, requireRole('admin'));
+
+// ---------- Overview ----------
+
+function serializeAdminOrder(doc) {
+  const o = doc.toObject();
+  const sellerDoc = o.sellerId;
+  return {
+    ...o,
+    id: o._id,
+    sellerId: sellerDoc?._id ?? o.sellerId,
+    sellerName: sellerDoc?.companyName ?? 'Unknown seller',
+    total: o.qty * o.unitPrice,
+  };
+}
+
+router.get(
+  '/overview',
+  asyncHandler(async (_req, res) => {
+    const [totalSellers, totalProducts, totalBuyers, pendingApprovals, orders, recentSellersRaw] = await Promise.all([
+      Seller.countDocuments(),
+      Product.countDocuments(),
+      User.countDocuments({ role: 'buyer' }),
+      User.countDocuments({ role: 'seller', cnicStatus: 'pending' }),
+      SellerOrder.find().sort({ placedAt: -1 }).populate('sellerId', 'companyName'),
+      User.find({ role: 'seller' }).sort({ createdAt: -1 }).limit(5),
+    ]);
+
+    const totalRevenue = orders.filter((o) => o.status !== 'Cancelled').reduce((sum, o) => sum + o.qty * o.unitPrice, 0);
+    const pendingOrders = orders.filter((o) => o.status === 'Pending' || o.status === 'Processing').length;
+    const recentOrders = orders.slice(0, 8).map(serializeAdminOrder);
+    const recentSellers = recentSellersRaw.map((u) => ({
+      id: u._id,
+      companyName: u.companyName,
+      email: u.email,
+      cnicStatus: u.cnicStatus,
+      createdAt: u.createdAt,
+    }));
+
+    res.json({
+      totals: {
+        sellers: totalSellers,
+        products: totalProducts,
+        buyers: totalBuyers,
+        orders: orders.length,
+        revenue: totalRevenue,
+        pendingOrders,
+        pendingApprovals,
+      },
+      recentOrders,
+      recentSellers,
+    });
+  })
+);
 
 router.patch(
   '/sellers/:id/verify',
@@ -179,6 +235,207 @@ router.delete(
     const deleted = await Product.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: 'Product not found.' });
     res.json({ ok: true });
+  })
+);
+
+// ---------- Orders ----------
+
+router.get(
+  '/orders',
+  asyncHandler(async (req, res) => {
+    const { status, q } = req.query;
+    const filter = {};
+    if (status && ORDER_STATUSES.includes(status)) filter.status = status;
+    let orders = await SellerOrder.find(filter).sort({ placedAt: -1 }).populate('sellerId', 'companyName');
+    if (q && q.trim()) {
+      const re = new RegExp(q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      orders = orders.filter((o) => re.test(o.buyerCompany) || re.test(o.productName) || re.test(o.sellerId?.companyName || ''));
+    }
+    res.json({ orders: orders.map(serializeAdminOrder) });
+  })
+);
+
+router.post(
+  '/orders',
+  asyncHandler(async (req, res) => {
+    const { sellerId, buyerCompany, buyerCountry, productName, qty, unitPrice, status } = req.body;
+    if (!sellerId || !buyerCompany || !buyerCountry || !productName || !qty || !unitPrice) {
+      return res.status(400).json({ message: 'Please fill in all required fields.' });
+    }
+    if (!Number.isFinite(qty) || qty <= 0) return res.status(400).json({ message: 'Quantity must be a positive number.' });
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) return res.status(400).json({ message: 'Unit price must be a positive number.' });
+    const sellerUser = await User.findOne({ _id: sellerId, role: 'seller' });
+    if (!sellerUser) return res.status(400).json({ message: 'Selected seller was not found.' });
+
+    const order = await SellerOrder.create({
+      sellerId: sellerUser._id,
+      buyerCompany,
+      buyerCountry,
+      productName,
+      qty,
+      unitPrice,
+      status: ORDER_STATUSES.includes(status) ? status : 'Pending',
+    });
+    await order.populate('sellerId', 'companyName');
+    res.status(201).json({ order: serializeAdminOrder(order) });
+  })
+);
+
+router.patch(
+  '/orders/:id',
+  asyncHandler(async (req, res) => {
+    const { status } = req.body;
+    if (!ORDER_STATUSES.includes(status)) {
+      return res.status(404).json({ message: 'Order not found or invalid status.' });
+    }
+    const order = await SellerOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found or invalid status.' });
+    order.status = status;
+    await order.save();
+    await order.populate('sellerId', 'companyName');
+    res.json({ order: serializeAdminOrder(order) });
+  })
+);
+
+// ---------- Categories ----------
+
+router.get(
+  '/categories',
+  asyncHandler(async (_req, res) => {
+    const categories = await Category.find({ kind: 'category' }).sort({ order: 1 });
+    res.json({ categories: categories.map((c) => ({ ...c.toObject(), id: c._id })) });
+  })
+);
+
+router.post(
+  '/categories',
+  asyncHandler(async (req, res) => {
+    const { key, name, icon, img } = req.body;
+    if (!key || !name) return res.status(400).json({ message: 'Key and name are required.' });
+    if (await Category.exists({ kind: 'category', key })) {
+      return res.status(409).json({ message: 'A category with this key already exists.' });
+    }
+    const count = await Category.countDocuments({ kind: 'category' });
+    const category = await Category.create({ kind: 'category', order: count, key, name, icon: icon || '', img: img || '' });
+    res.status(201).json({ category: { ...category.toObject(), id: category._id } });
+  })
+);
+
+router.patch(
+  '/categories/:id',
+  asyncHandler(async (req, res) => {
+    const { name, icon, img, order } = req.body;
+    const update = {};
+    if (name !== undefined) update.name = name;
+    if (icon !== undefined) update.icon = icon;
+    if (img !== undefined) update.img = img;
+    if (order !== undefined) update.order = order;
+    const category = await Category.findOneAndUpdate({ _id: req.params.id, kind: 'category' }, update, { new: true });
+    if (!category) return res.status(404).json({ message: 'Category not found.' });
+    res.json({ category: { ...category.toObject(), id: category._id } });
+  })
+);
+
+router.delete(
+  '/categories/:id',
+  asyncHandler(async (req, res) => {
+    const deleted = await Category.findOneAndDelete({ _id: req.params.id, kind: 'category' });
+    if (!deleted) return res.status(404).json({ message: 'Category not found.' });
+    res.json({ ok: true });
+  })
+);
+
+// ---------- Reports ----------
+
+router.get(
+  '/reports',
+  asyncHandler(async (_req, res) => {
+    const orders = await SellerOrder.find().populate('sellerId', 'companyName');
+
+    const DAYS = 30;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const byDay = new Map();
+    const dayKeys = [];
+    for (let i = DAYS - 1; i >= 0; i -= 1) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      dayKeys.push(key);
+      byDay.set(key, { date: key, revenue: 0, orders: 0 });
+    }
+    const cutoff = new Date(today);
+    cutoff.setDate(cutoff.getDate() - (DAYS - 1));
+
+    const statusBreakdown = { Pending: 0, Processing: 0, Shipped: 0, Delivered: 0, Cancelled: 0 };
+    const sellerTotals = new Map();
+
+    orders.forEach((o) => {
+      statusBreakdown[o.status] = (statusBreakdown[o.status] || 0) + 1;
+      if (o.status === 'Cancelled') return;
+      const revenue = o.qty * o.unitPrice;
+
+      const placed = new Date(o.placedAt);
+      if (placed >= cutoff) {
+        const key = placed.toISOString().slice(0, 10);
+        const bucket = byDay.get(key);
+        if (bucket) {
+          bucket.revenue += revenue;
+          bucket.orders += 1;
+        }
+      }
+
+      const sellerName = o.sellerId?.companyName || 'Unknown seller';
+      const existing = sellerTotals.get(sellerName) || { name: sellerName, revenue: 0, orders: 0 };
+      existing.revenue += revenue;
+      existing.orders += 1;
+      sellerTotals.set(sellerName, existing);
+    });
+
+    const daily = dayKeys.map((key) => byDay.get(key));
+    const sellerPerformance = Array.from(sellerTotals.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+
+    res.json({ daily, statusBreakdown, sellerPerformance });
+  })
+);
+
+// ---------- Marketplace settings ----------
+
+router.get(
+  '/settings',
+  asyncHandler(async (_req, res) => {
+    let settings = await MarketplaceSettings.findOne();
+    if (!settings) settings = await MarketplaceSettings.create({});
+    res.json({ settings });
+  })
+);
+
+router.patch(
+  '/settings',
+  asyncHandler(async (req, res) => {
+    const { siteName, supportEmail, commissionRatePercent, currency, maintenanceMode } = req.body;
+    if (siteName !== undefined && !String(siteName).trim()) {
+      return res.status(400).json({ message: 'Marketplace name cannot be empty.' });
+    }
+    if (
+      commissionRatePercent !== undefined &&
+      (!Number.isFinite(commissionRatePercent) || commissionRatePercent < 0 || commissionRatePercent > 100)
+    ) {
+      return res.status(400).json({ message: 'Commission rate must be between 0 and 100.' });
+    }
+    let settings = await MarketplaceSettings.findOne();
+    if (!settings) settings = new MarketplaceSettings();
+    settings.set({
+      ...(siteName !== undefined && { siteName }),
+      ...(supportEmail !== undefined && { supportEmail }),
+      ...(commissionRatePercent !== undefined && { commissionRatePercent }),
+      ...(currency !== undefined && { currency }),
+      ...(maintenanceMode !== undefined && { maintenanceMode: Boolean(maintenanceMode) }),
+    });
+    await settings.save();
+    res.json({ settings });
   })
 );
 

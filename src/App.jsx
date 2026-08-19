@@ -27,6 +27,8 @@ import SellerDashboard from './pages/seller/SellerDashboard';
 import SellerProducts from './pages/seller/SellerProducts';
 import SellerProductDetail from './pages/seller/SellerProductDetail';
 import SellerOrders from './pages/seller/SellerOrders';
+import SellerCustomers from './pages/seller/SellerCustomers';
+import SellerMessages from './pages/seller/SellerMessages';
 import SellerSettings from './pages/seller/SellerSettings';
 import SellerStoreProfile from './pages/seller/SellerStoreProfile';
 import SellerAnalytics from './pages/seller/SellerAnalytics';
@@ -68,6 +70,8 @@ export default function App() {
           <Route path="products" element={<SellerProducts />} />
           <Route path="products/:id" element={<SellerProductDetail />} />
           <Route path="orders" element={<SellerOrders />} />
+          <Route path="customers" element={<SellerCustomers />} />
+          <Route path="messages" element={<SellerMessages />} />
           <Route path="store-profile" element={<SellerStoreProfile />} />
           <Route path="analytics" element={<SellerAnalytics />} />
           <Route path="promotions" element={<SellerPromotions />} />

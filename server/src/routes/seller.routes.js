@@ -169,6 +169,31 @@ router.patch(
   })
 );
 
+// ---------- Customers ----------
+
+router.get(
+  '/customers',
+  asyncHandler(async (req, res) => {
+    const orders = await SellerOrder.find({ sellerId: req.user._id }).sort({ placedAt: -1 });
+    const byCompany = new Map();
+    orders.forEach((o) => {
+      const existing = byCompany.get(o.buyerCompany) || {
+        buyerCompany: o.buyerCompany,
+        buyerCountry: o.buyerCountry,
+        totalOrders: 0,
+        totalSpent: 0,
+        lastOrderAt: o.placedAt,
+      };
+      existing.totalOrders += 1;
+      if (o.status !== 'Cancelled') existing.totalSpent += o.qty * o.unitPrice;
+      if (new Date(o.placedAt) > new Date(existing.lastOrderAt)) existing.lastOrderAt = o.placedAt;
+      byCompany.set(o.buyerCompany, existing);
+    });
+    const customers = Array.from(byCompany.values()).sort((a, b) => new Date(b.lastOrderAt) - new Date(a.lastOrderAt));
+    res.json({ customers });
+  })
+);
+
 // ---------- Store profile ----------
 
 function serializeStore(doc) {

@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { loadConversations, totalUnread, MESSAGES_UPDATED_EVENT } from '../../lib/sellerMessagesStore';
 import VerifiedBadge from '../../components/VerifiedBadge';
 import OfficialBadge from '../../components/OfficialBadge';
 import Avatar from '../../components/Avatar';
@@ -8,11 +10,13 @@ import {
   IconBox,
   IconGrid,
   IconLogout,
+  IconMessageCircle,
   IconReceipt,
   IconSettings,
   IconSparkle,
   IconStore,
   IconTrendingUp,
+  IconUser,
   IconWallet,
 } from '../../components/icons';
 import logoMark from '../../assets/logo-mark.png';
@@ -21,6 +25,8 @@ const TABS = [
   { to: '/seller', label: 'Dashboard', icon: IconGrid, end: true, requiresApproval: true },
   { to: '/seller/products', label: 'Products', icon: IconBox, end: false, requiresApproval: true },
   { to: '/seller/orders', label: 'Orders', icon: IconReceipt, end: false, requiresApproval: true },
+  { to: '/seller/customers', label: 'Customers', icon: IconUser, end: false, requiresApproval: true },
+  { to: '/seller/messages', label: 'Messages', icon: IconMessageCircle, end: false, requiresApproval: true, badgeKey: 'messages' },
   { to: '/seller/store-profile', label: 'Store Profile', icon: IconStore, end: false, requiresApproval: true },
   { to: '/seller/analytics', label: 'Analytics', icon: IconTrendingUp, end: false, requiresApproval: true },
   { to: '/seller/promotions', label: 'Promotions', icon: IconSparkle, end: false, requiresApproval: true },
@@ -32,6 +38,15 @@ export default function SellerLayout() {
   const { user, status, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const refresh = () => setUnreadMessages(totalUnread(loadConversations(user.id)));
+    refresh();
+    window.addEventListener(MESSAGES_UPDATED_EVENT, refresh);
+    return () => window.removeEventListener(MESSAGES_UPDATED_EVENT, refresh);
+  }, [user?.id]);
 
   if (status === 'loading') {
     return (
@@ -95,10 +110,11 @@ export default function SellerLayout() {
 
           <div className="flex-1" />
 
-          <span className="hidden md:flex items-center gap-2 text-sm text-teal-mist truncate max-w-[220px]">
+          <span className="hidden md:flex items-center gap-2 text-sm text-teal-mist truncate max-w-[260px]">
             <Avatar src={user.avatarUrl} size={26} iconSize={13} bgClassName="bg-white/15" iconClassName="text-white" />
             {user.companyName}
             {user.verified && <VerifiedBadge size={16} tooltipPosition="bottom" />}
+            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-white bg-white/15 px-1.5 py-0.5 rounded">Seller</span>
           </span>
           <button
             type="button"
@@ -134,6 +150,11 @@ export default function SellerLayout() {
               >
                 <tab.icon width="15" height="15" />
                 {tab.label}
+                {tab.badgeKey === 'messages' && unreadMessages > 0 && (
+                  <span className="min-w-[16px] h-4 px-1 rounded-full bg-orange text-white text-[10px] font-bold flex items-center justify-center">
+                    {unreadMessages}
+                  </span>
+                )}
               </NavLink>
             )
           )}

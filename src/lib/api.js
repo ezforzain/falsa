@@ -181,6 +181,7 @@ export const seller = {
   requestPromotion: (payload) => request('/api/seller/promotions', { method: 'POST', body: payload, auth: true }),
   promotions: () => request('/api/seller/promotions', { auth: true }),
   payouts: () => request('/api/seller/payouts', { auth: true }),
+  customers: () => request('/api/seller/customers', { auth: true }),
 };
 
 // ---------- Sellers directory (Store Profile + Verified Store badge) ----------
@@ -206,6 +207,33 @@ export const admin = {
   deleteProduct: (id) => request(`/api/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
   promotions: (status) => request(`/api/admin/promotions${status ? `?status=${encodeURIComponent(status)}` : ''}`, { auth: true }),
   reviewPromotion: (id, payload) => request(`/api/admin/promotions/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload, auth: true }),
+  overview: () => request('/api/admin/overview', { auth: true }),
+  reports: () => request('/api/admin/reports', { auth: true }),
+  getSettings: () => request('/api/admin/settings', { auth: true }),
+  updateSettings: (payload) => request('/api/admin/settings', { method: 'PATCH', body: payload, auth: true }),
+};
+
+// ---------- Admin: orders ----------
+
+export const adminOrders = {
+  list: ({ status, q } = {}) => {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (q) params.set('q', q);
+    const qs = params.toString();
+    return request(`/api/admin/orders${qs ? `?${qs}` : ''}`, { auth: true });
+  },
+  create: (payload) => request('/api/admin/orders', { method: 'POST', body: payload, auth: true }),
+  updateStatus: (id, status) => request(`/api/admin/orders/${encodeURIComponent(id)}`, { method: 'PATCH', body: { status }, auth: true }),
+};
+
+// ---------- Admin: categories ----------
+
+export const adminCategories = {
+  list: () => request('/api/admin/categories', { auth: true }),
+  create: (payload) => request('/api/admin/categories', { method: 'POST', body: payload, auth: true }),
+  update: (id, payload) => request(`/api/admin/categories/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload, auth: true }),
+  remove: (id) => request(`/api/admin/categories/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
 };
 
 // ---------- Admin: user management ----------

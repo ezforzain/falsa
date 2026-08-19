@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
 import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser, IconMail, IconShield, IconGlobe, IconTruck } from '../components/icons';
@@ -21,6 +21,7 @@ const TRUST_POINTS = [
 export default function AuthPage() {
   const { signIn, signUp, user } = useAuth();
   const { notify } = useNotifications();
+  const navigate = useNavigate();
 
   const [screen, setScreen] = useState('signin'); // signin | signup | forgot | success
   const [signupStep, setSignupStep] = useState(1); // 1: role, 2: details
@@ -100,7 +101,9 @@ export default function AuthPage() {
     try {
       const { user: signedInUser } = await signIn(identifier, password);
       notify('account', 'Signed in', `Welcome back, ${signedInUser.companyName}.`);
-      setScreen('success');
+      if (signedInUser.role === 'admin') navigate('/admin');
+      else if (signedInUser.role === 'seller') navigate('/seller');
+      else navigate('/');
     } catch (err) {
       setSigninError(err.message);
     } finally {
