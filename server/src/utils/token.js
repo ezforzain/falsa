@@ -19,8 +19,13 @@ export function hashEmailVerificationToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-export function signAuthToken(user) {
-  return jwt.sign({ sub: String(user._id), role: user.role }, process.env.JWT_SECRET, {
+// sessionId, when passed, ties this token to a Session document (see models/Session.js) so it
+// can be individually revoked later — see middleware/auth.js. Omitted only for tokens minted
+// before sessions existed; there is no other caller that should skip it.
+export function signAuthToken(user, sessionId) {
+  const payload = { sub: String(user._id), role: user.role };
+  if (sessionId) payload.sid = sessionId;
+  return jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '30d',
   });
 }

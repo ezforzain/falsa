@@ -76,6 +76,8 @@ export function AuthProvider({ children }) {
 
   const resendVerificationEmail = () => auth.resendVerificationEmail();
 
+  const changePassword = (payload) => auth.changePassword(payload);
+
   // Called by VerifyEmailPage after a successful /verify-email so the signed-in session (if any)
   // reflects the new status immediately, without waiting for the next session refresh.
   const markEmailVerified = () => {
@@ -104,6 +106,7 @@ export function AuthProvider({ children }) {
     resubmitKyc,
     resendVerificationEmail,
     markEmailVerified,
+    changePassword,
     logout,
   };
 

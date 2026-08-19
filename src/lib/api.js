@@ -90,6 +90,10 @@ export const auth = {
   resubmitKyc: (payload) => request('/api/auth/kyc/resubmit', { method: 'POST', body: payload, auth: true }),
   verifyEmail: (token) => request('/api/auth/verify-email', { method: 'POST', body: { token } }),
   resendVerificationEmail: () => request('/api/auth/verify-email/resend', { method: 'POST', auth: true }),
+  changePassword: (payload) => request('/api/auth/password', { method: 'PATCH', body: payload, auth: true }),
+  sessions: () => request('/api/auth/sessions', { auth: true }),
+  revokeSession: (id) => request(`/api/auth/sessions/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
+  revokeOtherSessions: () => request('/api/auth/sessions/revoke-others', { method: 'POST', auth: true }),
 };
 
 // ---------- Catalog ----------

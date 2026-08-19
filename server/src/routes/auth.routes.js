@@ -1,9 +1,11 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { Seller } from '../models/Seller.js';
+import { Session } from '../models/Session.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { signAuthToken, createEmailVerificationToken, hashEmailVerificationToken } from '../utils/token.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -29,6 +31,19 @@ async function findOrCreateSellerByName(name) {
 async function findUserByIdentifier(identifier) {
   const id = String(identifier ?? '').trim().toLowerCase();
   return User.findOne({ $or: [{ email: id }, { phone: String(identifier ?? '').trim() }] });
+}
+
+// Creates the Session document a fresh sign-in/sign-up is bound to, then signs a token carrying
+// its id — shared so signin and signup can never drift on how a session gets created.
+async function createSessionAndToken(user, req) {
+  const sessionId = crypto.randomUUID();
+  await Session.create({
+    userId: user._id,
+    sessionId,
+    userAgent: req.headers['user-agent'] || '',
+    ip: req.ip,
+  });
+  return signAuthToken(user, sessionId);
 }
 
 // Generates a fresh verification token, saves its hash on the user, and emails it to their
@@ -61,7 +76,7 @@ router.post(
     if (user.status === 'suspended') {
       return res.status(403).json({ message: 'Your account has been suspended. Contact support for help.' });
     }
-    const token = signAuthToken(user);
+    const token = await createSessionAndToken(user, req);
     res.json({ token, user: await serializeUser(user) });
   })
 );
@@ -202,7 +217,7 @@ router.post(
       emailSendFailed = true;
     }
 
-    const token = signAuthToken(user);
+    const token = await createSessionAndToken(user, req);
     res.json({ token, user: await serializeUser(user), emailSendFailed });
   })
 );
@@ -264,10 +279,16 @@ router.post('/forgot-password', (_req, res) => {
 });
 
 // ---------- POST /api/auth/logout ----------
-// Stateless JWTs aren't server-revocable here; the client is expected to discard the token.
-router.post('/logout', (_req, res) => {
-  res.json({ ok: true });
-});
+// Deletes the Session this token is bound to, so the token stops working immediately (not just
+// once the client discards it) — see middleware/auth.js. A legacy pre-session token has no
+// req.sessionId; nothing to delete, so this is still a safe no-op for it.
+router.post(
+  '/logout',
+  asyncHandler(async (req, res) => {
+    if (req.sessionId) await Session.deleteOne({ sessionId: req.sessionId });
+    res.json({ ok: true });
+  })
+);
 
 // ---------- GET /api/auth/session ----------
 router.get(
@@ -388,6 +409,79 @@ router.post(
     });
     await req.user.save();
     res.json({ user: await serializeUser(req.user) });
+  })
+);
+
+// ---------- PATCH /api/auth/password ----------
+// Changing the password revokes every other session as a security measure (standard practice —
+// a compromised/shared device losing its saved password shouldn't keep a live session), keeping
+// only the one that made this request.
+router.patch(
+  '/password',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current and new password are required.' });
+    }
+    if (!(await req.user.comparePassword(currentPassword))) {
+      return res.status(400).json({ message: 'Current password is incorrect.' });
+    }
+    if (String(newPassword).length < 8) {
+      return res.status(400).json({ message: 'New password must be at least 8 characters.' });
+    }
+    req.user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await req.user.save();
+    const keepSessionId = req.sessionId;
+    await Session.deleteMany({
+      userId: req.user._id,
+      ...(keepSessionId ? { sessionId: { $ne: keepSessionId } } : {}),
+    });
+    res.json({ ok: true });
+  })
+);
+
+// ---------- GET /api/auth/sessions ----------
+router.get(
+  '/sessions',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const sessions = await Session.find({ userId: req.user._id }).sort({ lastActiveAt: -1 });
+    res.json({
+      sessions: sessions.map((s) => ({
+        id: s._id,
+        userAgent: s.userAgent,
+        ip: s.ip,
+        createdAt: s.createdAt,
+        lastActiveAt: s.lastActiveAt,
+        current: s.sessionId === req.sessionId,
+      })),
+    });
+  })
+);
+
+// ---------- DELETE /api/auth/sessions/:id ----------
+router.delete(
+  '/sessions/:id',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const session = await Session.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!session) return res.status(404).json({ message: 'Session not found.' });
+    await session.deleteOne();
+    res.json({ ok: true });
+  })
+);
+
+// ---------- POST /api/auth/sessions/revoke-others ----------
+router.post(
+  '/sessions/revoke-others',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    await Session.deleteMany({
+      userId: req.user._id,
+      ...(req.sessionId ? { sessionId: { $ne: req.sessionId } } : {}),
+    });
+    res.json({ ok: true });
   })
 );
 
