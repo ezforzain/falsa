@@ -2,9 +2,22 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProfileDrawer } from '../context/ProfileDrawerContext';
-import { IconUser, IconMenu, IconMail, IconPhone, IconPin, IconClock, IconShield, IconCheck, IconAlertCircle, IconChevronRight } from '../components/icons';
+import {
+  IconUser,
+  IconMenu,
+  IconMail,
+  IconPhone,
+  IconPin,
+  IconClock,
+  IconShield,
+  IconCheck,
+  IconAlertCircle,
+  IconChevronRight,
+  IconEdit,
+} from '../components/icons';
 import VerifiedBadge from '../components/VerifiedBadge';
 import AvatarUploader from '../components/AvatarUploader';
+import Toast from '../components/Toast';
 
 const ROLE_LABEL = { buyer: 'Buyer', seller: 'Seller', admin: 'Admin' };
 
@@ -29,6 +42,85 @@ function InfoRow({ icon, label, children }) {
         <span className="block text-[10.5px] font-semibold uppercase tracking-wide text-text-muted">{label}</span>
         <span className="block text-[13.5px] font-medium text-ink truncate">{children}</span>
       </span>
+    </div>
+  );
+}
+
+const fieldClass =
+  'w-full px-3.5 py-2.5 border border-border rounded-xl text-[14px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
+const fieldLabelClass = 'block text-[11.5px] font-semibold text-text-muted uppercase tracking-wide mb-1.5';
+
+// Replaces the read-only info grid in place while active — see PATCH /api/auth/profile
+// (server/src/routes/auth.routes.js), which only ever accepts companyName/phone/country/category.
+// Email isn't editable here (or on the server route) since it's tied to sign-in and verification.
+function ProfileEditForm({ user, updateProfile, onSaved, onCancel }) {
+  const [form, setForm] = useState({
+    companyName: user.companyName || '',
+    phone: user.phone || '',
+    country: user.country || '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const submit = async () => {
+    if (!form.companyName.trim()) {
+      setError('Name is required.');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await updateProfile(form);
+      onSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3.5">
+      {error && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5">{error}</p>}
+
+      <div>
+        <label className={fieldLabelClass}>Name</label>
+        <input type="text" value={form.companyName} onChange={set('companyName')} className={fieldClass} />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div>
+          <label className={fieldLabelClass}>Phone</label>
+          <input type="text" value={form.phone} onChange={set('phone')} placeholder="+92 300 0000000" className={fieldClass} />
+        </div>
+        <div>
+          <label className={fieldLabelClass}>Country</label>
+          <input type="text" value={form.country} onChange={set('country')} className={fieldClass} />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2.5 mt-1">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={saving}
+          className="flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover active:translate-y-0 text-white font-semibold text-[13.5px] py-2.5 px-5 rounded-full shadow-[0_6px_16px_rgba(14,90,70,0.25)] hover:-translate-y-0.5 transition-all"
+        >
+          {saving && (
+            <span className="w-3.5 h-3.5 border-2 border-white/35 rounded-full inline-block" style={{ borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
+          )}
+          {saving ? 'Saving…' : 'Save changes'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 text-text-muted hover:text-ink font-semibold text-[13.5px] py-2.5 px-4 rounded-full hover:bg-surface-muted transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }
@@ -136,8 +228,10 @@ function SellerVerificationCard({ cnicStatus }) {
 // page (desktop), and this page renders bare on mobile (no Header at all — see MainLayout's
 // bare-route list), so it needs its own trigger too, rather than relying on the bottom nav.
 export default function AccountPage() {
-  const { user, isAuthenticated, resendVerificationEmail } = useAuth();
+  const { user, isAuthenticated, resendVerificationEmail, updateProfile } = useAuth();
   const { open: openAccountMenu } = useProfileDrawer();
+  const [editing, setEditing] = useState(false);
+  const [savedToastVisible, setSavedToastVisible] = useState(false);
 
   const TopBar = (
     <div className="flex items-center justify-between gap-3 mb-1.5">
@@ -197,6 +291,18 @@ export default function AccountPage() {
           <div className="relative h-20 sm:h-24 bg-gradient-to-br from-green-deep via-green to-green-hover overflow-hidden">
             <div className="absolute -top-10 -right-6 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute -bottom-16 left-10 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+            {!editing && (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                aria-label="Edit profile"
+                title="Edit profile"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 cursor-pointer flex items-center gap-1.5 bg-white/15 hover:bg-white/25 active:bg-white/30 text-white text-[12.5px] font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors"
+              >
+                <IconEdit width="13" height="13" />
+                Edit
+              </button>
+            )}
           </div>
 
           <div className="px-5 sm:px-8 pb-6 sm:pb-8">
@@ -221,29 +327,43 @@ export default function AccountPage() {
 
             <div className="h-px bg-border my-6" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {user.email && (
-                <InfoRow icon={<IconMail width="14" height="14" />} label="Email">
-                  {user.email}
-                </InfoRow>
-              )}
-              {user.phone && (
-                <InfoRow icon={<IconPhone width="14" height="14" />} label="Phone">
-                  {user.phone}
-                </InfoRow>
-              )}
-              {user.country && (
-                <InfoRow icon={<IconPin width="14" height="14" />} label="Country">
-                  {user.country}
-                </InfoRow>
-              )}
-            </div>
+            {editing ? (
+              <ProfileEditForm
+                user={user}
+                updateProfile={updateProfile}
+                onSaved={() => {
+                  setEditing(false);
+                  setSavedToastVisible(true);
+                }}
+                onCancel={() => setEditing(false)}
+              />
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {user.email && (
+                  <InfoRow icon={<IconMail width="14" height="14" />} label="Email">
+                    {user.email}
+                  </InfoRow>
+                )}
+                {user.phone && (
+                  <InfoRow icon={<IconPhone width="14" height="14" />} label="Phone">
+                    {user.phone}
+                  </InfoRow>
+                )}
+                {user.country && (
+                  <InfoRow icon={<IconPin width="14" height="14" />} label="Country">
+                    {user.country}
+                  </InfoRow>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {!user.emailVerified && <EmailVerifyNotice email={user.email} resend={resendVerificationEmail} />}
         {isSeller && <SellerVerificationCard cnicStatus={user.cnicStatus} />}
       </div>
+
+      <Toast message="Profile updated" show={savedToastVisible} onHide={() => setSavedToastVisible(false)} />
     </main>
   );
 }
