@@ -83,7 +83,7 @@ export default function AvatarUploader({ size = 96, avatarClassName = '' }) {
           disabled={uploading}
           aria-label="Edit profile picture"
           title="Edit profile picture"
-          className="absolute bottom-0 right-0 cursor-pointer disabled:cursor-not-allowed w-8 h-8 rounded-full bg-green hover:bg-green-hover text-white flex items-center justify-center border-[3px] border-surface shadow-md transition-colors"
+          className="absolute bottom-0 right-0 cursor-pointer disabled:cursor-not-allowed w-8 h-8 rounded-full bg-green hover:bg-green-hover active:scale-90 text-white flex items-center justify-center border-[3px] border-surface shadow-md transition-all"
         >
           <IconCamera width="14" height="14" />
         </button>
