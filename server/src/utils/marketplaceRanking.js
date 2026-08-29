@@ -47,7 +47,10 @@ function scoreProduct(p) {
   score += Math.min(Math.log10(sold + 1) * 10, 30);
   const ageDays = (Date.now() - new Date(p.createdAt).getTime()) / 86400000;
   score += Math.max(0, 10 - ageDays / 30);
-  return score;
+  // Admin reach multiplier (1x–10x, see Product.reachBoost) — applied last so it scales every
+  // other signal at once, letting an admin lift or bury a product across the marketplace.
+  const reach = Number(p.reachBoost);
+  return score * (Number.isFinite(reach) && reach > 0 ? reach : 1);
 }
 
 // Ranks by score band (coarse, so near-ties rotate) with a seeded shuffle inside each band so

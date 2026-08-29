@@ -11,6 +11,7 @@ import { signAuthToken, createEmailVerificationToken, hashEmailVerificationToken
 import { requireAuth } from '../middleware/auth.js';
 import { serializeUser } from '../utils/serializeUser.js';
 import { sendVerificationEmail } from '../utils/mailer.js';
+import { describeBan, liftExpiredBan } from '../utils/ban.js';
 
 const router = Router();
 const UPLOAD_ROOT = path.resolve('uploads');
@@ -73,8 +74,10 @@ router.post(
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ message: 'Invalid email/phone or password.' });
     }
-    if (user.status === 'suspended') {
-      return res.status(403).json({ message: 'Your account has been suspended. Contact support for help.' });
+    await liftExpiredBan(user);
+    const ban = describeBan(user);
+    if (ban.banned) {
+      return res.status(403).json({ message: ban.message });
     }
     const token = await createSessionAndToken(user, req);
     res.json({ token, user: await serializeUser(user) });

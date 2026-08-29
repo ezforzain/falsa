@@ -17,6 +17,16 @@ function serializeProduct(doc) {
   };
 }
 
+const reachOf = (doc) => {
+  const n = Number(doc.reachBoost);
+  return Number.isFinite(n) && n > 0 ? n : 1;
+};
+
+// Stable reorder by the admin reach multiplier (1x–10x, see Product.reachBoost), highest first.
+// Callers pass a list already in their natural order (newest first / curated) so products with
+// an equal boost keep that order — a boost only ever pulls a product forward, never shuffles ties.
+const byReach = (products) => products.slice().sort((a, b) => reachOf(b) - reachOf(a));
+
 router.get(
   '/categories',
   asyncHandler(async (_req, res) => {
@@ -55,7 +65,7 @@ router.get(
     // to place it (this collection keys `_id` off a human-readable slug, not an ObjectId, so
     // natural order isn't creation order) and can look like it "didn't show up".
     const products = await Product.find(filter).sort({ createdAt: -1 }).populate('sellerId', 'verified');
-    res.json({ products: products.map(serializeProduct) });
+    res.json({ products: byReach(products).map(serializeProduct) });
   })
 );
 
@@ -71,7 +81,8 @@ router.get(
       Product.find({ trendingOrder: { $ne: null } }).sort({ trendingOrder: 1 }).populate('sellerId', 'verified'),
       Product.find({ trendingOrder: null }).sort({ createdAt: -1 }).populate('sellerId', 'verified'),
     ]);
-    res.json({ products: [...curated, ...rest].map(serializeProduct) });
+    // Curated items keep their hand-set order; everything else is ordered by reach then recency.
+    res.json({ products: [...curated, ...byReach(rest)].map(serializeProduct) });
   })
 );
 

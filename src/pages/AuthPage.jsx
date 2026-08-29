@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
@@ -29,6 +29,115 @@ const DEMO_ACCOUNTS = {
   },
 };
 
+// Main product category options for seller sign-up. Broad A–Z coverage of what Pakistani
+// exporters/manufacturers actually trade in, so almost every seller finds a real match instead
+// of the three-item stub this used to be. "Other" is the deliberate catch-all at the end.
+const PRODUCT_CATEGORIES = [
+  'Agriculture & Farming',
+  'Apparel & Clothing',
+  'Automobiles & Auto Parts',
+  'Ayurvedic & Herbal Products',
+  'Bags, Handbags & Luggage',
+  'Bathroom & Sanitary Ware',
+  'Beauty & Personal Care',
+  'Bedding & Linen',
+  'Bicycles & Parts',
+  'Books & Stationery',
+  'Building & Construction Materials',
+  'Candles & Fragrances',
+  'Carpets & Rugs',
+  'Ceramics & Pottery',
+  'Chemicals & Dyes',
+  'Cleaning & Janitorial Supplies',
+  'Coal, Minerals & Ores',
+  'Coffee, Tea & Beverages',
+  'Computer Hardware & Accessories',
+  'Cosmetics & Skincare',
+  'Cotton, Yarn & Threads',
+  'Dairy Products',
+  'Dates & Dried Fruits',
+  'Denim & Jeans',
+  'Dental Instruments',
+  'Disposable & Hygiene Products',
+  'Electrical Equipment & Supplies',
+  'Electronics & Home Appliances',
+  'Energy & Solar Products',
+  'Fabrics & Textiles',
+  'Fashion Accessories',
+  'Fish & Seafood',
+  'Fitness & Gym Equipment',
+  'Food & Beverages',
+  'Footwear & Shoes',
+  'Furniture',
+  'Garments & Hosiery',
+  'Gems & Jewellery',
+  'Gifts & Handicrafts',
+  'Gloves (Industrial & Surgical)',
+  'Grains, Pulses & Cereals',
+  'Hand Tools & Power Tools',
+  'Hardware & Fasteners',
+  'Health & Medical Supplies',
+  'Home Decor',
+  'Home Textiles',
+  'Hospital & Lab Equipment',
+  'Hotel & Restaurant Supplies',
+  'Industrial Machinery',
+  'Instruments & Meters',
+  'Iron, Steel & Metals',
+  'Kitchenware & Tableware',
+  'Leather & Leather Goods',
+  'Lighting & Fixtures',
+  'Livestock & Poultry',
+  'Marble, Granite & Stone',
+  'Martial Arts Equipment',
+  'Mattresses',
+  'Meat & Poultry Products',
+  'Medical & Surgical Disposables',
+  'Mobile Phones & Accessories',
+  'Musical Instruments',
+  'Nuts & Kernels',
+  'Office Supplies & Equipment',
+  'Oils, Ghee & Fats',
+  'Packaging & Printing',
+  'Paints & Coatings',
+  'Paper & Paper Products',
+  'Pet Supplies',
+  'Pharmaceuticals',
+  'Pipes, Tubes & Fittings',
+  'Plastic & Plastic Products',
+  'Pumps, Valves & Fittings',
+  'Rice',
+  'Rubber Products',
+  'Safety & Security Products',
+  'Salt, Spices & Seasonings',
+  'School & Educational Supplies',
+  'Scientific & Laboratory Instruments',
+  'Seeds & Plant Products',
+  'Sewing & Embroidery',
+  'Solar Energy Products',
+  'Sporting Goods & Sportswear',
+  'Stationery & Paper Products',
+  'Sugar & Sweeteners',
+  'Surgical Instruments',
+  'Tents & Camping Gear',
+  'Tiles & Sanitary Ware',
+  'Tobacco & Cigarettes',
+  'Towels & Bathrobes',
+  'Toys & Games',
+  'Tractor Parts & Agricultural Machinery',
+  'Travel & Luggage',
+  'Uniforms & Workwear',
+  'Vegetables & Fruits',
+  'Vehicles & Transportation',
+  'Watches & Clocks',
+  'Water Treatment & Filtration',
+  'Welding Equipment',
+  'Wheat, Flour & Bakery',
+  'Wood & Timber',
+  'Wool & Woolen Products',
+  'Other',
+];
+
 // The left brand panel's trust bullets (desktop only — see the lg:grid split below).
 const TRUST_POINTS = [
   { icon: IconShield, label: 'Verified sellers, reviewed before they list' },
@@ -58,6 +167,7 @@ export default function AuthPage() {
     email: '',
     password: '',
     sellerType: 'individual',
+    category: '',
     // Individual path
     address: '',
     cnicNumber: '',
@@ -221,6 +331,7 @@ export default function AuthPage() {
         email: signupForm.email,
         password: signupForm.password,
         sellerType: isSeller ? signupForm.sellerType : undefined,
+        category: isSeller ? signupForm.category || undefined : undefined,
         address: isSeller && !isCorporate ? signupForm.address : undefined,
         cnicNumber: isSeller && !isCorporate ? signupForm.cnicNumber : undefined,
         cnicFront,
@@ -561,6 +672,92 @@ function SignUpRole({ role, setRole, onContinue, goSignin }) {
   );
 }
 
+// Searchable category picker — a real dropdown (the old one was a dead <div>), with a search
+// box pinned to the top so a seller can type "surg" instead of scrolling the full A–Z list.
+function CategorySelect({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDocClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
+
+  const needle = query.trim().toLowerCase();
+  const filtered = needle
+    ? PRODUCT_CATEGORIES.filter((c) => c.toLowerCase().includes(needle))
+    : PRODUCT_CATEGORIES;
+
+  return (
+    <div className="relative" ref={ref}>
+      <div
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center justify-between px-[18px] py-[15px] border-[1.5px] border-border rounded-xl text-[15px] bg-surface cursor-pointer hover:border-green transition-colors"
+      >
+        <span className={value ? 'text-ink' : 'text-text-muted'}>
+          {value || 'Select — Textiles, Surgical, Sports…'}
+        </span>
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`text-text-muted transition-transform ${open ? 'rotate-180' : ''}`}
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </div>
+
+      {open && (
+        <div className="absolute z-20 mt-1.5 w-full bg-surface border-[1.5px] border-border rounded-xl shadow-[0_20px_44px_-16px_rgba(0,0,0,0.24)] overflow-hidden">
+          <div className="p-2 border-b border-border/60">
+            <input
+              autoFocus
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search categories…"
+              className="w-full px-3.5 py-2.5 border-[1.5px] border-border rounded-lg text-[14px] bg-surface text-ink outline-none focus:border-green"
+            />
+          </div>
+          <div className="max-h-[240px] overflow-y-auto py-1">
+            {filtered.length === 0 ? (
+              <p className="px-4 py-3 text-[13.5px] text-text-muted">No categories match “{query.trim()}”.</p>
+            ) : (
+              filtered.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => {
+                    onChange(c);
+                    setOpen(false);
+                    setQuery('');
+                  }}
+                  className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-[14px] hover:bg-green-tint/60 transition-colors ${
+                    value === c ? 'text-green font-semibold' : 'text-ink'
+                  }`}
+                >
+                  <span>{c}</span>
+                  {value === c && <IconCheck width="15" height="15" className="shrink-0" />}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, error, onBack, onSubmit, goSignin }) {
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   // Converts HEIC/HEIF photos (the default format on iPhones) to JPEG the moment they're
@@ -649,12 +846,7 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
       {isSeller && (
         <div className="mb-[18px]">
           <FieldLabel>Main product category</FieldLabel>
-          <div className="flex items-center justify-between px-[18px] py-[15px] border-[1.5px] border-border rounded-xl text-[15px] bg-surface cursor-pointer hover:border-green transition-colors">
-            <span className="text-text-muted">Select — Textiles, Surgical, Sports…</span>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </div>
+          <CategorySelect value={form.category} onChange={(c) => patchForm({ category: c })} />
         </div>
       )}
 

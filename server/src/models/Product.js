@@ -57,6 +57,10 @@ const productSchema = new mongoose.Schema(
     // marketplace.routes.js) rather than being the section's only source of products.
     spotlight: { type: Boolean, default: false },
     spotlightType: { type: String, enum: ['featured', 'sponsored'], default: 'featured' },
+    // Admin-controlled reach multiplier (1x–10x, see the Products tab in the admin panel). Feeds
+    // straight into the marketplace ranking score and the homepage / category ordering, so an
+    // admin can push any product up or down the feed without touching the Spotlight system.
+    reachBoost: { type: Number, default: 1, min: 1, max: 10 },
     // Explicit seller opt-in for the B2B marketplace tab — never inferred.
     b2bEnabled: { type: Boolean, default: false },
     // Denormalized from the linked Seller/User at sync time (see publicCatalogSync.js) so the

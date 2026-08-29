@@ -252,6 +252,10 @@ export const adminUsers = {
   },
   update: (id, payload) => request(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload, auth: true }),
   setStatus: (id, status) => request(`/api/admin/users/${encodeURIComponent(id)}/status`, { method: 'PATCH', body: { status }, auth: true }),
+  setVerified: (id, verified) =>
+    request(`/api/admin/users/${encodeURIComponent(id)}/verified`, { method: 'PATCH', body: { verified }, auth: true }),
+  // payload: { permanent: true } | { days: <number> } | { lift: true }, plus optional { reason }
+  ban: (id, payload) => request(`/api/admin/users/${encodeURIComponent(id)}/ban`, { method: 'PATCH', body: payload, auth: true }),
   remove: (id) => request(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
   payouts: (id) => request(`/api/admin/users/${encodeURIComponent(id)}/payouts`, { auth: true }),
   addPayout: (id, payload) => request(`/api/admin/users/${encodeURIComponent(id)}/payouts`, { method: 'POST', body: payload, auth: true }),

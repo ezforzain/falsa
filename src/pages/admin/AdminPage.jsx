@@ -131,7 +131,6 @@ export default function AdminPage() {
   const [userFormOpen, setUserFormOpen] = useState(false);
   const [userFormLoading, setUserFormLoading] = useState(false);
   const [userFormError, setUserFormError] = useState(null);
-  const [userStatusPendingId, setUserStatusPendingId] = useState(null);
   const [deleteUserTarget, setDeleteUserTarget] = useState(null);
   const [deleteUserLoading, setDeleteUserLoading] = useState(false);
   const [expandedUserId, setExpandedUserId] = useState(null);
@@ -140,6 +139,12 @@ export default function AdminPage() {
   const [payoutForm, setPayoutForm] = useState({ amount: '', method: 'bank_transfer', reference: '', note: '' });
   const [payoutSubmitting, setPayoutSubmitting] = useState(false);
   const [payoutError, setPayoutError] = useState(null);
+  const [userVerifyPendingId, setUserVerifyPendingId] = useState(null);
+  const [banningUserId, setBanningUserId] = useState(null);
+  const [banDays, setBanDays] = useState('7');
+  const [banPending, setBanPending] = useState(false);
+  const [permanentBanTarget, setPermanentBanTarget] = useState(null);
+  const [reachPendingId, setReachPendingId] = useState(null);
 
   const [promotionRequests, setPromotionRequests] = useState([]);
   const [promotionsLoading, setPromotionsLoading] = useState(true);
@@ -476,16 +481,55 @@ export default function AdminPage() {
     }
   };
 
-  const handleSetUserStatus = async (userRecord, status) => {
-    setUserStatusPendingId(userRecord.id);
+  // "suspended" with no future bannedUntil = permanent; with a future date = temporary.
+  const banLabel = (u) => {
+    if (u.status !== 'suspended') return null;
+    if (!u.bannedUntil) return 'Permanently banned';
+    const until = new Date(u.bannedUntil);
+    if (until.getTime() <= Date.now()) return null;
+    return `Banned until ${until.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+  };
+
+  const handleToggleUserVerified = async (u) => {
+    setUserVerifyPendingId(u.id);
     try {
-      await adminUsers.setStatus(userRecord.id, status);
-      showToast(status === 'suspended' ? 'Account suspended' : 'Account reactivated');
+      await adminUsers.setVerified(u.id, !u.verified);
+      showToast(u.verified ? 'Blue tick removed' : 'Blue tick added');
       loadUsers();
     } catch (err) {
-      showToast(err.message || 'Could not update account status');
+      showToast(err.message || 'Could not update verification');
     } finally {
-      setUserStatusPendingId(null);
+      setUserVerifyPendingId(null);
+    }
+  };
+
+  const submitBan = async (u, payload, label) => {
+    setBanPending(true);
+    try {
+      await adminUsers.ban(u.id, payload);
+      showToast(label);
+      setBanningUserId(null);
+      setPermanentBanTarget(null);
+      loadUsers();
+    } catch (err) {
+      showToast(err.message || 'Could not update the ban');
+    } finally {
+      setBanPending(false);
+    }
+  };
+
+  const handleSetReach = async (product, value) => {
+    const next = Math.min(10, Math.max(1, value));
+    if (next === (product.reachBoost || 1)) return;
+    setReachPendingId(product.id);
+    try {
+      await admin.updateProduct(product.id, { reachBoost: next });
+      showToast(`Reach set to ${next}×`);
+      loadProducts();
+    } catch (err) {
+      showToast(err.message || 'Could not update reach');
+    } finally {
+      setReachPendingId(null);
     }
   };
 
@@ -1043,6 +1087,35 @@ export default function AdminPage() {
                           })}
                         </div>
                       </div>
+
+                      {/* Admin reach multiplier — scales this product's ranking everywhere (home
+                          feed, category pages, marketplace tabs). 1× is normal, 10× is a hard push. */}
+                      <div className="flex items-center gap-2 pt-2 mt-2 border-t border-border">
+                        <span className="text-[10.5px] font-semibold text-text-muted uppercase tracking-wide shrink-0">Reach</span>
+                        <div className="flex items-center gap-1.5 flex-1 justify-end">
+                          <button
+                            type="button"
+                            disabled={reachPendingId === p.id || (p.reachBoost || 1) <= 1}
+                            onClick={() => handleSetReach(p, (p.reachBoost || 1) - 1)}
+                            className="cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed w-6 h-6 rounded-md bg-surface-muted text-ink-soft font-bold text-sm flex items-center justify-center hover:bg-[#EFEBE2] transition-colors"
+                            aria-label="Lower reach"
+                          >
+                            −
+                          </button>
+                          <span className={`min-w-[34px] text-center text-xs font-bold ${(p.reachBoost || 1) > 1 ? 'text-green' : 'text-text-muted'}`}>
+                            {reachPendingId === p.id ? '…' : `${p.reachBoost || 1}×`}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={reachPendingId === p.id || (p.reachBoost || 1) >= 10}
+                            onClick={() => handleSetReach(p, (p.reachBoost || 1) + 1)}
+                            className="cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed w-6 h-6 rounded-md bg-surface-muted text-ink-soft font-bold text-sm flex items-center justify-center hover:bg-[#EFEBE2] transition-colors"
+                            aria-label="Raise reach"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1529,13 +1602,15 @@ export default function AdminPage() {
                             <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-text-muted bg-surface-muted px-1.5 py-0.5 rounded capitalize">
                               {u.role}
                             </span>
-                            <span
-                              className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                                u.status === 'suspended' ? 'bg-orange-tint text-orange-text' : 'bg-green-tint text-green'
-                              }`}
-                            >
-                              {u.status === 'suspended' ? 'Suspended' : 'Active'}
-                            </span>
+                            {u.status === 'suspended' ? (
+                              <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-tint text-orange-text">
+                                {banLabel(u) || 'Suspended'}
+                              </span>
+                            ) : (
+                              <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-green-tint text-green">
+                                Active
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs text-text-muted truncate">
                             {u.email} · {u.phone}
@@ -1561,16 +1636,43 @@ export default function AdminPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={userStatusPendingId === u.id || u.id === user.id}
-                          onClick={() => handleSetUserStatus(u, u.status === 'suspended' ? 'active' : 'suspended')}
+                          disabled={userVerifyPendingId === u.id}
+                          onClick={() => handleToggleUserVerified(u)}
+                          style={u.verified ? undefined : { backgroundColor: '#3B82F6' }}
                           className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 font-semibold text-xs px-3.5 py-2 rounded-full transition-colors ${
-                            u.status === 'suspended'
-                              ? 'bg-green hover:bg-green-hover text-white'
-                              : 'bg-white border border-border text-orange-text hover:bg-orange-tint'
+                            u.verified
+                              ? 'bg-white border border-border text-text hover:bg-surface-muted'
+                              : 'text-white hover:brightness-110'
                           }`}
                         >
-                          {userStatusPendingId === u.id ? 'Saving…' : u.status === 'suspended' ? 'Activate' : 'Suspend'}
+                          {userVerifyPendingId === u.id ? 'Saving…' : u.verified ? 'Remove tick' : 'Blue tick'}
                         </button>
+                        {u.status === 'suspended' ? (
+                          <button
+                            type="button"
+                            disabled={banPending || u.id === user.id}
+                            onClick={() => submitBan(u, { lift: true }, 'Ban lifted')}
+                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 font-semibold text-xs px-3.5 py-2 rounded-full bg-green hover:bg-green-hover text-white transition-colors"
+                          >
+                            {banPending ? 'Saving…' : 'Unban'}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={u.id === user.id}
+                            onClick={() => {
+                              setBanDays('7');
+                              setBanningUserId(banningUserId === u.id ? null : u.id);
+                            }}
+                            className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 font-semibold text-xs px-3.5 py-2 rounded-full border border-border transition-colors ${
+                              banningUserId === u.id
+                                ? 'bg-orange-tint text-orange-text'
+                                : 'bg-white text-orange-text hover:bg-orange-tint'
+                            }`}
+                          >
+                            {banningUserId === u.id ? 'Cancel' : 'Ban'}
+                          </button>
+                        )}
                         <button
                           type="button"
                           disabled={u.id === user.id}
@@ -1582,6 +1684,39 @@ export default function AdminPage() {
                         </button>
                       </div>
                     </div>
+
+                    {banningUserId === u.id && u.status !== 'suspended' && (
+                      <div className="px-5 pb-4 -mt-1">
+                        <div className="flex items-end gap-2 flex-wrap bg-surface-muted rounded-xl p-3">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-text-muted mb-1">Ban length (days)</label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={banDays}
+                              onChange={(e) => setBanDays(e.target.value.replace(/[^\d]/g, ''))}
+                              className="w-[90px] px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            disabled={banPending || !banDays || Number(banDays) <= 0}
+                            onClick={() => submitBan(u, { days: Number(banDays) }, `Banned for ${banDays} day${banDays === '1' ? '' : 's'}`)}
+                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-orange hover:bg-orange-hover text-white font-semibold text-xs px-4 py-2.5 rounded-full transition-colors"
+                          >
+                            {banPending ? 'Saving…' : `Ban ${banDays || '…'} day${banDays === '1' ? '' : 's'}`}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={banPending}
+                            onClick={() => setPermanentBanTarget(u)}
+                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-white border border-orange text-orange-text font-semibold text-xs px-4 py-2.5 rounded-full hover:bg-orange-tint transition-colors"
+                          >
+                            Permanent ban
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {expandedUserId === u.id && (
                       <div className="px-5 pb-5 bg-surface-muted/60">
@@ -2163,6 +2298,16 @@ export default function AdminPage() {
         loading={deleteUserLoading}
         onCancel={() => setDeleteUserTarget(null)}
         onConfirm={handleDeleteUser}
+      />
+
+      <ConfirmDialog
+        open={Boolean(permanentBanTarget)}
+        title="Permanently ban this account?"
+        message={`"${permanentBanTarget?.companyName}" will be locked out and signed off every device until an admin lifts the ban.`}
+        confirmLabel="Permanently ban"
+        loading={banPending}
+        onCancel={() => setPermanentBanTarget(null)}
+        onConfirm={() => permanentBanTarget && submitBan(permanentBanTarget, { permanent: true }, 'Account permanently banned')}
       />
 
       <AdminOrderFormModal

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import { Seller } from '../models/Seller.js';
 import { User } from '../models/User.js';
 import { Product } from '../models/Product.js';
@@ -11,6 +12,15 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { serializeUser, serializeUsers } from '../utils/serializeUser.js';
 import { parseMoqNumber } from '../utils/moq.js';
+import { describeBan } from '../utils/ban.js';
+
+// Reach multiplier is a whole number from 1x to 10x — anything outside that is clamped rather
+// than rejected so the admin stepper can't ever wedge a product into an invalid state.
+function clampReachBoost(value) {
+  const n = Math.round(Number(value));
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(10, Math.max(1, n));
+}
 
 const router = Router();
 router.use(requireAuth, requireRole('admin'));
@@ -148,7 +158,7 @@ router.get(
 router.post(
   '/products',
   asyncHandler(async (req, res) => {
-    const { name, sellerId, category, description, price, unit, moq, stock, badge, images, img, b2bEnabled, freeShipping, worldwideFreeShipping } = req.body;
+    const { name, sellerId, category, description, price, unit, moq, stock, badge, images, img, b2bEnabled, freeShipping, worldwideFreeShipping, reachBoost } = req.body;
     if (!name || !sellerId || !category || !price) {
       return res.status(400).json({ message: 'Please fill in all required fields.' });
     }
@@ -181,6 +191,7 @@ router.post(
       b2bEnabled: Boolean(b2bEnabled),
       freeShipping: freeShipping !== false,
       worldwideFreeShipping: Boolean(worldwideFreeShipping),
+      reachBoost: reachBoost === undefined ? 1 : clampReachBoost(reachBoost),
       sellerCountry: sellerDoc.country || null,
       sellerVerified: sellerDoc.verified || false,
       sellerOfficialStore: sellerDoc.officialStore || false,
@@ -214,6 +225,7 @@ router.patch(
     if (body.stock !== undefined) {
       body.stock = body.stock === null || body.stock === '' ? null : Number(body.stock);
     }
+    if (body.reachBoost !== undefined) body.reachBoost = clampReachBoost(body.reachBoost);
     if (body.b2bEnabled !== undefined) body.b2bEnabled = Boolean(body.b2bEnabled);
     if (body.freeShipping !== undefined) body.freeShipping = body.freeShipping !== false;
     if (body.worldwideFreeShipping !== undefined) body.worldwideFreeShipping = Boolean(body.worldwideFreeShipping);
@@ -454,6 +466,9 @@ router.get(
 router.get(
   '/kyc/:userId',
   asyncHandler(async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.userId)) {
+      return res.status(404).json({ message: 'Seller not found.' });
+    }
     const user = await User.findOne({ _id: req.params.userId, role: 'seller' });
     if (!user) return res.status(404).json({ message: 'Seller not found.' });
     const detail = user.toObject({ virtuals: true });
@@ -467,7 +482,7 @@ router.patch(
   '/kyc/:userId',
   asyncHandler(async (req, res) => {
     const { status, rejectionReason } = req.body;
-    if (!['approved', 'rejected'].includes(status)) {
+    if (!['approved', 'rejected'].includes(status) || !mongoose.isValidObjectId(req.params.userId)) {
       return res.status(404).json({ message: 'Seller not found or invalid status.' });
     }
     const user = await User.findOne({ _id: req.params.userId, role: 'seller' });
@@ -553,6 +568,64 @@ router.patch(
     user.status = status;
     await user.save();
     res.json({ user: await serializeUser(user) });
+  })
+);
+
+// Account-level "blue tick". Works on any role; for a seller it also flips the linked Seller
+// directory badge (and the denormalized copy on their products) so the store badge and the
+// account badge always agree — same sync the Verified Stores tab does.
+router.patch(
+  '/users/:id/verified',
+  asyncHandler(async (req, res) => {
+    const verified = Boolean(req.body.verified);
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    user.verified = verified;
+    await user.save();
+
+    if (user.role === 'seller' && user.sellerId) {
+      const sellerRecord = await Seller.findByIdAndUpdate(user.sellerId, { verified }, { new: true });
+      if (sellerRecord) {
+        await Product.updateMany({ sellerId: sellerRecord._id }, { sellerVerified: verified });
+      }
+    }
+
+    res.json({ user: await serializeUser(user) });
+  })
+);
+
+// Ban / unban. Body: { permanent: true } | { days: <positive number> } | { lift: true },
+// plus an optional { reason }. A ban is just `status: 'suspended'` with an optional
+// `bannedUntil` expiry — see server/src/utils/ban.js.
+router.patch(
+  '/users/:id/ban',
+  asyncHandler(async (req, res) => {
+    const { days, permanent, lift, reason } = req.body;
+    if (req.params.id === req.user._id.toString()) {
+      return res.status(400).json({ message: "You can't ban your own account." });
+    }
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    if (lift) {
+      user.set({ status: 'active', bannedUntil: null, banReason: null });
+      await user.save();
+      return res.json({ user: await serializeUser(user) });
+    }
+
+    if (permanent) {
+      user.set({ status: 'suspended', bannedUntil: null, banReason: reason?.trim() || null });
+    } else {
+      const n = Number(days);
+      if (!Number.isFinite(n) || n <= 0) {
+        return res.status(400).json({ message: 'Enter a number of days, or choose a permanent ban.' });
+      }
+      const until = new Date(Date.now() + Math.round(n) * 24 * 60 * 60 * 1000);
+      user.set({ status: 'suspended', bannedUntil: until, banReason: reason?.trim() || null });
+    }
+    await user.save();
+    res.json({ user: await serializeUser(user), ban: describeBan(user) });
   })
 );
 

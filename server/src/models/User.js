@@ -5,6 +5,14 @@ const userSchema = new mongoose.Schema(
   {
     role: { type: String, enum: ['buyer', 'seller', 'admin'], required: true },
     status: { type: String, enum: ['active', 'suspended'], default: 'active' },
+    // Admin ban controls (see PATCH /api/admin/users/:id/ban). `status: 'suspended'` is the ban
+    // flag; `bannedUntil` set = temporary ban that auto-lifts once the date passes, `bannedUntil`
+    // null while suspended = permanent ban. `banReason` is shown to the admin, not the user.
+    bannedUntil: { type: Date, default: null },
+    banReason: { type: String, default: null },
+    // Admin-granted "blue tick" — can be set on ANY account (buyer, seller, admin) from the
+    // Users tab. For sellers it is kept in lockstep with the linked Seller.verified badge.
+    verified: { type: Boolean, default: false },
     companyName: { type: String, required: true },
     country: { type: String, default: null },
     phone: { type: String, required: true, unique: true },

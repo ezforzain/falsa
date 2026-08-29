@@ -2,6 +2,7 @@ import { verifyAuthToken } from '../utils/token.js';
 import { User } from '../models/User.js';
 import { Session } from '../models/Session.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { describeBan, liftExpiredBan } from '../utils/ban.js';
 
 function bearerToken(req) {
   const header = req.headers.authorization || '';
@@ -39,13 +40,13 @@ export const attachUser = asyncHandler(async (req, _res, next) => {
   next();
 });
 
-export const requireAuth = (req, res, next) => {
+export const requireAuth = asyncHandler(async (req, res, next) => {
   if (!req.user) return res.status(401).json({ message: 'Not signed in.' });
-  if (req.user.status === 'suspended') {
-    return res.status(403).json({ message: 'Your account has been suspended. Contact support for help.' });
-  }
+  await liftExpiredBan(req.user);
+  const ban = describeBan(req.user);
+  if (ban.banned) return res.status(403).json({ message: ban.message });
   next();
-};
+});
 
 export const requireRole = (role) => (req, res, next) => {
   if (!req.user) return res.status(401).json({ message: 'Not signed in.' });
