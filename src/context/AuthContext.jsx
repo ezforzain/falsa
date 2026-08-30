@@ -67,13 +67,6 @@ export function AuthProvider({ children }) {
     return updated;
   };
 
-  // A rejected seller uploads fresh CNIC images — resets their status back to "pending" server-side.
-  const resubmitKyc = async (payload) => {
-    const { user: updated } = await auth.resubmitKyc(payload);
-    setUser(updated);
-    return updated;
-  };
-
   const resendVerificationEmail = () => auth.resendVerificationEmail();
 
   const changePassword = (payload) => auth.changePassword(payload);
@@ -103,7 +96,6 @@ export function AuthProvider({ children }) {
     signUp,
     updateProfile,
     updateAvatar,
-    resubmitKyc,
     resendVerificationEmail,
     markEmailVerified,
     changePassword,

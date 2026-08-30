@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
-import { sellers, admin, adminUsers, adminOrders, adminCategories, kyc } from '../../lib/api';
+import { sellers, admin, adminUsers, adminOrders, adminCategories } from '../../lib/api';
 import { formatPKR } from '../../data/mockData';
 import { ORDER_STATUSES, statusBadgeClass } from '../seller/statusStyles';
 import VerifiedBadge from '../../components/VerifiedBadge';
@@ -98,18 +98,6 @@ export default function AdminPage() {
   const [pendingId, setPendingId] = useState(null);
   const [actionError, setActionError] = useState(null);
 
-  const [kycList, setKycList] = useState([]);
-  const [kycLoading, setKycLoading] = useState(true);
-  const [kycError, setKycError] = useState(null);
-  const [kycActionError, setKycActionError] = useState(null);
-  const [expandedId, setExpandedId] = useState(null);
-  const [kycDetail, setKycDetail] = useState(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [reviewPending, setReviewPending] = useState(false);
-  const [showRejectForm, setShowRejectForm] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [lightboxImage, setLightboxImage] = useState(null);
-
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState(null);
@@ -166,16 +154,6 @@ export default function AdminPage() {
       .then((res) => setList(res.sellers))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  };
-
-  const loadKyc = () => {
-    setKycLoading(true);
-    setKycError(null);
-    kyc
-      .getPendingKyc()
-      .then((res) => setKycList(res.sellers))
-      .catch((err) => setKycError(err.message))
-      .finally(() => setKycLoading(false));
   };
 
   const loadProducts = () => {
@@ -261,7 +239,6 @@ export default function AdminPage() {
   useEffect(() => {
     if (isAuthenticated && user?.role === 'admin') {
       load();
-      loadKyc();
       loadProducts();
       loadUsers();
       loadPromotions();
@@ -682,63 +659,6 @@ export default function AdminPage() {
     }
   };
 
-  const toggleExpand = async (userId) => {
-    if (expandedId === userId) {
-      setExpandedId(null);
-      setKycDetail(null);
-      setShowRejectForm(false);
-      return;
-    }
-    setExpandedId(userId);
-    setKycDetail(null);
-    setShowRejectForm(false);
-    setRejectReason('');
-    setKycActionError(null);
-    setDetailLoading(true);
-    try {
-      const { seller } = await kyc.getSellerKyc(userId);
-      setKycDetail(seller);
-    } catch (err) {
-      setKycActionError(err.message);
-    } finally {
-      setDetailLoading(false);
-    }
-  };
-
-  const finishReview = (updated) => {
-    setKycList((current) => current.map((s) => (s.id === updated.id ? updated : s)));
-    setExpandedId(null);
-    setKycDetail(null);
-    setShowRejectForm(false);
-    setRejectReason('');
-  };
-
-  const approveKyc = async (userId) => {
-    setReviewPending(true);
-    setKycActionError(null);
-    try {
-      const { seller: updated } = await kyc.approveSellerKyc(userId);
-      finishReview(updated);
-    } catch (err) {
-      setKycActionError(err.message);
-    } finally {
-      setReviewPending(false);
-    }
-  };
-
-  const rejectKyc = async (userId) => {
-    setReviewPending(true);
-    setKycActionError(null);
-    try {
-      const { seller: updated } = await kyc.rejectSellerKyc(userId, rejectReason.trim());
-      finishReview(updated);
-    } catch (err) {
-      setKycActionError(err.message);
-    } finally {
-      setReviewPending(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-cream font-sans text-ink flex flex-col">
       <header className="bg-green-deep text-white sticky top-0 z-40">
@@ -779,7 +699,6 @@ export default function AdminPage() {
             { key: 'products', label: 'Products' },
             { key: 'orders', label: 'Orders' },
             { key: 'stores', label: 'Verified Stores' },
-            { key: 'kyc', label: 'Seller ID Verification' },
             { key: 'users', label: 'Users' },
             { key: 'categories', label: 'Categories' },
             { key: 'reports', label: 'Reports' },
@@ -826,7 +745,6 @@ export default function AdminPage() {
                     { label: 'Total orders', value: overview.totals.orders.toLocaleString('en-US') },
                     { label: 'Total revenue', value: formatPKR(overview.totals.revenue) },
                     { label: 'Pending orders', value: overview.totals.pendingOrders.toLocaleString('en-US') },
-                    { label: 'Pending seller approvals', value: overview.totals.pendingApprovals.toLocaleString('en-US') },
                   ].map((stat) => (
                     <div key={stat.label} className="bg-white border border-border rounded-2xl p-5">
                       <div className="font-display text-xl font-bold text-ink">{stat.value}</div>
@@ -871,17 +789,11 @@ export default function AdminPage() {
                             <div className="font-semibold text-[13.5px] text-ink truncate">{s.companyName}</div>
                             <div className="text-xs text-text-muted truncate">{s.email}</div>
                           </div>
-                          <span
-                            className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded capitalize ${
-                              s.cnicStatus === 'approved'
-                                ? 'bg-green-tint text-green'
-                                : s.cnicStatus === 'rejected'
-                                  ? 'bg-orange-tint text-orange-text'
-                                  : 'bg-surface-muted text-text-muted'
-                            }`}
-                          >
-                            {s.cnicStatus || 'pending'}
-                          </span>
+                          {s.createdAt && (
+                            <span className="shrink-0 text-[11px] text-text-muted">
+                              {new Date(s.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </span>
+                          )}
                         </div>
                       ))
                     )}
@@ -891,6 +803,7 @@ export default function AdminPage() {
             )}
           </>
         )}
+
 
         {activeTab === 'products' && (
           <>
@@ -1204,339 +1117,6 @@ export default function AdminPage() {
           </>
         )}
 
-        {activeTab === 'kyc' && (
-          <>
-        <div className="mb-6">
-          <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Seller ID Verification</h1>
-          <p className="text-sm text-text mt-1">
-            Review CNIC documents submitted at signup. Approve to unlock the seller portal, or reject with a reason.
-            Sellers cannot approve their own CNIC.
-          </p>
-        </div>
-
-        {kycActionError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-5">{kycActionError}</p>}
-
-        <div className="bg-white border border-border rounded-2xl overflow-hidden">
-          {kycLoading && (
-            <div className="p-6 flex flex-col gap-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="animate-pulse h-12 bg-surface-muted rounded-xl" />
-              ))}
-            </div>
-          )}
-
-          {!kycLoading && kycError && <div className="p-8 text-center text-sm text-orange-text">{kycError}</div>}
-
-          {!kycLoading &&
-            !kycError &&
-            kycList.map((s, i) => (
-              <div key={s.id} className={i !== kycList.length - 1 ? 'border-b border-border' : ''}>
-                <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-[14.5px] text-ink truncate">{s.companyName}</span>
-                      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-text-muted bg-surface-muted px-1.5 py-0.5 rounded">
-                        {s.sellerType === 'corporate' ? 'Corporate' : 'Individual'}
-                      </span>
-                    </div>
-                    <div className="text-xs text-text-muted truncate">
-                      {s.email} · {s.sellerType === 'corporate' ? `NTN ${s.ntn || '—'}` : `CNIC ${s.cnicNumber || '—'}`}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span
-                      className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                        s.cnicStatus === 'approved'
-                          ? 'bg-green-tint text-green'
-                          : s.cnicStatus === 'rejected'
-                            ? 'bg-orange-tint text-orange-text'
-                            : 'bg-surface-muted text-text-muted'
-                      }`}
-                    >
-                      {s.cnicStatus === 'approved' ? 'Approved' : s.cnicStatus === 'rejected' ? 'Rejected' : 'Pending'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => toggleExpand(s.id)}
-                      className="cursor-pointer bg-white border border-border text-ink-soft font-semibold text-xs px-4 py-2 rounded-full hover:bg-surface-muted transition-colors"
-                    >
-                      {expandedId === s.id ? 'Close' : 'Review'}
-                    </button>
-                  </div>
-                </div>
-
-                {expandedId === s.id && (
-                  <div className="px-5 pb-5 bg-surface-muted/60">
-                    {detailLoading && <div className="text-sm text-text-muted py-4">Loading documents…</div>}
-                    {!detailLoading && kycDetail && kycDetail.sellerType === 'corporate' && (
-                      <div className="flex flex-col gap-4 pt-1">
-                        <div className="max-w-[220px]">
-                          <div className="text-[11px] font-semibold text-text-muted mb-1.5 uppercase tracking-wide">Business document</div>
-                          {kycDetail.businessDocument ? (
-                            kycDetail.businessDocument.startsWith('data:application/pdf') ? (
-                              <a
-                                href={kycDetail.businessDocument}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center gap-2 px-3 py-3 rounded-lg border border-border hover:border-green text-sm font-semibold text-green transition-colors"
-                              >
-                                <IconFile width="16" height="16" />
-                                View PDF
-                              </a>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => setLightboxImage(kycDetail.businessDocument)}
-                                className="block w-full cursor-zoom-in"
-                              >
-                                <img
-                                  src={kycDetail.businessDocument}
-                                  alt="Business document"
-                                  className="w-full aspect-[1.3] object-cover rounded-lg border border-border hover:border-green transition-colors"
-                                />
-                              </button>
-                            )
-                          ) : (
-                            <div className="w-full aspect-[1.3] rounded-lg border border-dashed border-border-strong flex items-center justify-center text-xs text-text-muted">
-                              No document
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="text-xs text-text-muted grid gap-x-6 gap-y-0.5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-                          <div>
-                            Legal company name: <span className="text-ink-soft">{kycDetail.legalCompanyName || '—'}</span>
-                          </div>
-                          <div>
-                            Registration number: <span className="text-ink-soft">{kycDetail.registrationNumber || '—'}</span>
-                          </div>
-                          <div>
-                            NTN: <span className="text-ink-soft">{kycDetail.ntn || '—'}</span>
-                          </div>
-                          <div>
-                            Company email: <span className="text-ink-soft">{kycDetail.companyEmail || '—'}</span>
-                          </div>
-                          <div>
-                            Company phone: <span className="text-ink-soft">{kycDetail.companyPhone || '—'}</span>
-                          </div>
-                          <div>
-                            Location: <span className="text-ink-soft">{kycDetail.location || '—'}</span>
-                          </div>
-                          <div className="col-span-full">
-                            Business address: <span className="text-ink-soft">{kycDetail.businessAddress || '—'}</span>
-                          </div>
-                          <div className="col-span-full h-px bg-border my-1" />
-                          <div>
-                            Bank name: <span className="text-ink-soft">{kycDetail.bankName || '—'}</span>
-                          </div>
-                          <div>
-                            Account title: <span className="text-ink-soft">{kycDetail.accountTitle || '—'}</span>
-                          </div>
-                          <div>
-                            Account number: <span className="text-ink-soft">{kycDetail.accountNumber || '—'}</span>
-                          </div>
-                          <div>
-                            IBAN: <span className="text-ink-soft">{kycDetail.iban || '—'}</span>
-                          </div>
-                          {kycDetail.reviewedAt && (
-                            <div className="col-span-full">
-                              Last reviewed: <span className="text-ink-soft">{new Date(kycDetail.reviewedAt).toLocaleString()}</span>
-                              {kycDetail.reviewedBy === user.id && ' by you'}
-                            </div>
-                          )}
-                        </div>
-
-                        {kycDetail.cnicStatus === 'rejected' && kycDetail.cnicRejectionReason && (
-                          <p className="text-xs text-orange-text bg-orange-tint rounded-lg px-3 py-2">
-                            Previous rejection reason: {kycDetail.cnicRejectionReason}
-                          </p>
-                        )}
-
-                        {showRejectForm ? (
-                          <div className="flex flex-col gap-2 max-w-[420px]">
-                            <textarea
-                              value={rejectReason}
-                              onChange={(e) => setRejectReason(e.target.value)}
-                              placeholder="Reason for rejection (shown to the seller)"
-                              rows={2}
-                              className="w-full px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green resize-none"
-                            />
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setShowRejectForm(false)}
-                                className="cursor-pointer bg-white border border-border text-ink-soft font-semibold text-xs px-4 py-2 rounded-full hover:bg-surface-muted transition-colors"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                disabled={reviewPending || !rejectReason.trim()}
-                                onClick={() => rejectKyc(s.id)}
-                                className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-orange hover:bg-orange-hover text-white font-semibold text-xs px-4 py-2 rounded-full transition-colors"
-                              >
-                                {reviewPending ? 'Submitting…' : 'Confirm rejection'}
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              disabled={reviewPending}
-                              onClick={() => setShowRejectForm(true)}
-                              className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-white border border-border text-orange-text font-semibold text-xs px-4 py-2 rounded-full hover:bg-orange-tint transition-colors"
-                            >
-                              Reject
-                            </button>
-                            <button
-                              type="button"
-                              disabled={reviewPending}
-                              onClick={() => approveKyc(s.id)}
-                              className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-xs px-4 py-2 rounded-full transition-colors"
-                            >
-                              {reviewPending ? 'Submitting…' : 'Approve'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {!detailLoading && kycDetail && kycDetail.sellerType !== 'corporate' && (
-                      <div className="flex flex-col gap-4 pt-1">
-                        <div className="grid grid-cols-2 gap-3 max-w-[360px]">
-                          <div>
-                            <div className="text-[11px] font-semibold text-text-muted mb-1.5 uppercase tracking-wide">CNIC front</div>
-                            {kycDetail.cnicFront ? (
-                              <button
-                                type="button"
-                                onClick={() => setLightboxImage(kycDetail.cnicFront)}
-                                className="block w-full cursor-zoom-in"
-                              >
-                                <img
-                                  src={kycDetail.cnicFront}
-                                  alt="CNIC front"
-                                  className="w-full aspect-[1.6] object-cover rounded-lg border border-border hover:border-green transition-colors"
-                                />
-                              </button>
-                            ) : (
-                              <div className="w-full aspect-[1.6] rounded-lg border border-dashed border-border-strong flex items-center justify-center text-xs text-text-muted">
-                                No image
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <div className="text-[11px] font-semibold text-text-muted mb-1.5 uppercase tracking-wide">CNIC back</div>
-                            {kycDetail.cnicBack ? (
-                              <button
-                                type="button"
-                                onClick={() => setLightboxImage(kycDetail.cnicBack)}
-                                className="block w-full cursor-zoom-in"
-                              >
-                                <img
-                                  src={kycDetail.cnicBack}
-                                  alt="CNIC back"
-                                  className="w-full aspect-[1.6] object-cover rounded-lg border border-border hover:border-green transition-colors"
-                                />
-                              </button>
-                            ) : (
-                              <div className="w-full aspect-[1.6] rounded-lg border border-dashed border-border-strong flex items-center justify-center text-xs text-text-muted">
-                                No image
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="text-xs text-text-muted grid gap-x-6 gap-y-0.5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-                          <div>
-                            Business name: <span className="text-ink-soft">{kycDetail.companyName || '—'}</span>
-                          </div>
-                          <div>
-                            Email: <span className="text-ink-soft">{kycDetail.email || '—'}</span>
-                          </div>
-                          <div>
-                            Phone: <span className="text-ink-soft">{kycDetail.phone || '—'}</span>
-                          </div>
-                          <div>
-                            CNIC number: <span className="text-ink-soft">{kycDetail.cnicNumber || '—'}</span>
-                          </div>
-                          <div className="col-span-full">
-                            Address: <span className="text-ink-soft">{kycDetail.address || '—'}</span>
-                          </div>
-                          {kycDetail.reviewedAt && (
-                            <div className="col-span-full">
-                              Last reviewed: <span className="text-ink-soft">{new Date(kycDetail.reviewedAt).toLocaleString()}</span>
-                              {kycDetail.reviewedBy === user.id && ' by you'}
-                            </div>
-                          )}
-                        </div>
-
-                        {kycDetail.cnicStatus === 'rejected' && kycDetail.cnicRejectionReason && (
-                          <p className="text-xs text-orange-text bg-orange-tint rounded-lg px-3 py-2">
-                            Previous rejection reason: {kycDetail.cnicRejectionReason}
-                          </p>
-                        )}
-
-                        {showRejectForm ? (
-                          <div className="flex flex-col gap-2 max-w-[420px]">
-                            <textarea
-                              value={rejectReason}
-                              onChange={(e) => setRejectReason(e.target.value)}
-                              placeholder="Reason for rejection (shown to the seller)"
-                              rows={2}
-                              className="w-full px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green resize-none"
-                            />
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setShowRejectForm(false)}
-                                className="cursor-pointer bg-white border border-border text-ink-soft font-semibold text-xs px-4 py-2 rounded-full hover:bg-surface-muted transition-colors"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                disabled={reviewPending || !rejectReason.trim()}
-                                onClick={() => rejectKyc(s.id)}
-                                className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-orange hover:bg-orange-hover text-white font-semibold text-xs px-4 py-2 rounded-full transition-colors"
-                              >
-                                {reviewPending ? 'Submitting…' : 'Confirm rejection'}
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              disabled={reviewPending}
-                              onClick={() => setShowRejectForm(true)}
-                              className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-white border border-border text-orange-text font-semibold text-xs px-4 py-2 rounded-full hover:bg-orange-tint transition-colors"
-                            >
-                              Reject
-                            </button>
-                            <button
-                              type="button"
-                              disabled={reviewPending}
-                              onClick={() => approveKyc(s.id)}
-                              className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-xs px-4 py-2 rounded-full transition-colors"
-                            >
-                              {reviewPending ? 'Submitting…' : 'Approve'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-
-          {!kycLoading && !kycError && kycList.length === 0 && (
-            <div className="p-10 text-center text-sm text-text">No sellers found.</div>
-          )}
-        </div>
-          </>
-        )}
 
         {activeTab === 'users' && (
           <>
@@ -2338,24 +1918,9 @@ export default function AdminPage() {
         onConfirm={handleDeleteCategory}
       />
 
-      <Toast message={toastMessage} show={toastVisible} onHide={() => setToastVisible(false)} />
 
-      {lightboxImage && (
-        <div
-          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-6 cursor-zoom-out animate-fade-up"
-          onClick={() => setLightboxImage(null)}
-        >
-          <img src={lightboxImage} alt="CNIC document" className="max-w-full max-h-full rounded-lg shadow-2xl" />
-          <button
-            type="button"
-            onClick={() => setLightboxImage(null)}
-            aria-label="Close"
-            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-colors"
-          >
-            <IconClose width="18" height="18" />
-          </button>
-        </div>
-      )}
+      <Toast message={toastMessage} show={toastVisible} onHide={() => setToastVisible(false)} />
     </div>
   );
 }
+

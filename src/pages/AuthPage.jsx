@@ -5,8 +5,7 @@ import { useNotifications } from '../context/NotificationsContext';
 import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser, IconMail, IconShield, IconGlobe, IconTruck, IconStore } from '../components/icons';
 import OfficialBadge from '../components/OfficialBadge';
 import CorporateVerificationForm from '../components/CorporateVerificationForm';
-import { fileToDataUrl, validateImageFile } from '../lib/file';
-import { createHeicAwareFileHandler } from '../lib/heic';
+import { fileToDataUrl } from '../lib/file';
 
 const ROLE_BUYER = 'buyer';
 const ROLE_SELLER = 'seller';
@@ -170,9 +169,6 @@ export default function AuthPage() {
     category: '',
     // Individual path
     address: '',
-    cnicNumber: '',
-    cnicFront: null,
-    cnicBack: null,
     // Corporate path
     location: '',
     businessAddress: '',
@@ -271,42 +267,9 @@ export default function AuthPage() {
       return;
     }
 
-    let cnicFront = null;
-    let cnicBack = null;
     let businessDocument = null;
 
-    if (isSeller && !isCorporate) {
-      const normalizedCnic = signupForm.cnicNumber.replace(/\D/g, '');
-      if (!signupForm.address.trim()) {
-        setSignupError('Address is required for seller accounts.');
-        return;
-      }
-      if (!/^\d{13}$/.test(normalizedCnic)) {
-        setSignupError('CNIC number must be exactly 13 digits.');
-        return;
-      }
-      const frontError = validateImageFile(signupForm.cnicFront);
-      if (frontError) {
-        setSignupError(`CNIC front photo: ${frontError}`);
-        return;
-      }
-      const backError = validateImageFile(signupForm.cnicBack);
-      if (backError) {
-        setSignupError(`CNIC back photo: ${backError}`);
-        return;
-      }
-      setLoadingKey('signup');
-      try {
-        [cnicFront, cnicBack] = await Promise.all([
-          fileToDataUrl(signupForm.cnicFront),
-          fileToDataUrl(signupForm.cnicBack),
-        ]);
-      } catch {
-        setSignupError('Could not read the CNIC images. Please try uploading them again.');
-        setLoadingKey(null);
-        return;
-      }
-    } else if (isCorporate) {
+    if (isCorporate) {
       // The wizard itself already gates its own Next/Submit buttons on both steps being fully
       // valid, so by the time this fires the corporate fields are known-good — only the file
       // read can still fail here.
@@ -332,10 +295,7 @@ export default function AuthPage() {
         password: signupForm.password,
         sellerType: isSeller ? signupForm.sellerType : undefined,
         category: isSeller ? signupForm.category || undefined : undefined,
-        address: isSeller && !isCorporate ? signupForm.address : undefined,
-        cnicNumber: isSeller && !isCorporate ? signupForm.cnicNumber : undefined,
-        cnicFront,
-        cnicBack,
+        address: isSeller && !isCorporate ? signupForm.address || undefined : undefined,
         location: isCorporate ? signupForm.location : undefined,
         businessAddress: isCorporate ? signupForm.businessAddress : undefined,
         businessDocument,
@@ -760,10 +720,6 @@ function CategorySelect({ value, onChange }) {
 
 function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, error, onBack, onSubmit, goSignin }) {
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
-  // Converts HEIC/HEIF photos (the default format on iPhones) to JPEG the moment they're
-  // selected, so a downstream Android/desktop admin reviewing this KYC photo can actually see it.
-  const setFile = (key) => createHeicAwareFileHandler((file) => setForm((f) => ({ ...f, [key]: file })));
-  const fileInputClass = `${inputClass} cursor-pointer file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-green-tint file:px-3 file:py-2 file:text-xs file:font-semibold file:text-green`;
   const isCorporate = isSeller && form.sellerType === 'corporate';
   const patchForm = (patch) => setForm((f) => ({ ...f, ...patch }));
 
@@ -863,37 +819,6 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
         </div>
       )}
 
-      {isSeller && !isCorporate && (
-        <div className="mb-[18px]">
-          <FieldLabel>CNIC number</FieldLabel>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={form.cnicNumber}
-            onChange={set('cnicNumber')}
-            placeholder="42101-1234567-1"
-            maxLength={15}
-            className={inputClass}
-          />
-          <p className="text-[11.5px] text-text-muted mt-1.5">13 digits — dashes are fine, we'll strip them automatically.</p>
-        </div>
-      )}
-
-      {isSeller && !isCorporate && (
-        <div className="grid gap-4 mb-[18px]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
-          <div>
-            <FieldLabel>CNIC front photo</FieldLabel>
-            <input type="file" accept="image/jpeg,image/png,image/heic,image/heif,.heic,.heif" onChange={setFile('cnicFront')} className={fileInputClass} />
-            {form.cnicFront && <p className="text-[11.5px] text-green mt-1.5 truncate">✓ {form.cnicFront.name}</p>}
-          </div>
-          <div>
-            <FieldLabel>CNIC back photo</FieldLabel>
-            <input type="file" accept="image/jpeg,image/png,image/heic,image/heif,.heic,.heif" onChange={setFile('cnicBack')} className={fileInputClass} />
-            {form.cnicBack && <p className="text-[11.5px] text-green mt-1.5 truncate">✓ {form.cnicBack.name}</p>}
-          </div>
-        </div>
-      )}
-
       <div className="mb-[18px]">
         <FieldLabel>{isSeller ? 'Account email (for signing in)' : 'Business email'}</FieldLabel>
         <input
@@ -935,26 +860,6 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
         </div>
       </div>
 
-      {isSeller && !isCorporate && (
-        <div className="flex gap-3 items-start bg-orange-tint rounded-xl px-[18px] py-[15px] mb-6">
-          <IconShieldSmall />
-          <span className="text-[13px] text-orange-text-dark leading-relaxed">
-            Seller accounts go through CNIC identity verification before listings go live — usually within 2 working
-            days. Your CNIC images are stored securely and only visible to our review team.
-          </span>
-        </div>
-      )}
-
-      {isCorporate && (
-        <div className="flex gap-3 items-start bg-orange-tint rounded-xl px-[18px] py-[15px] mb-6">
-          <IconShieldSmall />
-          <span className="text-[13px] text-orange-text-dark leading-relaxed">
-            Corporate accounts go through business verification (registration, NTN, and bank details) before
-            listings go live — usually within 2 working days.
-          </span>
-        </div>
-      )}
-
       {isCorporate ? (
         <CorporateVerificationForm
           value={form}
@@ -982,14 +887,6 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
         </a>
       </p>
     </div>
-  );
-}
-
-function IconShieldSmall() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5 text-orange-text">
-      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-    </svg>
   );
 }
 

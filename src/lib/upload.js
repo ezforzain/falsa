@@ -6,7 +6,7 @@ import { ApiError } from './api';
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '';
 
-// type is one of "cnic" | "business-docs" | "products" — see server/src/middleware/upload.js.
+// type is one of "business-docs" | "products" | "store-banners" | "avatars" — see server/src/middleware/upload.js.
 export async function uploadFile(type, file) {
   const formData = new FormData();
   formData.append('file', file);

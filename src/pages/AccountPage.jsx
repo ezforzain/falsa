@@ -11,8 +11,6 @@ import {
   IconClock,
   IconShield,
   IconCheck,
-  IconAlertCircle,
-  IconChevronRight,
   IconEdit,
 } from '../components/icons';
 import VerifiedBadge from '../components/VerifiedBadge';
@@ -172,55 +170,6 @@ function EmailVerifyNotice({ email, resend }) {
   );
 }
 
-// Seller-only — mirrors the review states set by the admin's "Seller ID Verification" queue
-// (server/src/routes/admin.routes.js PATCH /kyc/:userId). Approving there also flips the
-// account's public "Verified Store" badge automatically, so `verified` and `cnicStatus` stay in
-// lockstep here without this component needing to reconcile them itself.
-const KYC_STATUS_META = {
-  approved: {
-    icon: IconCheck,
-    iconBg: 'bg-green-tint',
-    iconColor: 'text-green',
-    title: 'Identity verified',
-    body: 'Your seller ID documents have been reviewed and approved.',
-  },
-  pending: {
-    icon: IconClock,
-    iconBg: 'bg-orange-tint',
-    iconColor: 'text-orange-text',
-    title: 'Verification in review',
-    body: "We're reviewing your submitted documents. This usually takes 1–2 business days.",
-  },
-  rejected: {
-    icon: IconAlertCircle,
-    iconBg: 'bg-orange-tint',
-    iconColor: 'text-orange-text',
-    title: 'Verification needs attention',
-    body: 'Your submitted documents couldn’t be approved. Resubmit them to try again.',
-  },
-};
-
-function SellerVerificationCard({ cnicStatus }) {
-  const meta = KYC_STATUS_META[cnicStatus];
-  if (!meta) return null;
-  const Icon = meta.icon;
-
-  return (
-    <Link
-      to="/seller/settings"
-      className="mt-4 bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_20px_-10px_rgba(0,0,0,0.08)] p-4 sm:p-5 flex items-center gap-3.5 no-underline text-inherit hover:border-green/40 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_10px_24px_-8px_rgba(14,90,70,0.16)] transition-all group"
-    >
-      <span className={`w-10 h-10 rounded-full ${meta.iconBg} inline-flex items-center justify-center shrink-0`}>
-        <Icon width="17" height="17" className={meta.iconColor} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[13.5px] font-semibold text-ink m-0">{meta.title}</p>
-        <p className="text-[12.5px] text-text-muted mt-0.5 mb-0 leading-snug">{meta.body}</p>
-      </div>
-      <IconChevronRight width="16" height="16" className="text-text-muted shrink-0 group-hover:translate-x-0.5 group-hover:text-green transition-all" />
-    </Link>
-  );
-}
 
 // "My Profile" — just the profile itself now. Orders, seller tools, settings, support, and
 // sign-out all moved into the Facebook-style account menu — see AccountMenuContent. The
@@ -360,7 +309,6 @@ export default function AccountPage() {
         </div>
 
         {!user.emailVerified && <EmailVerifyNotice email={user.email} resend={resendVerificationEmail} />}
-        {isSeller && <SellerVerificationCard cnicStatus={user.cnicStatus} />}
       </div>
 
       <Toast message="Profile updated" show={savedToastVisible} onHide={() => setSavedToastVisible(false)} />

@@ -30,7 +30,7 @@ export async function serializeUser(user, sellerVerifiedById) {
 }
 
 // Batch version — one Seller query for the whole set instead of one per user, and resilient to
-// a single bad record so the admin KYC / Users lists can't fail wholesale.
+// a single bad record so the admin Users list can't fail wholesale.
 export async function serializeUsers(users) {
   const sellerIds = [
     ...new Set(

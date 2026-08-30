@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
     // Admin-granted "blue tick" — can be set on ANY account (buyer, seller, admin) from the
     // Users tab. For sellers it is kept in lockstep with the linked Seller.verified badge.
     verified: { type: Boolean, default: false },
+
     companyName: { type: String, required: true },
     country: { type: String, default: null },
     phone: { type: String, required: true, unique: true },
@@ -35,11 +36,6 @@ const userSchema = new mongoose.Schema(
     sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller', default: null },
     sellerType: { type: String, enum: ['individual', 'corporate', null], default: null },
 
-    // Individual seller path — CNIC.
-    cnicNumber: { type: String, default: null },
-    cnicFront: { type: String, default: null },
-    cnicBack: { type: String, default: null },
-
     // Corporate seller path.
     location: { type: String, default: null },
     businessAddress: { type: String, default: null },
@@ -53,12 +49,6 @@ const userSchema = new mongoose.Schema(
     accountTitle: { type: String, default: null },
     accountNumber: { type: String, default: null },
     iban: { type: String, default: null },
-
-    // Shared KYC review trail.
-    cnicStatus: { type: String, enum: ['pending', 'approved', 'rejected', null], default: null },
-    cnicRejectionReason: { type: String, default: null },
-    reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-    reviewedAt: { type: Date, default: null },
 
     // App preferences (Settings page) — theme/reduce-motion stay device-local (localStorage),
     // but language and notification preferences follow the account across devices.
@@ -81,13 +71,10 @@ userSchema.methods.comparePassword = function comparePassword(candidate) {
   return bcrypt.compare(candidate, this.passwordHash);
 };
 
-// Never send the password hash or raw KYC document data back to the client — only the admin
-// KYC-detail endpoint reaches past this via a separate projection.
+// Never send the password hash or the raw corporate business document back to the client.
 userSchema.methods.toPublicJSON = function toPublicJSON() {
   const obj = this.toObject({ virtuals: true });
   delete obj.passwordHash;
-  delete obj.cnicFront;
-  delete obj.cnicBack;
   delete obj.businessDocument;
   delete obj.emailVerificationTokenHash;
   delete obj.__v;

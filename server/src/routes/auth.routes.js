@@ -99,9 +99,6 @@ router.post(
       category,
       address,
       sellerType,
-      cnicNumber,
-      cnicFront,
-      cnicBack,
       location,
       businessAddress,
       businessDocument,
@@ -131,27 +128,7 @@ router.post(
       return res.status(409).json({ message: 'An account with this phone number already exists.' });
     }
 
-    let normalizedCnic = null;
     const isCorporate = role === 'seller' && sellerType === 'corporate';
-
-    if (role === 'seller' && !isCorporate) {
-      if (!address || !cnicNumber || !cnicFront || !cnicBack) {
-        return res.status(400).json({
-          message: 'Address, CNIC number, and both CNIC images are required for seller accounts.',
-        });
-      }
-      normalizedCnic = String(cnicNumber).replace(/\D/g, '');
-      if (!/^\d{13}$/.test(normalizedCnic)) {
-        return res
-          .status(400)
-          .json({ message: 'CNIC number must be exactly 13 digits (dashes are fine, letters are not).' });
-      }
-      if (await User.findOne({ cnicNumber: normalizedCnic })) {
-        return res.status(409).json({
-          message: 'This CNIC number is already registered. Only one seller account is allowed per CNIC.',
-        });
-      }
-    }
 
     if (isCorporate) {
       const required = {
@@ -192,9 +169,6 @@ router.post(
       address: address || null,
       sellerId: sellerDoc?._id || null,
       sellerType: isSeller ? sellerType || 'individual' : null,
-      cnicNumber: isSeller && !isCorporate ? normalizedCnic : null,
-      cnicFront: isSeller && !isCorporate ? cnicFront : null,
-      cnicBack: isSeller && !isCorporate ? cnicBack : null,
       location: isCorporate ? location : null,
       businessAddress: isCorporate ? businessAddress : null,
       businessDocument: isCorporate ? businessDocument : null,
@@ -207,7 +181,6 @@ router.post(
       accountTitle: isCorporate ? accountTitle : null,
       accountNumber: isCorporate ? accountNumber : null,
       iban: isCorporate ? iban : null,
-      cnicStatus: isSeller ? 'pending' : null,
     });
 
     // Best-effort — a broken/unconfigured mail provider shouldn't block account creation itself,
@@ -220,6 +193,7 @@ router.post(
       emailSendFailed = true;
     }
 
+    // Every new account is live right away — sign them straight in, same as a normal /signin.
     const token = await createSessionAndToken(user, req);
     res.json({ token, user: await serializeUser(user), emailSendFailed });
   })
@@ -386,31 +360,6 @@ router.patch(
     if (previousAvatarUrl && previousAvatarUrl !== avatarUrl) {
       await deleteAvatarFile(previousAvatarUrl);
     }
-    res.json({ user: await serializeUser(req.user) });
-  })
-);
-
-// ---------- POST /api/auth/kyc/resubmit ----------
-router.post(
-  '/kyc/resubmit',
-  requireAuth,
-  asyncHandler(async (req, res) => {
-    if (req.user.role !== 'seller') {
-      return res.status(403).json({ message: 'Only seller accounts can resubmit CNIC documents.' });
-    }
-    const { cnicFront, cnicBack } = req.body;
-    if (!cnicFront || !cnicBack) {
-      return res.status(400).json({ message: 'Both CNIC front and back images are required.' });
-    }
-    req.user.set({
-      cnicFront,
-      cnicBack,
-      cnicStatus: 'pending',
-      cnicRejectionReason: null,
-      reviewedBy: null,
-      reviewedAt: null,
-    });
-    await req.user.save();
     res.json({ user: await serializeUser(req.user) });
   })
 );

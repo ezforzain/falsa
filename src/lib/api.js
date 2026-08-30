@@ -86,8 +86,6 @@ export const auth = {
   updateProfile: (payload) => request('/api/auth/profile', { method: 'PATCH', body: payload, auth: true }),
   updatePreferences: (payload) => request('/api/auth/preferences', { method: 'PATCH', body: payload, auth: true }),
   updateAvatar: (avatarUrl) => request('/api/auth/avatar', { method: 'PATCH', body: { avatarUrl }, auth: true }),
-  // Self-service: a rejected seller uploads fresh CNIC images to go back into the review queue.
-  resubmitKyc: (payload) => request('/api/auth/kyc/resubmit', { method: 'POST', body: payload, auth: true }),
   verifyEmail: (token) => request('/api/auth/verify-email', { method: 'POST', body: { token } }),
   resendVerificationEmail: () => request('/api/auth/verify-email/resend', { method: 'POST', auth: true }),
   changePassword: (payload) => request('/api/auth/password', { method: 'PATCH', body: payload, auth: true }),
@@ -259,19 +257,6 @@ export const adminUsers = {
   remove: (id) => request(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
   payouts: (id) => request(`/api/admin/users/${encodeURIComponent(id)}/payouts`, { auth: true }),
   addPayout: (id, payload) => request(`/api/admin/users/${encodeURIComponent(id)}/payouts`, { method: 'POST', body: payload, auth: true }),
-};
-
-// ---------- Seller KYC (CNIC identity verification, admin review) ----------
-
-export const kyc = {
-  // Every seller with their CNIC review status (pending sorted first) — never the raw images,
-  // see getSellerKyc for those.
-  getPendingKyc: () => request('/api/admin/kyc', { auth: true }),
-  // One seller's full KYC record, including CNIC front/back images — admin only.
-  getSellerKyc: (userId) => request(`/api/admin/kyc/${encodeURIComponent(userId)}`, { auth: true }),
-  approveSellerKyc: (userId) => request(`/api/admin/kyc/${encodeURIComponent(userId)}`, { method: 'PATCH', body: { status: 'approved' }, auth: true }),
-  rejectSellerKyc: (userId, rejectionReason) =>
-    request(`/api/admin/kyc/${encodeURIComponent(userId)}`, { method: 'PATCH', body: { status: 'rejected', rejectionReason }, auth: true }),
 };
 
 // ---------- Dev helpers ----------

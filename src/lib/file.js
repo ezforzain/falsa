@@ -1,7 +1,6 @@
-// Small file-upload helpers for the CNIC verification flow (and anywhere else a file needs to
-// become something JSON-serializable). There's no real backend here — MSW handlers persist to
-// localStorage — so an uploaded image is read as a base64 data URL rather than sent as
-// multipart/form-data to a server.
+// Small file-upload helpers for anywhere a picked file needs to become something
+// JSON-serializable (corporate business documents at signup, avatars, product images) — the
+// file is read as a base64 data URL and sent in the JSON body rather than as multipart form data.
 
 export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
 export const MAX_IMAGE_BYTES = 4 * 1024 * 1024; // 4MB, mirrors Laravel's `max:4096` (KB)

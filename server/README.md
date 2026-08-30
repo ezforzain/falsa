@@ -28,7 +28,8 @@ npm run create-admin -- --email you@company.com --password 'Str0ngPass!' --compa
 ## Design notes / current limitations
 
 - **Sign-in and sign-up are single-step** — password verified (or account created) and a JWT is
-  issued directly, no OTP/verification-code gate.
+  issued directly for every account (buyer and seller), no OTP/verification-code gate, no admin
+  approval step, and no separate seller identity/KYC check.
 - **Forgot-password is disabled** (`POST /api/auth/forgot-password` returns 503) until a real
   email/SMS provider is wired up to deliver a reset code — there was previously a fixed dev-mode
   code here, which isn't a real verification step.
@@ -38,10 +39,10 @@ npm run create-admin -- --email you@company.com --password 'Str0ngPass!' --compa
   which never sends an auth token to `/api/cart` or `/api/sellers/:id/follow`. Identity is an
   httpOnly `guestId` cookie set on first request. Once the frontend switches from `fetch(...)` to
   requests with `credentials: 'include'`, this will keep working unchanged.
-- **Uploads are local disk**, served from `/uploads/*`. `POST /api/uploads/:type` (`cnic` |
-  `business-docs` | `products`, multipart field `file`) returns `{ url }`; that URL is what you
-  pass as `cnicFront`/`cnicBack`/`businessDocument`/`images[]` on the other endpoints — same
-  shape the mock already validates ("images must be a list of URLs").
+- **Uploads are local disk**, served from `/uploads/*`. `POST /api/uploads/:type`
+  (`business-docs` | `products`, multipart field `file`) returns `{ url }`; that URL is what you
+  pass as `businessDocument`/`images[]` on the other endpoints — same shape the mock already
+  validates ("images must be a list of URLs").
 - Product IDs are human-readable slugs (e.g. `cotton-twill-fabric`), matching the existing mock
   data and frontend routes.
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { loadConversations, totalUnread, MESSAGES_UPDATED_EVENT } from '../../lib/sellerMessagesStore';
 import VerifiedBadge from '../../components/VerifiedBadge';
@@ -22,22 +22,21 @@ import {
 import logoMark from '../../assets/logo-mark.png';
 
 const TABS = [
-  { to: '/seller', label: 'Dashboard', icon: IconGrid, end: true, requiresApproval: true },
-  { to: '/seller/products', label: 'Products', icon: IconBox, end: false, requiresApproval: true },
-  { to: '/seller/orders', label: 'Orders', icon: IconReceipt, end: false, requiresApproval: true },
-  { to: '/seller/customers', label: 'Customers', icon: IconUser, end: false, requiresApproval: true },
-  { to: '/seller/messages', label: 'Messages', icon: IconMessageCircle, end: false, requiresApproval: true, badgeKey: 'messages' },
-  { to: '/seller/store-profile', label: 'Store Profile', icon: IconStore, end: false, requiresApproval: true },
-  { to: '/seller/analytics', label: 'Analytics', icon: IconTrendingUp, end: false, requiresApproval: true },
-  { to: '/seller/promotions', label: 'Promotions', icon: IconSparkle, end: false, requiresApproval: true },
-  { to: '/seller/payouts', label: 'Payouts', icon: IconWallet, end: false, requiresApproval: true },
-  { to: '/seller/settings', label: 'Settings', icon: IconSettings, end: false, requiresApproval: false },
+  { to: '/seller', label: 'Dashboard', icon: IconGrid, end: true },
+  { to: '/seller/products', label: 'Products', icon: IconBox, end: false },
+  { to: '/seller/orders', label: 'Orders', icon: IconReceipt, end: false },
+  { to: '/seller/customers', label: 'Customers', icon: IconUser, end: false },
+  { to: '/seller/messages', label: 'Messages', icon: IconMessageCircle, end: false, badgeKey: 'messages' },
+  { to: '/seller/store-profile', label: 'Store Profile', icon: IconStore, end: false },
+  { to: '/seller/analytics', label: 'Analytics', icon: IconTrendingUp, end: false },
+  { to: '/seller/promotions', label: 'Promotions', icon: IconSparkle, end: false },
+  { to: '/seller/payouts', label: 'Payouts', icon: IconWallet, end: false },
+  { to: '/seller/settings', label: 'Settings', icon: IconSettings, end: false },
 ];
 
 export default function SellerLayout() {
   const { user, status, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
@@ -77,13 +76,6 @@ export default function SellerLayout() {
         </div>
       </div>
     );
-  }
-
-  // Seller features (Dashboard/Products/Orders) are locked until CNIC is approved — only
-  // Settings (where the status lives, and where a rejected seller can resubmit) stays open.
-  const kycApproved = user.cnicStatus === 'approved';
-  if (!kycApproved && location.pathname !== '/seller/settings') {
-    return <Navigate to="/seller/settings" replace />;
   }
 
   const handleLogout = async () => {
@@ -127,68 +119,28 @@ export default function SellerLayout() {
         </div>
 
         <nav className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 flex gap-1 overflow-x-auto no-scrollbar">
-          {TABS.map((tab) =>
-            tab.requiresApproval && !kycApproved ? (
-              <span
-                key={tab.to}
-                title="Available once your CNIC is approved"
-                className="flex items-center gap-1.5 whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-teal-mist/40 cursor-not-allowed"
-              >
-                <tab.icon width="15" height="15" />
-                {tab.label}
-              </span>
-            ) : (
-              <NavLink
-                key={tab.to}
-                to={tab.to}
-                end={tab.end}
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
-                    isActive ? 'border-orange text-white' : 'border-transparent text-teal-mist hover:text-white'
-                  }`
-                }
-              >
-                <tab.icon width="15" height="15" />
-                {tab.label}
-                {tab.badgeKey === 'messages' && unreadMessages > 0 && (
-                  <span className="min-w-[16px] h-4 px-1 rounded-full bg-orange text-white text-[10px] font-bold flex items-center justify-center">
-                    {unreadMessages}
-                  </span>
-                )}
-              </NavLink>
-            )
-          )}
+          {TABS.map((tab) => (
+            <NavLink
+              key={tab.to}
+              to={tab.to}
+              end={tab.end}
+              className={({ isActive }) =>
+                `flex items-center gap-1.5 whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                  isActive ? 'border-orange text-white' : 'border-transparent text-teal-mist hover:text-white'
+                }`
+              }
+            >
+              <tab.icon width="15" height="15" />
+              {tab.label}
+              {tab.badgeKey === 'messages' && unreadMessages > 0 && (
+                <span className="min-w-[16px] h-4 px-1 rounded-full bg-orange text-white text-[10px] font-bold flex items-center justify-center">
+                  {unreadMessages}
+                </span>
+              )}
+            </NavLink>
+          ))}
         </nav>
       </header>
-
-      {user.cnicStatus === 'pending' && (
-        <div className="bg-orange-tint border-b border-[#E9C9A0]">
-          <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-2 text-[13px] text-orange-text-dark">
-            <IconAlertCircle width="15" height="15" className="shrink-0" />
-            Your {user.sellerType === 'corporate' ? 'business verification' : 'CNIC identity verification'} is pending —
-            usually completed within 2 working days. Listings you add now will go live once verified.
-          </div>
-        </div>
-      )}
-
-      {user.cnicStatus === 'rejected' && (
-        <div className="bg-orange-tint border-b border-[#E9C9A0]">
-          <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-2 text-[13px] text-orange-text-dark">
-            <IconAlertCircle width="15" height="15" className="shrink-0" />
-            Your verification was rejected{user.cnicRejectionReason ? `: ${user.cnicRejectionReason}` : '.'} Upload new
-            documents below to resubmit for review.
-          </div>
-        </div>
-      )}
-
-      {!user.cnicStatus && user.role === 'seller' && (
-        <div className="bg-orange-tint border-b border-[#E9C9A0]">
-          <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-2 text-[13px] text-orange-text-dark">
-            <IconAlertCircle width="15" height="15" className="shrink-0" />
-            Your seller account is pending verification — usually completed within 2 working days. Listings you add now will go live once verified.
-          </div>
-        </div>
-      )}
 
       <main className="flex-1 max-w-[1200px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />

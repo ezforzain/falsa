@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import mongoose from 'mongoose';
 import { Seller } from '../models/Seller.js';
 import { User } from '../models/User.js';
 import { Product } from '../models/Product.js';
@@ -42,11 +41,10 @@ function serializeAdminOrder(doc) {
 router.get(
   '/overview',
   asyncHandler(async (_req, res) => {
-    const [totalSellers, totalProducts, totalBuyers, pendingApprovals, orders, recentSellersRaw] = await Promise.all([
+    const [totalSellers, totalProducts, totalBuyers, orders, recentSellersRaw] = await Promise.all([
       Seller.countDocuments(),
       Product.countDocuments(),
       User.countDocuments({ role: 'buyer' }),
-      User.countDocuments({ role: 'seller', cnicStatus: 'pending' }),
       SellerOrder.find().sort({ placedAt: -1 }).populate('sellerId', 'companyName'),
       User.find({ role: 'seller' }).sort({ createdAt: -1 }).limit(5),
     ]);
@@ -58,7 +56,6 @@ router.get(
       id: u._id,
       companyName: u.companyName,
       email: u.email,
-      cnicStatus: u.cnicStatus,
       createdAt: u.createdAt,
     }));
 
@@ -70,7 +67,6 @@ router.get(
         orders: orders.length,
         revenue: totalRevenue,
         pendingOrders,
-        pendingApprovals,
       },
       recentOrders,
       recentSellers,
@@ -448,67 +444,6 @@ router.patch(
     });
     await settings.save();
     res.json({ settings });
-  })
-);
-
-const STATUS_ORDER = { pending: 0, rejected: 1, approved: 2 };
-
-router.get(
-  '/kyc',
-  asyncHandler(async (_req, res) => {
-    const sellers = await User.find({ role: 'seller' });
-    const serialized = await serializeUsers(sellers);
-    serialized.sort((a, b) => (STATUS_ORDER[a.cnicStatus] ?? 3) - (STATUS_ORDER[b.cnicStatus] ?? 3));
-    res.json({ sellers: serialized });
-  })
-);
-
-router.get(
-  '/kyc/:userId',
-  asyncHandler(async (req, res) => {
-    if (!mongoose.isValidObjectId(req.params.userId)) {
-      return res.status(404).json({ message: 'Seller not found.' });
-    }
-    const user = await User.findOne({ _id: req.params.userId, role: 'seller' });
-    if (!user) return res.status(404).json({ message: 'Seller not found.' });
-    const detail = user.toObject({ virtuals: true });
-    delete detail.passwordHash;
-    delete detail.__v;
-    res.json({ seller: detail });
-  })
-);
-
-router.patch(
-  '/kyc/:userId',
-  asyncHandler(async (req, res) => {
-    const { status, rejectionReason } = req.body;
-    if (!['approved', 'rejected'].includes(status) || !mongoose.isValidObjectId(req.params.userId)) {
-      return res.status(404).json({ message: 'Seller not found or invalid status.' });
-    }
-    const user = await User.findOne({ _id: req.params.userId, role: 'seller' });
-    if (!user) return res.status(404).json({ message: 'Seller not found or invalid status.' });
-    user.set({
-      cnicStatus: status,
-      cnicRejectionReason: status === 'rejected' ? rejectionReason || 'Documents could not be verified.' : null,
-      reviewedBy: req.user._id,
-      reviewedAt: new Date(),
-    });
-    await user.save();
-
-    // Approving a seller's ID documents IS what "getting verified" means from their side — flip
-    // the store's public "Verified Store" badge (and the denormalized copy on their products,
-    // same as PATCH /sellers/:id/verify) in lockstep so approval always shows up immediately,
-    // rather than requiring the admin to separately toggle it in the Verified Stores tab.
-    // Rejection deliberately leaves an existing verified badge alone — a failed resubmission
-    // shouldn't silently unverify a store that was already legitimately verified.
-    if (status === 'approved' && user.sellerId) {
-      const sellerRecord = await Seller.findByIdAndUpdate(user.sellerId, { verified: true }, { new: true });
-      if (sellerRecord) {
-        await Product.updateMany({ sellerId: sellerRecord._id }, { sellerVerified: true });
-      }
-    }
-
-    res.json({ seller: await serializeUser(user) });
   })
 );
 
