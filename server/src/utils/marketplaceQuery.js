@@ -16,13 +16,33 @@ export function buildMarketplaceFilter(query) {
     clauses.push({ $or: [{ name: re }, { category: re }, { seller: re }] });
   }
 
-  if (query.category) clauses.push({ category: query.category });
+  // category/country are multiselect — comma-joined in the query string (e.g.
+  // "Textiles,Sports Goods"); a single value works the same way as $in with one element.
+  const splitList = (raw) =>
+    String(raw)
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+  if (query.category) {
+    const values = splitList(query.category);
+    if (values.length === 1) clauses.push({ category: values[0] });
+    else if (values.length > 1) clauses.push({ category: { $in: values } });
+  }
   if (query.sellerId) clauses.push({ sellerId: query.sellerId });
-  if (query.country) clauses.push({ sellerCountry: query.country });
+  if (query.country) {
+    const values = splitList(query.country);
+    if (values.length === 1) clauses.push({ sellerCountry: values[0] });
+    else if (values.length > 1) clauses.push({ sellerCountry: { $in: values } });
+  }
 
   if (query.verified === '1' || query.verified === 'true') clauses.push({ sellerVerified: true });
   if (query.officialStore === '1' || query.officialStore === 'true') clauses.push({ sellerOfficialStore: true });
   if (query.freeShipping === '1' || query.freeShipping === 'true') clauses.push({ freeShipping: true });
+  // "On sale" — discountPercent is a plain number, so this is a real (not fabricated) DB-level
+  // comparison, unlike `rating` (a display string, parsed in-memory — see marketplace.routes.js).
+  if (query.discountOnly === '1' || query.discountOnly === 'true') {
+    clauses.push({ discountPercent: { $gt: 0 } });
+  }
 
   const priceMin = query.priceMin !== undefined ? Number(query.priceMin) : null;
   const priceMax = query.priceMax !== undefined ? Number(query.priceMax) : null;

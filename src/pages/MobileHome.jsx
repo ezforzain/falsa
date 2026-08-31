@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { normalizeQuery, searchHints, mobileTabs as fallbackTabs } from '../data/mockData';
 import { catalog, marketplace } from '../lib/api';
@@ -41,7 +41,6 @@ export default function MobileHome() {
 
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('spotlight');
-  const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -98,16 +97,22 @@ export default function MobileHome() {
 
     const fetcher = MARKETPLACE_FETCHERS[activeTab] || catalog.products;
     return fetcher({
-      category: activeCatDef?.fullName,
+      // The category quick-circles (activeCatDef) and the filter panel's own Category multiselect
+      // both narrow by category — a circle tap wins when set, since it's the more deliberate,
+      // single-purpose action; the panel's category filter only applies once no circle is active.
+      category: activeCatDef?.fullName || marketplaceFilters.category,
       q: debouncedQuery,
       buyerCountry: getBuyerCountry(user),
-      country: marketplaceFilters.country || undefined,
+      country: marketplaceFilters.country,
       verified: marketplaceFilters.verified,
       officialStore: marketplaceFilters.officialStore,
       freeShipping: marketplaceFilters.freeShipping,
+      discountOnly: marketplaceFilters.discountOnly,
       priceMin: marketplaceFilters.priceMin,
       priceMax: marketplaceFilters.priceMax,
       moqMax: marketplaceFilters.moqMax,
+      ratingMin: marketplaceFilters.ratingMin,
+      sortBy: marketplaceFilters.sortBy,
     })
       .then(({ products: fetched }) => {
         if (fetchIdRef.current === requestId) setProducts(fetched);
@@ -129,23 +134,11 @@ export default function MobileHome() {
   let label = activeCatDef ? activeCatDef.name : t('home.allCategories');
   if (debouncedQuery) label = `Results for "${debouncedQuery}"`;
 
-  // "Low MOQ" reads the leading number off the moq string (e.g. "150pc" -> 150) regardless of unit,
-  // since MOQ units aren't comparable across product types — only the seller's own threshold is.
-  const LOW_MOQ_THRESHOLD = 200;
-  const filteredProducts = useMemo(() => {
-    if (activeFilter === 'verified') return products.filter((p) => p.verified);
-    if (activeFilter === 'lowMoq') {
-      return products.filter((p) => {
-        const n = parseInt(p.moq, 10);
-        return !isNaN(n) && n <= LOW_MOQ_THRESHOLD;
-      });
-    }
-    return products;
-  }, [products, activeFilter]);
-
   // The mock catalog is small and finite — this loops it endlessly (reshuffled each lap) so the
   // feed behaves like an infinite/YouTube-style feed instead of stopping after ~9 products.
-  const { items: feedProducts, loadingMore, sentinelRef } = useInfiniteFeed(filteredProducts, { batchSize: 6 });
+  // Filtering itself now happens server-side (the section's own marketplace endpoint, driven by
+  // the filter panel below) rather than client-side over whatever already loaded.
+  const { items: feedProducts, loadingMore, sentinelRef } = useInfiniteFeed(products, { batchSize: 6 });
 
   // Paused the moment the user focuses the search field or has typed anything, and only
   // resumes — with a fresh full dwell time — once it's empty and unfocused again.
@@ -191,7 +184,14 @@ export default function MobileHome() {
                 <button
                   key={tab.key}
                   type="button"
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => {
+                    setActiveTab(tab.key);
+                    // Each section has its own filter panel (see FilterConfig) — a value picked
+                    // under one section (say B2B's Max MOQ) would otherwise silently keep being
+                    // sent to the new section's query even though its panel doesn't show that
+                    // control anymore.
+                    setMarketplaceFilters(EMPTY_MARKETPLACE_FILTERS);
+                  }}
                   className={`flex items-center gap-1.5 shrink-0 whitespace-nowrap rounded-full pl-2.5 pr-3.5 py-2 text-[13px] font-semibold cursor-pointer transition-colors border ${
                     isActive
                       ? 'bg-green text-white border-green shadow-[0_4px_12px_rgba(14,90,70,0.25)]'
@@ -233,7 +233,7 @@ export default function MobileHome() {
       </div>
       {filtersOpen && (
         <div className="px-[18px] pb-3">
-          <MarketplaceFilters categories={categories} value={marketplaceFilters} onChange={setMarketplaceFilters} />
+          <MarketplaceFilters section={activeTab} value={marketplaceFilters} onChange={setMarketplaceFilters} />
         </div>
       )}
 
@@ -265,17 +265,39 @@ export default function MobileHome() {
         </div>
       </div>
 
-      {/* Quick actions */}
+      {/* Quick actions — each gets its own vivid gradient badge (instead of a flat tint) plus a
+          matching colored glow and a faint wash on the card itself, so the row reads as three
+          distinct, colorful entry points rather than three identical gray cards. */}
       <div className="flex gap-3 px-[18px] pb-4">
         {[
-          { label: t('home.startExploring'), bg: 'bg-green-tint', icon: <IconGrid />, onClick: () => navigate('/categories') },
-          { label: t('home.requestQuotation'), bg: 'bg-orange-tint', icon: <IconTarget />, onClick: () => navigate('/messenger') },
+          {
+            label: t('home.startExploring'),
+            badge: 'bg-gradient-to-br from-green to-green-hover',
+            glow: 'shadow-[0_6px_16px_rgba(14,90,70,0.32)]',
+            wash: 'from-green-tint/70',
+            hoverBorder: 'hover:border-green/30',
+            icon: <IconGrid />,
+            onClick: () => navigate('/categories'),
+          },
+          {
+            label: t('home.requestQuotation'),
+            badge: 'bg-gradient-to-br from-orange to-[#E0973F]',
+            glow: 'shadow-[0_6px_16px_rgba(201,123,45,0.35)]',
+            wash: 'from-orange-tint/70',
+            hoverBorder: 'hover:border-orange/30',
+            icon: <IconTarget />,
+            onClick: () => navigate('/messenger'),
+          },
           {
             label: t('home.topSellers'),
-            bg: 'bg-green-tint',
+            badge: 'bg-gradient-to-br from-gold to-orange',
+            glow: 'shadow-[0_6px_16px_rgba(197,140,50,0.35)]',
+            wash: 'from-gold/25',
+            hoverBorder: 'hover:border-gold/40',
             icon: <IconTrophy />,
             onClick: () => {
-              setActiveFilter('verified');
+              setMarketplaceFilters((f) => ({ ...f, verified: true }));
+              setFiltersOpen(true);
               productGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             },
           },
@@ -284,9 +306,9 @@ export default function MobileHome() {
             key={a.label}
             type="button"
             onClick={a.onClick}
-            className="group flex-1 bg-surface border border-border rounded-2xl px-3 py-3.5 flex flex-col items-start gap-2.5 text-left cursor-pointer transition-all duration-150 hover:border-green/20 hover:shadow-[0_10px_24px_rgba(27,31,29,0.08)] hover:-translate-y-0.5 active:scale-[0.97] active:shadow-none"
+            className={`group flex-1 bg-gradient-to-b ${a.wash} to-surface border border-border rounded-2xl px-3 py-3.5 flex flex-col items-start gap-2.5 text-left cursor-pointer transition-all duration-150 ${a.hoverBorder} hover:shadow-[0_10px_24px_rgba(27,31,29,0.1)] hover:-translate-y-0.5 active:scale-[0.97] active:shadow-none`}
           >
-            <span className={`w-9 h-9 rounded-xl ${a.bg} flex items-center justify-center transition-transform duration-150 group-hover:scale-105`}>
+            <span className={`w-9 h-9 rounded-xl ${a.badge} ${a.glow} flex items-center justify-center transition-transform duration-150 group-hover:scale-105 group-hover:rotate-3`}>
               {a.icon}
             </span>
             <span className="font-display text-[12.5px] font-semibold text-ink leading-snug tracking-[-0.01em]">{a.label}</span>
@@ -295,10 +317,12 @@ export default function MobileHome() {
       </div>
 
       {/* Trust banner — labels wrap onto a second line instead of forcing single-line width, so
-          a long line like "Money-back protection" never overflows past the card. */}
+          a long line like "Money-back protection" never overflows past the card. Icon badges are
+          round, colorful gradients (green = shipping, teal = protection) rather than flat white
+          squares, so the two perks feel distinct instead of visually identical. */}
       <div className="mx-[18px] mb-1.5 rounded-2xl border border-orange/15 bg-gradient-to-br from-orange-tint to-[#FBF2E4] px-4 py-3.5 flex items-center shadow-[0_1px_3px_rgba(27,31,29,0.03)]">
         <div className="flex-1 flex items-center gap-3 min-w-0">
-          <span className="w-9 h-9 rounded-xl bg-surface flex items-center justify-center shrink-0 shadow-[0_1px_4px_rgba(122,74,20,0.16)]">
+          <span className="w-9 h-9 rounded-full bg-gradient-to-br from-green to-green-hover flex items-center justify-center shrink-0 shadow-[0_3px_10px_rgba(14,90,70,0.35)]">
             <IconShipFast />
           </span>
           <span className="min-w-0">
@@ -308,7 +332,7 @@ export default function MobileHome() {
         </div>
         <span className="w-px self-stretch bg-orange/20 mx-3.5 shrink-0" />
         <div className="flex-1 flex items-center gap-3 min-w-0">
-          <span className="w-9 h-9 rounded-xl bg-surface flex items-center justify-center shrink-0 shadow-[0_1px_4px_rgba(122,74,20,0.16)]">
+          <span className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-soft to-green flex items-center justify-center shrink-0 shadow-[0_3px_10px_rgba(14,90,70,0.3)]">
             <IconMoneyBack />
           </span>
           <span className="min-w-0">
@@ -354,34 +378,9 @@ export default function MobileHome() {
             })}
       </div>
 
-      {/* Filter pills */}
-      <div className="flex gap-2 px-[18px] pt-2.5 pb-3.5">
-        {[
-          { key: 'all', label: t('common.all') },
-          { key: 'verified', label: t('common.verified') },
-          { key: 'lowMoq', label: t('common.lowMoq') },
-        ].map((f) => (
-          <span
-            key={f.key}
-            data-testid={`filter-pill-${f.key}`}
-            onClick={() => setActiveFilter(f.key)}
-            className={`text-[12.5px] font-bold px-4 py-1.5 rounded-full cursor-pointer transition-colors ${
-              activeFilter === f.key ? 'bg-ink text-white' : 'bg-surface-muted text-text font-semibold hover:bg-[#EFEBE2]'
-            }`}
-          >
-            {f.label}
-          </span>
-        ))}
-      </div>
-
       {/* Active label */}
-      <div ref={productGridRef} className="px-[18px] pb-2.5 text-[13px] text-text scroll-mt-4">
+      <div ref={productGridRef} className="px-[18px] pt-2.5 pb-2.5 text-[13px] text-text scroll-mt-4">
         {t('home.showing')} <strong className="text-ink">{label}</strong>
-        {activeFilter !== 'all' && (
-          <>
-            {' '}· <strong className="text-ink">{activeFilter === 'verified' ? t('common.verified') : t('common.lowMoq')}</strong>
-          </>
-        )}
       </div>
 
       {/* Product grid */}
@@ -442,7 +441,7 @@ export default function MobileHome() {
 
 function IconGrid() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="7" height="7" rx="1" />
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -450,18 +449,21 @@ function IconGrid() {
     </svg>
   );
 }
+// These four sit on colored gradient badges (quick actions + trust banner, see above) rather
+// than flat tint chips, so they're plain white strokes now instead of each hardcoding its own
+// muted brand color.
 function IconTarget() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A05E17" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="9" />
       <circle cx="12" cy="12" r="4.5" />
-      <circle cx="12" cy="12" r="0.8" fill="#A05E17" />
+      <circle cx="12" cy="12" r="0.8" fill="#fff" />
     </svg>
   );
 }
 function IconTrophy() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M8 21h8" />
       <path d="M12 17v4" />
       <path d="M7 4h10v5a5 5 0 0 1-10 0z" />
@@ -471,7 +473,7 @@ function IconTrophy() {
 }
 function IconShipFast() {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#C97B2D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M10 17h4V5H2v12h3" />
       <path d="M14 9h4l3 3v5h-3" />
       <circle cx="7.5" cy="17.5" r="1.8" />
@@ -481,7 +483,7 @@ function IconShipFast() {
 }
 function IconMoneyBack() {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2D6FC9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z" />
       <path d="m9 12 2 2 4-4" />
     </svg>

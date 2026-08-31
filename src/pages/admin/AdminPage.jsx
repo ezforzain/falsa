@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
-import { sellers, admin, adminUsers, adminOrders, adminCategories } from '../../lib/api';
+import { sellers, admin, adminUsers, adminOrders, adminCategories, adminFilters } from '../../lib/api';
 import { formatPKR } from '../../data/mockData';
 import { ORDER_STATUSES, statusBadgeClass } from '../seller/statusStyles';
 import VerifiedBadge from '../../components/VerifiedBadge';
@@ -11,12 +11,14 @@ import Avatar from '../../components/Avatar';
 import AdminProductFormModal from '../../components/AdminProductFormModal';
 import AdminUserFormModal from '../../components/AdminUserFormModal';
 import AdminCategoryFormModal from '../../components/AdminCategoryFormModal';
+import AdminFilterFormModal from '../../components/AdminFilterFormModal';
 import AdminOrderFormModal from '../../components/AdminOrderFormModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import Toast from '../../components/Toast';
 import {
   IconAlertCircle,
   IconBox,
+  IconChevronDown,
   IconClose,
   IconEdit,
   IconFile,
@@ -31,6 +33,27 @@ import {
 import logoMark from '../../assets/logo-mark.png';
 
 const PIE_COLORS = ['#0E5A46', '#C97B2D', '#2D6FC9', '#8B5CF6', '#DC5A5A'];
+
+// Same 4 marketplace sections as MarketplaceTabs (src/components/marketplace/MarketplaceTabs.jsx)
+// and FilterConfig.FILTER_SECTIONS on the backend — kept in this fixed order everywhere.
+const FILTER_SECTIONS = [
+  { key: 'b2b', label: 'B2B' },
+  { key: 'spotlight', label: 'Spotlight' },
+  { key: 'worldwide', label: 'Worldwide' },
+  { key: 'freeshipping', label: 'Free Shipping' },
+];
+const FILTER_TYPE_LABELS = {
+  category: 'Category',
+  country: 'Country',
+  priceRange: 'Price range',
+  moq: 'Max MOQ',
+  verified: 'Verified Sellers',
+  officialStore: 'Mall / Official Store',
+  freeShipping: 'Free Shipping',
+  rating: 'Rating',
+  discount: 'On Sale',
+  sortBy: 'Sort by',
+};
 
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -80,6 +103,18 @@ export default function AdminPage() {
   const [categoryFormError, setCategoryFormError] = useState(null);
   const [deleteCategoryTarget, setDeleteCategoryTarget] = useState(null);
   const [deleteCategoryLoading, setDeleteCategoryLoading] = useState(false);
+
+  const [filtersList, setFiltersList] = useState([]);
+  const [filtersLoading, setFiltersLoading] = useState(true);
+  const [filtersError, setFiltersError] = useState(null);
+  const [filterFormOpen, setFilterFormOpen] = useState(false);
+  const [filterFormSection, setFilterFormSection] = useState(null); // section "Add filter" was clicked from
+  const [editingFilter, setEditingFilter] = useState(null);
+  const [filterFormLoading, setFilterFormLoading] = useState(false);
+  const [filterFormError, setFilterFormError] = useState(null);
+  const [filterRowPendingId, setFilterRowPendingId] = useState(null);
+  const [deleteFilterTarget, setDeleteFilterTarget] = useState(null);
+  const [deleteFilterLoading, setDeleteFilterLoading] = useState(false);
 
   const [sellerAccounts, setSellerAccounts] = useState([]);
 
@@ -226,6 +261,16 @@ export default function AdminPage() {
       .finally(() => setCategoriesLoading(false));
   };
 
+  const loadFilters = () => {
+    setFiltersLoading(true);
+    setFiltersError(null);
+    adminFilters
+      .list()
+      .then((res) => setFiltersList(res.filters))
+      .catch((err) => setFiltersError(err.message))
+      .finally(() => setFiltersLoading(false));
+  };
+
   const loadSettings = () => {
     setSettingsLoading(true);
     setSettingsError(null);
@@ -246,6 +291,7 @@ export default function AdminPage() {
       loadReports();
       loadOrders();
       loadCategories();
+      loadFilters();
       loadSettings();
       adminUsers.list({ role: 'seller' }).then((res) => setSellerAccounts(res.users)).catch(() => {});
       setProfileForm({ companyName: user.companyName || '', phone: user.phone || '', country: user.country || '' });
@@ -338,6 +384,79 @@ export default function AdminPage() {
       setCategoriesError(err.message);
     } finally {
       setDeleteCategoryLoading(false);
+    }
+  };
+
+  const openAddFilter = (section) => {
+    setFilterFormSection(section);
+    setEditingFilter(null);
+    setFilterFormError(null);
+    setFilterFormOpen(true);
+  };
+
+  const openEditFilter = (filter) => {
+    setFilterFormSection(filter.section);
+    setEditingFilter(filter);
+    setFilterFormError(null);
+    setFilterFormOpen(true);
+  };
+
+  const handleSubmitFilterForm = async (payload) => {
+    setFilterFormLoading(true);
+    setFilterFormError(null);
+    try {
+      if (editingFilter) {
+        await adminFilters.update(editingFilter.id, payload);
+        showToast('Filter updated');
+      } else {
+        await adminFilters.create(payload);
+        showToast('Filter added');
+      }
+      setFilterFormOpen(false);
+      loadFilters();
+    } catch (err) {
+      setFilterFormError(err.message);
+    } finally {
+      setFilterFormLoading(false);
+    }
+  };
+
+  const handleToggleFilterEnabled = async (f) => {
+    setFilterRowPendingId(f.id);
+    try {
+      await adminFilters.update(f.id, { enabled: !f.enabled });
+      loadFilters();
+    } catch (err) {
+      setFiltersError(err.message);
+    } finally {
+      setFilterRowPendingId(null);
+    }
+  };
+
+  const handleMoveFilter = async (f, direction) => {
+    setFilterRowPendingId(f.id);
+    try {
+      const { filters: sectionFilters } = await adminFilters.move(f.id, direction);
+      setFiltersList((current) => [...current.filter((x) => x.section !== f.section), ...sectionFilters]);
+    } catch (err) {
+      setFiltersError(err.message);
+    } finally {
+      setFilterRowPendingId(null);
+    }
+  };
+
+  const handleDeleteFilter = async () => {
+    if (!deleteFilterTarget) return;
+    setDeleteFilterLoading(true);
+    try {
+      await adminFilters.remove(deleteFilterTarget.id);
+      setDeleteFilterTarget(null);
+      showToast('Filter removed');
+      loadFilters();
+    } catch (err) {
+      setFiltersError(err.message);
+    } finally {
+      setDeleteFilterLoading(false);
     }
   };
 
@@ -701,6 +820,7 @@ export default function AdminPage() {
             { key: 'stores', label: 'Verified Stores' },
             { key: 'users', label: 'Users' },
             { key: 'categories', label: 'Categories' },
+            { key: 'filters', label: 'Filters' },
             { key: 'reports', label: 'Reports' },
             { key: 'settings', label: 'Settings' },
           ].map((tab) => (
@@ -1589,6 +1709,124 @@ export default function AdminPage() {
           </>
         )}
 
+        {activeTab === 'filters' && (
+          <>
+            <div className="mb-6">
+              <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Filters</h1>
+              <p className="text-sm text-text mt-1">
+                Choose which filters shoppers see on each marketplace section, in what order, and (for Category / Country)
+                which values are offered. Every filter is backed by real product data — nothing here is decorative.
+              </p>
+            </div>
+
+            {filtersLoading && (
+              <div className="flex flex-col gap-4">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="animate-pulse h-40 bg-white border border-border rounded-2xl" />
+                ))}
+              </div>
+            )}
+
+            {!filtersLoading && filtersError && (
+              <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{filtersError}</div>
+            )}
+
+            {!filtersLoading && !filtersError && (
+              <div className="flex flex-col gap-6">
+                {FILTER_SECTIONS.map((section) => {
+                  const sectionFilters = filtersList.filter((f) => f.section === section.key).sort((a, b) => a.order - b.order);
+                  return (
+                    <div key={section.key} className="bg-white border border-border rounded-2xl overflow-hidden">
+                      <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-border">
+                        <h2 className="font-display text-[15px] font-bold text-ink">{section.label}</h2>
+                        <button
+                          type="button"
+                          onClick={() => openAddFilter(section.key)}
+                          className="cursor-pointer flex items-center gap-1.5 bg-white border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
+                        >
+                          <IconPlus width="13" height="13" />
+                          Add filter
+                        </button>
+                      </div>
+
+                      {sectionFilters.length === 0 ? (
+                        <p className="text-sm text-text-muted px-5 py-6 text-center">No filters added to this section yet.</p>
+                      ) : (
+                        sectionFilters.map((f, i) => (
+                          <div key={f.id} className={`flex items-center justify-between gap-3 px-5 py-3.5 flex-wrap ${i !== sectionFilters.length - 1 ? 'border-b border-border' : ''}`}>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="flex flex-col shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveFilter(f, 'up')}
+                                  disabled={i === 0 || filterRowPendingId === f.id}
+                                  aria-label="Move up"
+                                  className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 text-text-muted hover:text-ink rotate-180"
+                                >
+                                  <IconChevronDown width="13" height="13" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveFilter(f, 'down')}
+                                  disabled={i === sectionFilters.length - 1 || filterRowPendingId === f.id}
+                                  aria-label="Move down"
+                                  className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 text-text-muted hover:text-ink"
+                                >
+                                  <IconChevronDown width="13" height="13" />
+                                </button>
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-semibold text-[14px] text-ink truncate">{f.label}</span>
+                                  <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-text-muted bg-surface-muted px-1.5 py-0.5 rounded">
+                                    {FILTER_TYPE_LABELS[f.type] || f.type}
+                                  </span>
+                                </div>
+                                {f.options?.length > 0 && (
+                                  <div className="text-xs text-text-muted truncate mt-0.5">{f.options.join(', ')}</div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleFilterEnabled(f)}
+                                disabled={filterRowPendingId === f.id}
+                                className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
+                                  f.enabled ? 'bg-green-tint text-green' : 'bg-surface-muted text-text-muted'
+                                }`}
+                              >
+                                {f.enabled ? 'Enabled' : 'Disabled'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openEditFilter(f)}
+                                aria-label="Edit filter"
+                                className="cursor-pointer flex items-center justify-center bg-white border border-border text-ink-soft p-2 rounded-full hover:bg-surface-muted transition-colors"
+                              >
+                                <IconEdit width="13" height="13" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteFilterTarget(f)}
+                                aria-label="Delete filter"
+                                className="cursor-pointer flex items-center justify-center bg-white border border-border text-orange-text p-2 rounded-full hover:bg-orange-tint transition-colors"
+                              >
+                                <IconTrash width="13" height="13" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+
         {activeTab === 'reports' && (
           <>
             <div className="mb-6">
@@ -1916,6 +2154,27 @@ export default function AdminPage() {
         loading={deleteCategoryLoading}
         onCancel={() => setDeleteCategoryTarget(null)}
         onConfirm={handleDeleteCategory}
+      />
+
+      <AdminFilterFormModal
+        open={filterFormOpen}
+        section={filterFormSection}
+        existingTypes={filtersList.filter((f) => f.section === filterFormSection).map((f) => f.type)}
+        filter={editingFilter}
+        loading={filterFormLoading}
+        error={filterFormError}
+        onClose={() => setFilterFormOpen(false)}
+        onSubmit={handleSubmitFilterForm}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteFilterTarget)}
+        title="Remove this filter?"
+        message={`"${deleteFilterTarget?.label}" will no longer appear on ${FILTER_SECTIONS.find((s) => s.key === deleteFilterTarget?.section)?.label || 'that section'}. You can add it back later.`}
+        confirmLabel="Remove"
+        loading={deleteFilterLoading}
+        onCancel={() => setDeleteFilterTarget(null)}
+        onConfirm={handleDeleteFilter}
       />
 
 

@@ -29,16 +29,6 @@ export default function SearchPage() {
   const [error, setError] = useState(null);
   const [results, setResults] = useState([]);
   const [filters, setFilters] = useState(EMPTY_MARKETPLACE_FILTERS);
-  const [categories, setCategories] = useState([]);
-
-  useEffect(() => {
-    catalog
-      .categories()
-      .then(({ categories: fetched }) => setCategories(fetched))
-      .catch(() => {
-        /* category filter option list just stays empty on failure — not fatal */
-      });
-  }, []);
 
   const setActiveTab = (tab) => {
     setSearchParams((prev) => {
@@ -47,6 +37,9 @@ export default function SearchPage() {
       else next.delete('tab');
       return next;
     });
+    // Each section has its own filter panel — a value picked under one section shouldn't
+    // silently keep being sent once a different section (or plain global search) is active.
+    setFilters(EMPTY_MARKETPLACE_FILTERS);
   };
 
   useEffect(() => {
@@ -59,14 +52,17 @@ export default function SearchPage() {
       ? fetcher({
           q: query,
           buyerCountry: getBuyerCountry(user),
-          category: filters.category || undefined,
-          country: filters.country || undefined,
+          category: filters.category,
+          country: filters.country,
           verified: filters.verified,
           officialStore: filters.officialStore,
           freeShipping: filters.freeShipping,
+          discountOnly: filters.discountOnly,
           priceMin: filters.priceMin,
           priceMax: filters.priceMax,
           moqMax: filters.moqMax,
+          ratingMin: filters.ratingMin,
+          sortBy: filters.sortBy,
         })
       : catalog.products({ q: query });
 
@@ -108,7 +104,7 @@ export default function SearchPage() {
 
       {activeTab && (
         <div className="mb-7">
-          <MarketplaceFilters categories={categories} value={filters} onChange={setFilters} />
+          <MarketplaceFilters section={activeTab} value={filters} onChange={setFilters} />
         </div>
       )}
 

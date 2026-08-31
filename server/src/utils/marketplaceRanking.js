@@ -131,3 +131,38 @@ export function rankAndBlendByCountry(products, buyerCountry, { localRatio, limi
 export function rankOnly(products) {
   return rankWithRotation(products.filter((p) => p.stock !== 0));
 }
+
+// Explicit sort options a shopper can pick from the filter panel's "Sort by" control (see
+// FilterConfig type 'sortBy'). 'relevance' isn't handled here — it means "use the ranking above
+// unchanged", which is what every endpoint already does by default.
+export const SORT_OPTIONS = ['priceAsc', 'priceDesc', 'bestSelling', 'newest', 'topRated'];
+
+// A shopper who explicitly picks "Price: Low to High" expects an actual price sort — not
+// something reshuffled by verified/reach/rotation scoring or the country blend. Bypasses ranking
+// entirely rather than layering a sort on top of it. Returns null for anything not in
+// SORT_OPTIONS so callers know to fall back to the ranked/blended order.
+export function sortByOption(products, sortBy) {
+  const list = products.filter((p) => p.stock !== 0);
+  switch (sortBy) {
+    case 'priceAsc':
+      return list.slice().sort((a, b) => (Number(a.priceValue) || 0) - (Number(b.priceValue) || 0));
+    case 'priceDesc':
+      return list.slice().sort((a, b) => (Number(b.priceValue) || 0) - (Number(a.priceValue) || 0));
+    case 'bestSelling':
+      return list.slice().sort((a, b) => (Number(b.sold) || 0) - (Number(a.sold) || 0));
+    case 'newest':
+      return list.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    case 'topRated':
+      return list.slice().sort((a, b) => (Number.parseFloat(b.rating) || 0) - (Number.parseFloat(a.rating) || 0));
+    default:
+      return null;
+  }
+}
+
+// `rating` is a display string (e.g. "4.5"), not a number Mongo can range-query — parsed the same
+// way scoreProduct() already does. A product with no parseable rating never matches a
+// minimum-rating filter; "no data" isn't a pass.
+export function meetsRatingMin(product, ratingMin) {
+  const r = Number.parseFloat(product.rating);
+  return Number.isFinite(r) && r >= ratingMin;
+}

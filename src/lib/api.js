@@ -133,6 +133,11 @@ export const catalog = {
 
 // ---------- Marketplace tabs (B2B / Spotlight / Worldwide / Free Shipping) ----------
 
+// category/country accept either a single string or an array (multiselect filter panel) — an
+// array is comma-joined, matching what buildMarketplaceFilter (server/src/utils/marketplaceQuery.js)
+// splits back apart into a Mongo $in.
+const joinList = (v) => (Array.isArray(v) ? v.filter(Boolean).join(',') : v);
+
 function buildMarketplaceParams({
   q,
   category,
@@ -145,20 +150,28 @@ function buildMarketplaceParams({
   priceMin,
   priceMax,
   moqMax,
+  ratingMin,
+  discountOnly,
+  sortBy,
   limit,
 } = {}) {
   const params = new URLSearchParams();
   if (q) params.set('q', q);
-  if (category) params.set('category', category);
-  if (country) params.set('country', country);
+  const categoryList = joinList(category);
+  if (categoryList) params.set('category', categoryList);
+  const countryList = joinList(country);
+  if (countryList) params.set('country', countryList);
   if (buyerCountry) params.set('buyerCountry', buyerCountry);
   if (sellerId) params.set('sellerId', sellerId);
   if (verified) params.set('verified', '1');
   if (officialStore) params.set('officialStore', '1');
   if (freeShipping) params.set('freeShipping', '1');
+  if (discountOnly) params.set('discountOnly', '1');
   if (priceMin !== undefined && priceMin !== '') params.set('priceMin', priceMin);
   if (priceMax !== undefined && priceMax !== '') params.set('priceMax', priceMax);
   if (moqMax !== undefined && moqMax !== '') params.set('moqMax', moqMax);
+  if (ratingMin !== undefined && ratingMin !== '') params.set('ratingMin', ratingMin);
+  if (sortBy && sortBy !== 'relevance') params.set('sortBy', sortBy);
   if (limit) params.set('limit', limit);
   return params;
 }
@@ -169,6 +182,9 @@ export const marketplace = {
   worldwide: (opts) => request(`/api/marketplace/worldwide?${buildMarketplaceParams(opts)}`),
   freeShipping: (opts) => request(`/api/marketplace/free-shipping?${buildMarketplaceParams(opts)}`),
   countries: () => request('/api/marketplace/countries'),
+  // Admin-configured filter panel definition for one section (b2b/spotlight/worldwide/freeshipping)
+  // — see server/src/models/FilterConfig.js.
+  filters: (section) => request(`/api/marketplace/filters/${encodeURIComponent(section)}`),
 };
 
 // ---------- Cart ----------
@@ -252,6 +268,16 @@ export const adminCategories = {
   create: (payload) => request('/api/admin/categories', { method: 'POST', body: payload, auth: true }),
   update: (id, payload) => request(`/api/admin/categories/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload, auth: true }),
   remove: (id) => request(`/api/admin/categories/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
+};
+
+// ---------- Admin: marketplace filter panels (per section) ----------
+
+export const adminFilters = {
+  list: () => request('/api/admin/filters', { auth: true }),
+  create: (payload) => request('/api/admin/filters', { method: 'POST', body: payload, auth: true }),
+  update: (id, payload) => request(`/api/admin/filters/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload, auth: true }),
+  move: (id, direction) => request(`/api/admin/filters/${encodeURIComponent(id)}/move`, { method: 'PATCH', body: { direction }, auth: true }),
+  remove: (id) => request(`/api/admin/filters/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
 };
 
 // ---------- Admin: user management ----------

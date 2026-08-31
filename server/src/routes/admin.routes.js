@@ -6,6 +6,7 @@ import { PromotionRequest } from '../models/PromotionRequest.js';
 import { Payout } from '../models/Payout.js';
 import { SellerOrder, ORDER_STATUSES } from '../models/SellerOrder.js';
 import { Category } from '../models/Category.js';
+import { FilterConfig, FILTER_TYPES, FILTER_SECTIONS } from '../models/FilterConfig.js';
 import { MarketplaceSettings } from '../models/MarketplaceSettings.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
@@ -349,6 +350,93 @@ router.delete(
   asyncHandler(async (req, res) => {
     const deleted = await Category.findOneAndDelete({ _id: req.params.id, kind: 'category' });
     if (!deleted) return res.status(404).json({ message: 'Category not found.' });
+    res.json({ ok: true });
+  })
+);
+
+// ---------- Marketplace filters (per-section, see server/src/models/FilterConfig.js and the
+// public GET /api/marketplace/filters/:section) ----------
+
+function serializeFilter(doc) {
+  return { ...doc.toObject(), id: doc._id };
+}
+
+router.get(
+  '/filters',
+  asyncHandler(async (_req, res) => {
+    const filters = await FilterConfig.find().sort({ section: 1, order: 1 });
+    res.json({ filters: filters.map(serializeFilter), types: FILTER_TYPES, sections: FILTER_SECTIONS });
+  })
+);
+
+router.post(
+  '/filters',
+  asyncHandler(async (req, res) => {
+    const { section, type, label, options } = req.body;
+    if (!FILTER_SECTIONS.includes(section)) return res.status(400).json({ message: 'Unknown section.' });
+    if (!FILTER_TYPES.includes(type)) return res.status(400).json({ message: 'Unknown filter type.' });
+    if (!String(label || '').trim()) return res.status(400).json({ message: 'Label is required.' });
+    if (await FilterConfig.exists({ section, type })) {
+      return res.status(409).json({ message: 'This filter type is already added to that section — edit it instead.' });
+    }
+    const count = await FilterConfig.countDocuments({ section });
+    const filter = await FilterConfig.create({
+      section,
+      type,
+      label: label.trim(),
+      order: count,
+      options: Array.isArray(options) ? options.filter((o) => String(o || '').trim()) : [],
+    });
+    res.status(201).json({ filter: serializeFilter(filter) });
+  })
+);
+
+router.patch(
+  '/filters/:id',
+  asyncHandler(async (req, res) => {
+    const { label, enabled, options } = req.body;
+    const update = {};
+    if (label !== undefined) update.label = String(label).trim();
+    if (enabled !== undefined) update.enabled = Boolean(enabled);
+    if (options !== undefined) {
+      update.options = Array.isArray(options) ? options.map((o) => String(o).trim()).filter(Boolean) : [];
+    }
+    const filter = await FilterConfig.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!filter) return res.status(404).json({ message: 'Filter not found.' });
+    res.json({ filter: serializeFilter(filter) });
+  })
+);
+
+// Swaps this filter's display order with its neighbor within the same section — same "nudge
+// past a sibling" reorder shape as the admin reach-boost stepper (server/src/routes/admin.routes.js
+// PATCH /products/:id, driven by the +/- buttons in AdminPage's Products tab).
+router.patch(
+  '/filters/:id/move',
+  asyncHandler(async (req, res) => {
+    const { direction } = req.body;
+    if (!['up', 'down'].includes(direction)) return res.status(400).json({ message: 'Invalid direction.' });
+    const filter = await FilterConfig.findById(req.params.id);
+    if (!filter) return res.status(404).json({ message: 'Filter not found.' });
+
+    const siblings = await FilterConfig.find({ section: filter.section }).sort({ order: 1 });
+    const idx = siblings.findIndex((s) => String(s._id) === String(filter._id));
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= siblings.length) {
+      return res.json({ filters: siblings.map(serializeFilter) });
+    }
+    const other = siblings[swapIdx];
+    [filter.order, other.order] = [other.order, filter.order];
+    await Promise.all([filter.save(), other.save()]);
+    const updated = await FilterConfig.find({ section: filter.section }).sort({ order: 1 });
+    res.json({ filters: updated.map(serializeFilter) });
+  })
+);
+
+router.delete(
+  '/filters/:id',
+  asyncHandler(async (req, res) => {
+    const deleted = await FilterConfig.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Filter not found.' });
     res.json({ ok: true });
   })
 );

@@ -46,14 +46,17 @@ export default function DesktopHome() {
     const fetcher = MARKETPLACE_FETCHERS[activeMarketplaceTab];
     fetcher({
       buyerCountry: getBuyerCountry(user),
-      category: marketplaceFilters.category || undefined,
-      country: marketplaceFilters.country || undefined,
+      category: marketplaceFilters.category,
+      country: marketplaceFilters.country,
       verified: marketplaceFilters.verified,
       officialStore: marketplaceFilters.officialStore,
       freeShipping: marketplaceFilters.freeShipping,
+      discountOnly: marketplaceFilters.discountOnly,
       priceMin: marketplaceFilters.priceMin,
       priceMax: marketplaceFilters.priceMax,
       moqMax: marketplaceFilters.moqMax,
+      ratingMin: marketplaceFilters.ratingMin,
+      sortBy: marketplaceFilters.sortBy,
     })
       .then((data) => {
         if (!cancelled) setMarketplaceProducts(data.products);
@@ -150,7 +153,15 @@ export default function DesktopHome() {
           Trending/category section below for that tab's real results; nothing else on this page
           changes, and clicking the active tab again returns to today's default view. */}
       <div className="pt-5 border-b border-border">
-        <MarketplaceTabs activeTab={activeMarketplaceTab} onChange={setActiveMarketplaceTab} />
+        <MarketplaceTabs
+          activeTab={activeMarketplaceTab}
+          onChange={(tab) => {
+            setActiveMarketplaceTab(tab);
+            // Each section has its own filter panel — a value picked under one section shouldn't
+            // silently keep being sent once a different section (or no section) is active.
+            setMarketplaceFilters(EMPTY_MARKETPLACE_FILTERS);
+          }}
+        />
       </div>
 
       {/* Category chips */}
@@ -273,7 +284,7 @@ export default function DesktopHome() {
             </div>
 
             <div className="mb-6">
-              <MarketplaceFilters categories={categories} value={marketplaceFilters} onChange={setMarketplaceFilters} />
+              <MarketplaceFilters section={activeMarketplaceTab} value={marketplaceFilters} onChange={setMarketplaceFilters} />
             </div>
 
             {marketplaceLoading && (
