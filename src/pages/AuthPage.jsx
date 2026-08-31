@@ -218,6 +218,15 @@ export default function AuthPage() {
     setScreen('forgot');
   };
 
+  // A page that requires sign-in (currently just checkout) sends people here as
+  // /auth?redirect=/cart so they land back where they were instead of the role-based default.
+  // Only a same-app relative path is honored — starts with a single '/', never '//' (which a
+  // browser would treat as protocol-relative, i.e. an external redirect).
+  const getSafeRedirect = () => {
+    const redirect = searchParams.get('redirect');
+    return redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : null;
+  };
+
   const handleSignin = async (identifier = signinForm.identifier, password = signinForm.password) => {
     if (loadingKey) return;
     setSigninError(null);
@@ -225,7 +234,9 @@ export default function AuthPage() {
     try {
       const { user: signedInUser } = await signIn(identifier, password);
       notify('account', 'Signed in', `Welcome back, ${signedInUser.companyName}.`);
-      if (signedInUser.role === 'admin') navigate('/admin');
+      const redirect = getSafeRedirect();
+      if (redirect) navigate(redirect);
+      else if (signedInUser.role === 'admin') navigate('/admin');
       else if (signedInUser.role === 'seller') navigate('/seller');
       else navigate('/');
     } catch (err) {

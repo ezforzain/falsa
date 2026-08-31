@@ -17,6 +17,22 @@ export const tokenStore = {
   clear: () => localStorage.removeItem(TOKEN_KEY),
 };
 
+const GUEST_ID_KEY = 'falsafahtot_guest_id';
+
+// Identity for the guest-scoped cart/follows (see server/src/middleware/guest.js). Used to live
+// entirely in a SameSite=None cookie, which mobile browsers increasingly block once frontend and
+// API are on different origins (Vercel + Render in production) — a blocked cookie silently
+// handed every request a brand-new empty cart. Owning the id here instead (plain localStorage,
+// sent as a header) doesn't depend on cross-site cookie policy at all.
+function getGuestId() {
+  let id = localStorage.getItem(GUEST_ID_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(GUEST_ID_KEY, id);
+  }
+  return id;
+}
+
 class ApiError extends Error {
   constructor(message, status) {
     super(message);
@@ -26,7 +42,7 @@ class ApiError extends Error {
 }
 
 async function request(path, { method = 'GET', body, auth = false } = {}) {
-  const headers = {};
+  const headers = { 'X-Guest-Id': getGuestId() };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (auth) {
     const token = tokenStore.get();
@@ -163,7 +179,7 @@ export const cartApi = {
   updateItem: (productId, qty) => request(`/api/cart/items/${encodeURIComponent(productId)}`, { method: 'PATCH', body: { qty } }),
   removeItem: (productId) => request(`/api/cart/items/${encodeURIComponent(productId)}`, { method: 'DELETE' }),
   clear: () => request('/api/cart', { method: 'DELETE' }),
-  checkout: () => request('/api/checkout', { method: 'POST' }),
+  checkout: (address) => request('/api/checkout', { method: 'POST', body: address, auth: true }),
 };
 
 // ---------- Seller portal ----------

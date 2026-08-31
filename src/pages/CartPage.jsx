@@ -1,18 +1,56 @@
 import { useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { formatPKR, parsePrice } from '../data/mockData';
 import { parseMoqNumber } from '../lib/moq';
-import { IconCart, IconCheck, IconTruck } from '../components/icons';
+import AddressForm, { EMPTY_ADDRESS } from '../components/AddressForm';
+import { IconCart, IconCheck, IconEdit, IconTruck } from '../components/icons';
+
+const LABEL_ICON = { Home: '🏠', Office: '🏢' };
+
+function AddressSummaryCard({ address, onEdit }) {
+  return (
+    <div className="bg-white border border-border rounded-2xl p-5 flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          <span className="text-[15px] font-semibold text-ink">{address.fullName}</span>
+          <span className="text-[10px] font-bold uppercase tracking-wide text-orange-text bg-orange-tint px-2 py-0.5 rounded-full">
+            {LABEL_ICON[address.label] || ''} {address.label}
+          </span>
+        </div>
+        <p className="text-sm text-text-muted m-0">{address.phone}</p>
+        <p className="text-sm text-text mt-1 mb-0 leading-relaxed">
+          {address.address}, {address.city}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onEdit}
+        className="shrink-0 cursor-pointer flex items-center gap-1.5 bg-white border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
+      >
+        <IconEdit width="13" height="13" />
+        Edit
+      </button>
+    </div>
+  );
+}
 
 export default function CartPage() {
   const { items, updateQty, removeFromCart, subtotal, loading, checkout } = useCart();
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [qtyError, setQtyError] = useState(null); // { productId, message }
   const qtyErrorTimer = useRef(null);
 
+  // 'cart' -> 'address' (only reachable once signed in — see handleProceed) -> order confirmed.
+  const [checkoutStep, setCheckoutStep] = useState('cart');
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState(EMPTY_ADDRESS);
+
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState(null);
-  const [orderConfirmation, setOrderConfirmation] = useState(null); // { orderId, subtotal, itemCount }
+  const [orderConfirmation, setOrderConfirmation] = useState(null); // { orderId, subtotal, itemCount, address }
 
   const handleQtyChange = async (productId, newQty) => {
     try {
@@ -24,12 +62,27 @@ export default function CartPage() {
     }
   };
 
-  const handleCheckout = async () => {
+  // Placing an order requires sign-in — cart itself stays guest-friendly. Signed-out buyers are
+  // sent to sign in and land back here (?redirect=/cart, see AuthPage) instead of the homepage.
+  const handleProceed = () => {
+    if (!isAuthenticated) {
+      navigate('/auth?redirect=/cart');
+      return;
+    }
+    setCheckoutError(null);
+    setEditingAddress(!user?.savedAddress);
+    setAddressForm(
+      user?.savedAddress || { ...EMPTY_ADDRESS, fullName: user?.companyName || '', phone: user?.phone || '' }
+    );
+    setCheckoutStep('address');
+  };
+
+  const handleCheckout = async (address) => {
     if (checkingOut) return;
     setCheckingOut(true);
     setCheckoutError(null);
     try {
-      const order = await checkout();
+      const order = await checkout(address);
       setOrderConfirmation(order);
     } catch (err) {
       setCheckoutError(err.message);
@@ -51,6 +104,12 @@ export default function CartPage() {
             {orderConfirmation.itemCount} item{orderConfirmation.itemCount === 1 ? '' : 's'} for{' '}
             <strong className="text-green">{formatPKR(orderConfirmation.subtotal)}</strong>.
           </p>
+          {orderConfirmation.address && (
+            <p className="text-sm text-text-muted mb-1 leading-relaxed">
+              Delivering to <strong className="text-ink-soft">{orderConfirmation.address.fullName}</strong>,{' '}
+              {orderConfirmation.address.address}, {orderConfirmation.address.city}
+            </p>
+          )}
           <p className="text-sm text-text-muted mb-6">Sellers will confirm and ship via secure escrow.</p>
           <Link
             to="/"
@@ -213,17 +272,54 @@ export default function CartPage() {
 
           {checkoutError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-4">{checkoutError}</p>}
 
-          <button
-            type="button"
-            onClick={handleCheckout}
-            disabled={checkingOut}
-            className="w-full flex items-center justify-center gap-2 text-center cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 bg-orange hover:bg-orange-hover text-white font-semibold text-[15px] py-[15px] rounded-full shadow-[0_8px_24px_rgba(201,123,45,0.3)] transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:hover:translate-y-0"
-          >
-            {checkingOut && (
-              <span className="w-4 h-4 border-[2.5px] border-white/35 rounded-full inline-block" style={{ borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
-            )}
-            {checkingOut ? 'Placing order…' : 'Proceed to Checkout'}
-          </button>
+          {checkoutStep === 'cart' ? (
+            <button
+              type="button"
+              onClick={handleProceed}
+              className="w-full flex items-center justify-center gap-2 text-center cursor-pointer bg-orange hover:bg-orange-hover text-white font-semibold text-[15px] py-[15px] rounded-full shadow-[0_8px_24px_rgba(201,123,45,0.3)] transition-all hover:-translate-y-0.5 active:translate-y-0"
+            >
+              Proceed to Checkout
+            </button>
+          ) : (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-ink-soft m-0">Deliver to</h3>
+                <button
+                  type="button"
+                  onClick={() => setCheckoutStep('cart')}
+                  className="cursor-pointer text-xs font-semibold text-text-muted hover:text-ink"
+                >
+                  ← Back to cart
+                </button>
+              </div>
+
+              {!editingAddress && user?.savedAddress ? (
+                <>
+                  <AddressSummaryCard address={user.savedAddress} onEdit={() => setEditingAddress(true)} />
+                  <button
+                    type="button"
+                    onClick={() => handleCheckout(user.savedAddress)}
+                    disabled={checkingOut}
+                    className="w-full mt-4 flex items-center justify-center gap-2 text-center cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 bg-orange hover:bg-orange-hover text-white font-semibold text-[15px] py-[15px] rounded-full shadow-[0_8px_24px_rgba(201,123,45,0.3)] transition-all"
+                  >
+                    {checkingOut && (
+                      <span className="w-4 h-4 border-[2.5px] border-white/35 rounded-full inline-block" style={{ borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
+                    )}
+                    {checkingOut ? 'Placing order…' : 'Deliver here — Place Order'}
+                  </button>
+                </>
+              ) : (
+                <AddressForm
+                  value={addressForm}
+                  onChange={setAddressForm}
+                  onSubmit={() => handleCheckout(addressForm)}
+                  onCancel={user?.savedAddress ? () => setEditingAddress(false) : undefined}
+                  submitLabel="Save & Place Order"
+                  loading={checkingOut}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
     </main>

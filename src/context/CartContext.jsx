@@ -56,9 +56,11 @@ export function CartProvider({ children }) {
   }, []);
 
   // No real payment step — this places a mock order and empties the cart. The order
-  // confirmation (id/total/item count) is returned so the caller can display it.
-  const checkout = useCallback(async () => {
-    const order = await cartApi.checkout();
+  // confirmation (id/total/item count/delivery address) is returned so the caller can display
+  // it. Requires sign-in (server-enforced) and a delivery address, which auto-saves to the
+  // account as a side effect — see server/src/routes/checkout.routes.js.
+  const checkout = useCallback(async (address) => {
+    const order = await cartApi.checkout(address);
     setItems([]);
     setSubtotal(0);
     setCount(0);

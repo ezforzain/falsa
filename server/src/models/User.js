@@ -50,6 +50,21 @@ const userSchema = new mongoose.Schema(
     accountNumber: { type: String, default: null },
     iban: { type: String, default: null },
 
+    // Delivery address for checkout (see POST /api/checkout) — auto-saved from whatever the
+    // buyer submits at checkout (new or edited) so it's pre-filled next time, one address per
+    // account rather than a full address book.
+    savedAddress: {
+      type: {
+        fullName: { type: String, required: true },
+        phone: { type: String, required: true },
+        city: { type: String, required: true },
+        address: { type: String, required: true },
+        label: { type: String, enum: ['Home', 'Office'], default: 'Home' },
+      },
+      _id: false,
+      default: null,
+    },
+
     // App preferences (Settings page) — theme/reduce-motion stay device-local (localStorage),
     // but language and notification preferences follow the account across devices.
     language: { type: String, enum: ['en', 'ur'], default: 'en' },
