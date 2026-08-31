@@ -71,7 +71,26 @@ router.get(
 router.post(
   '/products',
   asyncHandler(async (req, res) => {
-    const { name, category, price, unit, moq, stock, status, images, description, sku, b2bEnabled, freeShipping, worldwideFreeShipping } = req.body;
+    const {
+      name,
+      category,
+      price,
+      unit,
+      moq,
+      stock,
+      status,
+      images,
+      description,
+      sku,
+      b2bEnabled,
+      freeShipping,
+      worldwideFreeShipping,
+      tags,
+      specifications,
+      variantAxes,
+      variants,
+      shipping,
+    } = req.body;
     if (!name || !category || !price || !unit || !moq) {
       return res.status(400).json({ message: 'Please fill in all required fields.' });
     }
@@ -83,6 +102,21 @@ router.post(
     }
     if (images !== undefined && (!Array.isArray(images) || images.some((url) => typeof url !== 'string'))) {
       return res.status(400).json({ message: 'Images must be a list of URLs.' });
+    }
+    if (tags !== undefined && (!Array.isArray(tags) || tags.some((t) => typeof t !== 'string'))) {
+      return res.status(400).json({ message: 'Tags must be a list of strings.' });
+    }
+    if (specifications !== undefined && !Array.isArray(specifications)) {
+      return res.status(400).json({ message: 'Specifications must be a list.' });
+    }
+    if (variantAxes !== undefined && !Array.isArray(variantAxes)) {
+      return res.status(400).json({ message: 'Variant axes must be a list.' });
+    }
+    if (variants !== undefined && !Array.isArray(variants)) {
+      return res.status(400).json({ message: 'Variants must be a list.' });
+    }
+    if (shipping !== undefined && (typeof shipping !== 'object' || shipping === null || Array.isArray(shipping))) {
+      return res.status(400).json({ message: 'Shipping info must be an object.' });
     }
     const gallery = Array.isArray(images) && images.length > 0 ? images : [req.body.img || DEFAULT_PRODUCT_IMG];
     const product = await SellerProduct.create({
@@ -101,6 +135,11 @@ router.post(
       b2bEnabled: Boolean(b2bEnabled),
       freeShipping: freeShipping !== false,
       worldwideFreeShipping: Boolean(worldwideFreeShipping),
+      tags: Array.isArray(tags) ? tags : [],
+      specifications: Array.isArray(specifications) ? specifications : [],
+      variantAxes: Array.isArray(variantAxes) ? variantAxes : [],
+      variants: Array.isArray(variants) ? variants : [],
+      shipping: shipping || {},
     });
     await syncSellerProductToCatalog(product, req.user);
     res.status(201).json({ product: serializeProduct(product) });
@@ -119,6 +158,21 @@ router.patch(
     }
     if (body.images !== undefined && (!Array.isArray(body.images) || body.images.some((url) => typeof url !== 'string'))) {
       return res.status(400).json({ message: 'Images must be a list of URLs.' });
+    }
+    if (body.tags !== undefined && (!Array.isArray(body.tags) || body.tags.some((t) => typeof t !== 'string'))) {
+      return res.status(400).json({ message: 'Tags must be a list of strings.' });
+    }
+    if (body.specifications !== undefined && !Array.isArray(body.specifications)) {
+      return res.status(400).json({ message: 'Specifications must be a list.' });
+    }
+    if (body.variantAxes !== undefined && !Array.isArray(body.variantAxes)) {
+      return res.status(400).json({ message: 'Variant axes must be a list.' });
+    }
+    if (body.variants !== undefined && !Array.isArray(body.variants)) {
+      return res.status(400).json({ message: 'Variants must be a list.' });
+    }
+    if (body.shipping !== undefined && (typeof body.shipping !== 'object' || body.shipping === null || Array.isArray(body.shipping))) {
+      return res.status(400).json({ message: 'Shipping info must be an object.' });
     }
 
     const product = await SellerProduct.findOne({ _id: req.params.id, sellerId: req.user._id });

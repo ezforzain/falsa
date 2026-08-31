@@ -1,7 +1,20 @@
 import mongoose from 'mongoose';
 
 const variantSchema = new mongoose.Schema(
-  { id: String, name: String, img: String },
+  { id: String, name: String, img: String, sku: String, price: Number, stock: Number },
+  { _id: false }
+);
+
+const shippingSchema = new mongoose.Schema(
+  {
+    weightKg: Number,
+    lengthCm: Number,
+    widthCm: Number,
+    heightCm: Number,
+    dispatchTime: String,
+    shipsFrom: String,
+    shippingFee: Number,
+  },
   { _id: false }
 );
 
@@ -72,6 +85,9 @@ const productSchema = new mongoose.Schema(
     // the display strings are unchanged and still the source of truth for rendering.
     priceValue: { type: Number, default: null },
     moqValue: { type: Number, default: null },
+    // #hashtags from the seller's description, surfaced for search/discovery.
+    tags: { type: [String], default: [] },
+    shipping: { type: shippingSchema, default: () => ({}) },
   },
   { timestamps: true }
 );

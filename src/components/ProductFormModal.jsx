@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
-import { categories } from '../data/mockData';
+import { useEffect, useMemo, useState } from 'react';
 import ProductImagesUploader from './ProductImagesUploader';
+import CategoryPicker from './CategoryPicker';
+import { getCategoryTemplate, suggestCategories } from '../data/productCategories';
 import { IconClose } from './icons';
 
 const MAX_IMAGES = 6;
+const DISPATCH_OPTIONS = ['Same day', '1-2 days', '3-5 days', '1 week+'];
 
 const emptyForm = {
   name: '',
@@ -19,33 +21,98 @@ const emptyForm = {
   b2bEnabled: false,
   freeShipping: true,
   worldwideFreeShipping: false,
+  specifications: {},
+  variantAxes: {},
+  variants: [],
+  shipping: { weightKg: '', lengthCm: '', widthCm: '', heightCm: '', dispatchTime: '', shipsFrom: '', shippingFee: '' },
 };
+
+function extractHashtags(text) {
+  const matches = String(text || '').match(/#\w+/g) || [];
+  return [...new Set(matches.map((t) => t.slice(1)))];
+}
+
+// specifications is stored/edited as { [attrKey]: value } in form state, but persisted/loaded
+// as [{label, value}] to match the backend's specSchema-style shape.
+function specsArrayToMap(specifications, template) {
+  const map = {};
+  for (const attr of template.attributes) {
+    const found = (specifications || []).find((s) => s.label === attr.label);
+    if (found) map[attr.key] = found.value;
+  }
+  return map;
+}
+
+// Mirrors specsArrayToMap for variant axes, so re-opening an edit reconstructs the same
+// "Red, Blue" text input the seller typed, and the cartesian regenerate below can re-merge
+// against the already-saved variant rows instead of wiping them.
+function axesArrayToMap(variantAxes, template) {
+  const map = {};
+  for (const axis of template.variantAxes) {
+    const found = (variantAxes || []).find((a) => a.name === axis.label);
+    if (found) map[axis.key] = found.values.join(', ');
+  }
+  return map;
+}
+
+function cartesianVariants(axesMap, template, basePrice) {
+  const axes = template.variantAxes
+    .map((axis) => ({ axis, values: (axesMap[axis.key] || '').split(',').map((v) => v.trim()).filter(Boolean) }))
+    .filter((a) => a.values.length > 0);
+  if (axes.length === 0) return [];
+
+  let combos = [[]];
+  for (const { axis, values } of axes) {
+    const next = [];
+    for (const combo of combos) {
+      for (const value of values) next.push([...combo, `${axis.label}: ${value}`]);
+    }
+    combos = next;
+  }
+  return combos.map((parts) => ({ name: parts.join(' / '), price: basePrice || '', stock: '' }));
+}
 
 export default function ProductFormModal({ open, product, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
   const isEdit = Boolean(product);
+  const template = form.category ? getCategoryTemplate(form.category) : null;
+  const suggestions = useMemo(() => (form.category ? [] : suggestCategories(form.name, 3)), [form.name, form.category]);
+  const tags = useMemo(() => extractHashtags(form.description), [form.description]);
 
   useEffect(() => {
     if (!open) return;
-    setForm(
-      product
-        ? {
-            name: product.name,
-            category: product.category,
-            description: product.description || '',
-            sku: product.sku || '',
-            price: String(product.price),
-            unit: product.unit,
-            moq: product.moq,
-            stock: String(product.stock),
-            status: product.status,
-            images: product.images && product.images.length > 0 ? product.images : product.img ? [product.img] : [],
-            b2bEnabled: Boolean(product.b2bEnabled),
-            freeShipping: product.freeShipping !== false,
-            worldwideFreeShipping: Boolean(product.worldwideFreeShipping),
-          }
-        : emptyForm
-    );
+    if (!product) {
+      setForm(emptyForm);
+      return;
+    }
+    const tpl = product.category ? getCategoryTemplate(product.category) : { attributes: [], variantAxes: [] };
+    setForm({
+      name: product.name,
+      category: product.category,
+      description: product.description || '',
+      sku: product.sku || '',
+      price: String(product.price),
+      unit: product.unit,
+      moq: product.moq,
+      stock: String(product.stock),
+      status: product.status,
+      images: product.images && product.images.length > 0 ? product.images : product.img ? [product.img] : [],
+      b2bEnabled: Boolean(product.b2bEnabled),
+      freeShipping: product.freeShipping !== false,
+      worldwideFreeShipping: Boolean(product.worldwideFreeShipping),
+      specifications: specsArrayToMap(product.specifications, tpl),
+      variantAxes: axesArrayToMap(product.variantAxes, tpl),
+      variants: (product.variants || []).map((v) => ({ name: v.name, price: v.price ?? '', stock: v.stock ?? '' })),
+      shipping: {
+        weightKg: product.shipping?.weightKg ?? '',
+        lengthCm: product.shipping?.lengthCm ?? '',
+        widthCm: product.shipping?.widthCm ?? '',
+        heightCm: product.shipping?.heightCm ?? '',
+        dispatchTime: product.shipping?.dispatchTime || '',
+        shipsFrom: product.shipping?.shipsFrom || '',
+        shippingFee: product.shipping?.shippingFee ?? '',
+      },
+    });
   }, [open, product]);
 
   useEffect(() => {
@@ -55,13 +122,53 @@ export default function ProductFormModal({ open, product, loading, error, onClos
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [open, onClose]);
 
+  // Regenerate the variant matrix whenever the axis values or applicable template change —
+  // existing rows are preserved by name so manual price/stock edits survive a re-derive.
+  useEffect(() => {
+    if (!template || template.variantAxes.length === 0) return;
+    setForm((f) => {
+      const generated = cartesianVariants(f.variantAxes, template, f.price);
+      const byName = Object.fromEntries(f.variants.map((v) => [v.name, v]));
+      const merged = generated.map((row) => byName[row.name] || row);
+      const sameLength = merged.length === f.variants.length;
+      const unchanged = sameLength && merged.every((row, i) => row === f.variants[i]);
+      return unchanged ? f : { ...f, variants: merged };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.variantAxes, form.category]);
+
   if (!open) return null;
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const toggle = (key) => () => setForm((f) => ({ ...f, [key]: !f[key], ...(key === 'freeShipping' && f.freeShipping ? { worldwideFreeShipping: false } : {}) }));
   const setImages = (images) => setForm((f) => ({ ...f, images }));
+  const setCategory = (name) => setForm((f) => ({ ...f, category: name, specifications: {}, variantAxes: {}, variants: [] }));
+  const setSpec = (key) => (e) => setForm((f) => ({ ...f, specifications: { ...f.specifications, [key]: e.target.value } }));
+  const setAxis = (key) => (e) => setForm((f) => ({ ...f, variantAxes: { ...f.variantAxes, [key]: e.target.value } }));
+  const setVariantField = (index, key) => (e) =>
+    setForm((f) => ({ ...f, variants: f.variants.map((v, i) => (i === index ? { ...v, [key]: e.target.value } : v)) }));
+  const setShippingField = (key) => (e) => setForm((f) => ({ ...f, shipping: { ...f.shipping, [key]: e.target.value } }));
 
   const submit = () => {
+    const specifications = template
+      ? template.attributes
+          .map((attr) => ({ label: attr.label, value: (form.specifications[attr.key] || '').trim() }))
+          .filter((s) => s.value)
+      : [];
+    const variants = form.variants
+      .filter((v) => v.stock !== '')
+      .map((v) => ({ name: v.name, price: v.price === '' ? Number(form.price) : Number(v.price), stock: Number(v.stock) }));
+
+    const shipping = {
+      weightKg: form.shipping.weightKg === '' ? null : Number(form.shipping.weightKg),
+      lengthCm: form.shipping.lengthCm === '' ? null : Number(form.shipping.lengthCm),
+      widthCm: form.shipping.widthCm === '' ? null : Number(form.shipping.widthCm),
+      heightCm: form.shipping.heightCm === '' ? null : Number(form.shipping.heightCm),
+      dispatchTime: form.shipping.dispatchTime,
+      shipsFrom: form.shipping.shipsFrom.trim(),
+      shippingFee: form.freeShipping || form.shipping.shippingFee === '' ? null : Number(form.shipping.shippingFee),
+    };
+
     onSubmit({
       name: form.name.trim(),
       category: form.category,
@@ -76,12 +183,22 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       b2bEnabled: form.b2bEnabled,
       freeShipping: form.freeShipping,
       worldwideFreeShipping: form.freeShipping && form.worldwideFreeShipping,
+      tags,
+      specifications,
+      variantAxes: template
+        ? template.variantAxes
+            .map((axis) => ({ name: axis.label, values: (form.variantAxes[axis.key] || '').split(',').map((v) => v.trim()).filter(Boolean) }))
+            .filter((a) => a.values.length > 0)
+        : [],
+      variants,
+      shipping,
     });
   };
 
   const fieldClass =
     'w-full px-[14px] py-[11px] border border-border rounded-lg text-[14px] font-sans bg-white text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
   const labelClass = 'block text-[12.5px] font-semibold text-ink-soft mb-1.5';
+  const sectionTitleClass = 'text-[13px] font-bold text-ink mb-2.5';
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8">
@@ -108,33 +225,47 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             <textarea
               value={form.description}
               onChange={set('description')}
-              placeholder="Describe the product — materials, grade, use case…"
+              placeholder="Describe the product — materials, grade, use case… use #hashtags to help buyers find it"
               rows={3}
               className={`${fieldClass} resize-none`}
             />
+            {tags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                <span className="text-[11.5px] font-semibold text-ink-soft">{tags.length} tag{tags.length !== 1 ? 's' : ''}:</span>
+                {tags.map((tag) => (
+                  <span key={tag} className="text-[11.5px] font-semibold text-green bg-green/10 rounded-full px-2.5 py-0.5">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>Category</label>
-              <select value={form.category} onChange={set('category')} className={fieldClass}>
-                <option value="" disabled>
-                  Select…
-                </option>
-                {categories.map((c) => (
-                  <option key={c.key} value={c.name}>
-                    {c.name}
-                  </option>
+          <div>
+            {suggestions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                <span className="text-[11.5px] text-ink-soft">Suggested:</span>
+                {suggestions.map((cat) => (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    onClick={() => setCategory(cat.name)}
+                    className="text-[11.5px] font-semibold text-green border border-green/30 bg-green/5 hover:bg-green/10 rounded-full px-2.5 py-0.5 cursor-pointer transition-colors"
+                  >
+                    {cat.name}
+                  </button>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Status</label>
-              <select value={form.status} onChange={set('status')} className={fieldClass}>
-                <option value="active">Active (visible)</option>
-                <option value="draft">Draft (hidden)</option>
-              </select>
-            </div>
+              </div>
+            )}
+            <CategoryPicker value={form.category} onChange={setCategory} fieldClass={fieldClass} labelClass={labelClass} />
+          </div>
+
+          <div>
+            <label className={labelClass}>Status</label>
+            <select value={form.status} onChange={set('status')} className={fieldClass}>
+              <option value="active">Active (visible)</option>
+              <option value="draft">Draft (hidden)</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -164,7 +295,77 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             <input type="text" value={form.sku} onChange={set('sku')} placeholder="Auto-generated if left blank" className={fieldClass} />
           </div>
 
+          {template && template.attributes.length > 0 && (
+            <div className="border border-border rounded-lg p-3.5">
+              <p className={sectionTitleClass}>Product details</p>
+              <div className="flex flex-col gap-3">
+                {template.attributes.map((attr) => (
+                  <div key={attr.key}>
+                    <label className={labelClass}>{attr.label} (optional)</label>
+                    <input
+                      type="text"
+                      value={form.specifications[attr.key] || ''}
+                      onChange={setSpec(attr.key)}
+                      placeholder={attr.placeholder}
+                      className={fieldClass}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {template && template.variantAxes.length > 0 && (
+            <div className="border border-border rounded-lg p-3.5">
+              <p className={sectionTitleClass}>Variants (optional)</p>
+              <div className="flex flex-col gap-3">
+                {template.variantAxes.map((axis) => (
+                  <div key={axis.key}>
+                    <label className={labelClass}>{axis.label} options</label>
+                    <input
+                      type="text"
+                      value={form.variantAxes[axis.key] || ''}
+                      onChange={setAxis(axis.key)}
+                      placeholder={axis.placeholder}
+                      className={fieldClass}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {form.variants.length > 0 && (
+                <div className="mt-3.5 flex flex-col gap-2">
+                  <p className="text-[11.5px] font-semibold text-ink-soft">Fill in stock for each variant you're offering:</p>
+                  {form.variants.map((v, i) => (
+                    <div key={v.name} className="grid grid-cols-[1fr_90px_80px] gap-2 items-center">
+                      <span className="text-[12.5px] text-ink truncate" title={v.name}>
+                        {v.name}
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={v.price}
+                        onChange={setVariantField(i, 'price')}
+                        placeholder={form.price || 'Price'}
+                        className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                      />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={v.stock}
+                        onChange={setVariantField(i, 'stock')}
+                        placeholder="Stock"
+                        className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex flex-col gap-2.5 border border-border rounded-lg p-3.5">
+            <p className={sectionTitleClass}>Shipping information</p>
             <label className="flex items-center gap-2.5 text-[13.5px] font-medium text-ink cursor-pointer">
               <input type="checkbox" checked={form.b2bEnabled} onChange={toggle('b2bEnabled')} className="w-4 h-4 accent-green cursor-pointer" />
               List this product on the B2B marketplace
@@ -184,6 +385,64 @@ export default function ProductFormModal({ open, product, loading, error, onClos
                 Offer it worldwide, not just within my own country
               </label>
             )}
+            {!form.freeShipping && (
+              <div>
+                <label className={labelClass}>Shipping fee (Rs)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={form.shipping.shippingFee}
+                  onChange={setShippingField('shippingFee')}
+                  placeholder="150"
+                  className={fieldClass}
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3 mt-1">
+              <div>
+                <label className={labelClass}>Weight (kg)</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={form.shipping.weightKg}
+                  onChange={setShippingField('weightKg')}
+                  placeholder="0.5"
+                  className={fieldClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Ships from (city)</label>
+                <input type="text" value={form.shipping.shipsFrom} onChange={setShippingField('shipsFrom')} placeholder="e.g. Karachi" className={fieldClass} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className={labelClass}>Length (cm)</label>
+                <input type="text" inputMode="decimal" value={form.shipping.lengthCm} onChange={setShippingField('lengthCm')} className={fieldClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Width (cm)</label>
+                <input type="text" inputMode="decimal" value={form.shipping.widthCm} onChange={setShippingField('widthCm')} className={fieldClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Height (cm)</label>
+                <input type="text" inputMode="decimal" value={form.shipping.heightCm} onChange={setShippingField('heightCm')} className={fieldClass} />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Dispatch time</label>
+              <select value={form.shipping.dispatchTime} onChange={setShippingField('dispatchTime')} className={fieldClass}>
+                <option value="">Select…</option>
+                {DISPATCH_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div>

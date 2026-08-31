@@ -2,6 +2,13 @@ import { Product } from '../models/Product.js';
 import { Seller } from '../models/Seller.js';
 import { parseMoqNumber } from './moq.js';
 
+function slugify(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
 // The Seller Portal's "Add listing" flow writes to SellerProduct — a private, freely-editable
 // table so a seller can manage their own inventory without touching the read-only public
 // catalog directly (see the comment on the SellerProduct model). Nothing mirrored an active
@@ -62,6 +69,17 @@ export async function syncSellerProductToCatalog(sellerProduct, ownerUser) {
       sellerCountry: sellerDoc?.country || ownerUser.country || null,
       sellerVerified: sellerDoc?.verified || false,
       sellerOfficialStore: sellerDoc?.officialStore || false,
+      tags: Array.isArray(sellerProduct.tags) ? sellerProduct.tags : [],
+      specifications: Array.isArray(sellerProduct.specifications) ? sellerProduct.specifications : [],
+      variants: (sellerProduct.variants || []).map((v) => ({
+        id: slugify(v.name) || undefined,
+        name: v.name,
+        img: sellerProduct.img,
+        sku: v.sku,
+        price: v.price,
+        stock: v.stock,
+      })),
+      shipping: sellerProduct.shipping || {},
     },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
