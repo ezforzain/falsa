@@ -5,6 +5,7 @@ import { SellerOrder, ORDER_STATUSES } from '../models/SellerOrder.js';
 import { Seller } from '../models/Seller.js';
 import { PromotionRequest } from '../models/PromotionRequest.js';
 import { Payout } from '../models/Payout.js';
+import { Conversation } from '../models/Conversation.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { syncSellerProductToCatalog, removeSellerProductFromCatalog } from '../utils/publicCatalogSync.js';
@@ -324,6 +325,60 @@ router.get(
     });
     const customers = Array.from(byCompany.values()).sort((a, b) => new Date(b.lastOrderAt) - new Date(a.lastOrderAt));
     res.json({ customers });
+  })
+);
+
+// ---------- Messages ----------
+// Seller side of the buyer<->seller messenger — same Conversation documents as messages.routes.js
+// (the buyer side), keyed by req.user.sellerId (the public Seller/store id, not this account's
+// own User id — see the Conversation model).
+
+function serializeSellerConversation(conv) {
+  return {
+    id: conv._id,
+    buyerCompany: conv.buyerName || 'Guest buyer',
+    unread: conv.sellerUnread || 0,
+    messages: conv.messages,
+  };
+}
+
+router.get(
+  '/messages',
+  asyncHandler(async (req, res) => {
+    if (!req.user.sellerId) return res.json({ conversations: [] });
+    const conversations = await Conversation.find({ sellerId: req.user.sellerId }).sort({ updatedAt: -1 });
+    res.json({ conversations: conversations.map(serializeSellerConversation) });
+  })
+);
+
+router.post(
+  '/messages/:id',
+  asyncHandler(async (req, res) => {
+    if (!req.user.sellerId) return res.status(404).json({ message: 'No storefront found for this account.' });
+    const text = (req.body?.text || '').trim();
+    if (!text) return res.status(400).json({ message: 'Message text is required.' });
+
+    const conv = await Conversation.findOne({ _id: req.params.id, sellerId: req.user.sellerId });
+    if (!conv) return res.status(404).json({ message: 'Conversation not found.' });
+
+    conv.messages.push({ from: 'seller', text, at: new Date() });
+    conv.buyerUnread = (conv.buyerUnread || 0) + 1;
+    await conv.save();
+    res.json({ conversation: serializeSellerConversation(conv) });
+  })
+);
+
+router.patch(
+  '/messages/:id/read',
+  asyncHandler(async (req, res) => {
+    if (!req.user.sellerId) return res.status(404).json({ message: 'No storefront found for this account.' });
+    const conv = await Conversation.findOne({ _id: req.params.id, sellerId: req.user.sellerId });
+    if (!conv) return res.status(404).json({ message: 'Conversation not found.' });
+    if (conv.sellerUnread) {
+      conv.sellerUnread = 0;
+      await conv.save();
+    }
+    res.json({ conversation: serializeSellerConversation(conv) });
   })
 );
 

@@ -1,31 +1,30 @@
-// Buyer-side view over the shared conversation store (see messagesStore.js) — scoped to the
-// signed-in buyer (or the guest id also used for the guest cart/follows, see lib/api.js's
-// getGuestId), one conversation per seller the buyer has messaged.
-import {
-  conversationsForBuyer,
-  getOrCreateConversation as getOrCreateShared,
-  sendMessage as sendShared,
-  MESSAGES_UPDATED_EVENT,
-} from './messagesStore';
+// Buyer-side view over the server-backed conversation store (see server/src/models/Conversation.js
+// and server/src/routes/messages.routes.js) — thin wrapper so MessengerPage doesn't call the raw
+// API shape directly. buyerId is derived server-side (signed-in user or guest id), not passed here.
+import { messages as messagesApi } from './api';
 
-function toBuyerView(conv) {
-  return { id: conv.id, sellerId: conv.sellerId, sellerName: conv.sellerName, messages: conv.messages };
-}
-
-export function loadConversations(buyerId) {
-  if (!buyerId) return [];
-  return conversationsForBuyer(buyerId).map(toBuyerView);
+export async function loadConversations() {
+  const { conversations } = await messagesApi.conversations();
+  return conversations;
 }
 
 // Used when a buyer arrives via "Chat" on a product/seller page so that seller's conversation is
 // ready to type into immediately, without them having to find it in a list first.
-export function getOrCreateConversation(buyerId, seller, buyerName) {
-  const conversation = getOrCreateShared(seller.id, seller.name, buyerId, buyerName);
-  return { conversation: toBuyerView(conversation), conversations: loadConversations(buyerId) };
+export async function getOrCreateConversation(seller, buyerName) {
+  const { conversation } = await messagesApi.startConversation({
+    sellerId: seller.id,
+    sellerName: seller.name,
+    buyerName,
+  });
+  return conversation;
 }
 
-export function sendBuyerMessage(conversationId, text) {
-  sendShared(conversationId, 'buyer', text);
+export async function sendBuyerMessage(conversationId, text) {
+  const { conversation } = await messagesApi.send(conversationId, text);
+  return conversation;
 }
 
-export { MESSAGES_UPDATED_EVENT };
+export async function markBuyerRead(conversationId) {
+  const { conversation } = await messagesApi.markRead(conversationId);
+  return conversation;
+}

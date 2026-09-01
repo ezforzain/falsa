@@ -243,6 +243,24 @@ export const seller = {
   promotions: () => request('/api/seller/promotions', { auth: true }),
   payouts: () => request('/api/seller/payouts', { auth: true }),
   customers: () => request('/api/seller/customers', { auth: true }),
+  messages: () => request('/api/seller/messages', { auth: true }),
+  sendMessage: (conversationId, text) =>
+    request(`/api/seller/messages/${encodeURIComponent(conversationId)}`, { method: 'POST', body: { text }, auth: true }),
+  markMessageRead: (conversationId) =>
+    request(`/api/seller/messages/${encodeURIComponent(conversationId)}/read`, { method: 'PATCH', auth: true }),
+};
+
+// ---------- Messages (buyer <-> seller chat) ----------
+// `auth: true` attaches the buyer's token when signed in so the server identifies them by their
+// real account instead of the guest id — see server/src/routes/messages.routes.js.
+
+export const messages = {
+  conversations: () => request('/api/messages/conversations', { auth: true }),
+  startConversation: (payload) => request('/api/messages/conversations', { method: 'POST', body: payload, auth: true }),
+  send: (conversationId, text) =>
+    request(`/api/messages/conversations/${encodeURIComponent(conversationId)}/messages`, { method: 'POST', body: { text }, auth: true }),
+  markRead: (conversationId) =>
+    request(`/api/messages/conversations/${encodeURIComponent(conversationId)}/read`, { method: 'PATCH', auth: true }),
 };
 
 // ---------- Buyer "My Orders" ----------

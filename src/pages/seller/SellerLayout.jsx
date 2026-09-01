@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { loadConversations, totalUnread, MESSAGES_UPDATED_EVENT } from '../../lib/sellerMessagesStore';
+import { loadConversations, totalUnread } from '../../lib/sellerMessagesStore';
 import VerifiedBadge from '../../components/VerifiedBadge';
 import OfficialBadge from '../../components/OfficialBadge';
 import Avatar from '../../components/Avatar';
@@ -43,10 +43,20 @@ export default function SellerLayout() {
     // Conversations are keyed by the public Seller/store id (same one buyers see on the product
     // page), not this account's own User id — those are two different records server-side.
     if (!user?.sellerId) return;
-    const refresh = () => setUnreadMessages(totalUnread(loadConversations(user.sellerId)));
+    let cancelled = false;
+    const refresh = () => {
+      loadConversations()
+        .then((conversations) => {
+          if (!cancelled) setUnreadMessages(totalUnread(conversations));
+        })
+        .catch(() => {});
+    };
     refresh();
-    window.addEventListener(MESSAGES_UPDATED_EVENT, refresh);
-    return () => window.removeEventListener(MESSAGES_UPDATED_EVENT, refresh);
+    const interval = setInterval(refresh, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [user?.sellerId]);
 
   if (status === 'loading') {

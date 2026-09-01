@@ -14,6 +14,7 @@ import checkoutRoutes from './routes/checkout.routes.js';
 import ordersRoutes from './routes/orders.routes.js';
 import sellersRoutes from './routes/sellers.routes.js';
 import sellerPortalRoutes from './routes/seller.routes.js';
+import messagesRoutes from './routes/messages.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import claudeRoutes from './routes/claude.routes.js';
@@ -101,6 +102,7 @@ export function createApp() {
   app.use('/api/orders', ordersRoutes);
   app.use('/api/sellers', sellersRoutes);
   app.use('/api/seller', sellerPortalRoutes);
+  app.use('/api/messages', messagesRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/uploads', uploadRoutes);
   app.use('/api/claude', claudeRoutes);

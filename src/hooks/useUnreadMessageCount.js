@@ -1,11 +1,32 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { messages as messagesApi } from '../lib/api';
 
-// There's no messaging backend yet — MessengerPage is a static "no messages yet" placeholder, so
-// the real unread count is always 0 today. This hook is the single place that will start
-// returning a real, live-updating count once a messages API exists; BottomNavBar (and anywhere
-// else that shows the badge) reads from here instead of a hardcoded number, so nothing else needs
-// to change when that happens.
+// Polls rather than pushes — there's no real-time channel yet, see
+// server/src/models/Conversation.js. BottomNavBar (and anywhere else that shows the badge) reads
+// from here instead of a hardcoded number, so nothing else needs to change if that changes.
+const POLL_MS = 20000;
+
 export function useUnreadMessageCount() {
-  const [count] = useState(0);
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => {
+      messagesApi
+        .conversations()
+        .then(({ conversations }) => {
+          if (cancelled) return;
+          setCount(conversations.reduce((sum, c) => sum + (c.unread || 0), 0));
+        })
+        .catch(() => {});
+    };
+    refresh();
+    const interval = setInterval(refresh, POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
   return count;
 }

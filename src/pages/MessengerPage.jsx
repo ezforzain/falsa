@@ -1,48 +1,76 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getGuestId } from '../lib/api';
-import { getOrCreateConversation, loadConversations, sendBuyerMessage, MESSAGES_UPDATED_EVENT } from '../lib/buyerMessagesStore';
+import { getOrCreateConversation, loadConversations, markBuyerRead, sendBuyerMessage } from '../lib/buyerMessagesStore';
 import { IconChevronLeft, IconMessageCircle } from '../components/icons';
+
+// Cross-device delivery (a seller replying from their own device/browser) has no push channel
+// yet, so this polls instead — see server/src/models/Conversation.js for the actual persistence.
+const POLL_MS = 6000;
 
 function formatTime(at) {
   return new Date(at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
-// Buyer-side counterpart to seller/SellerMessages.jsx — see buyerMessagesStore.js for why this
-// is localStorage-backed rather than a real messaging backend. Arriving here via a product or
+// Buyer-side counterpart to seller/SellerMessages.jsx. Arriving here via a product or
 // seller-info page's "Chat" button (see ChatButton) passes { sellerId, sellerName } in router
 // state, which opens straight into that seller's thread instead of the plain conversation list.
 export default function MessengerPage() {
   const { user } = useAuth();
   const location = useLocation();
-  const buyerId = user?.id || getGuestId();
   const buyerName = user?.companyName || 'Guest buyer';
 
   const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
 
-  useEffect(() => {
-    const targetSeller = location.state?.sellerId ? { id: location.state.sellerId, name: location.state.sellerName } : null;
-    if (targetSeller) {
-      const { conversation, conversations: all } = getOrCreateConversation(buyerId, targetSeller, buyerName);
-      setConversations(all);
-      setActiveId(conversation.id);
-    } else {
-      setConversations(loadConversations(buyerId));
-    }
-    // Only re-run when the buyer or the incoming seller target actually changes — not on every
-    // conversations update.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buyerId, location.state?.sellerId]);
+  const refresh = useCallback(() => {
+    loadConversations()
+      .then((all) => setConversations(all))
+      .catch(() => {
+        // Silent — this is a background poll, not the user's own action.
+      });
+  }, []);
 
   useEffect(() => {
-    const refresh = () => setConversations(loadConversations(buyerId));
-    window.addEventListener(MESSAGES_UPDATED_EVENT, refresh);
-    return () => window.removeEventListener(MESSAGES_UPDATED_EVENT, refresh);
-  }, [buyerId]);
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    const targetSeller = location.state?.sellerId ? { id: location.state.sellerId, name: location.state.sellerName } : null;
+    const initial = targetSeller
+      ? getOrCreateConversation(targetSeller, buyerName).then((conversation) => {
+          if (!cancelled) setActiveId(conversation.id);
+          return loadConversations();
+        })
+      : loadConversations();
+
+    initial
+      .then((all) => {
+        if (!cancelled) setConversations(all);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message || 'Could not load your messages right now.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // Only re-run when the incoming seller target actually changes — not on every conversations update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.sellerId]);
+
+  useEffect(() => {
+    const interval = setInterval(refresh, POLL_MS);
+    return () => clearInterval(interval);
+  }, [refresh]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'nearest' });
@@ -50,11 +78,28 @@ export default function MessengerPage() {
 
   const active = conversations.find((c) => c.id === activeId) || null;
 
-  const sendMessage = () => {
+  const openConversation = (id) => {
+    setActiveId(id);
+    markBuyerRead(id)
+      .then((conv) => setConversations((prev) => prev.map((c) => (c.id === conv.id ? conv : c))))
+      .catch(() => {});
+  };
+
+  const sendMessage = async () => {
     const text = draft.trim();
-    if (!text || !active) return;
-    sendBuyerMessage(active.id, text);
+    if (!text || !active || sending) return;
     setDraft('');
+    setSending(true);
+    setError(null);
+    try {
+      const conv = await sendBuyerMessage(active.id, text);
+      setConversations((prev) => prev.map((c) => (c.id === conv.id ? conv : c)));
+    } catch (err) {
+      setError(err.message || 'Could not send that message.');
+      setDraft(text);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -62,7 +107,13 @@ export default function MessengerPage() {
       <h1 className="font-display text-[28px] font-bold m-0 mb-1.5 tracking-tight">Messenger</h1>
       <p className="text-sm text-text-muted mb-7">Conversations with sellers about your orders and enquiries.</p>
 
-      {conversations.length === 0 ? (
+      {loading ? (
+        <div className="bg-white border border-border rounded-2xl h-[560px] max-h-[70vh] animate-pulse" />
+      ) : error && conversations.length === 0 ? (
+        <div className="text-center py-[60px] px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+          <p className="text-sm text-orange-text">{error}</p>
+        </div>
+      ) : conversations.length === 0 ? (
         <div className="text-center py-[60px] px-5 bg-surface border border-dashed border-border-strong rounded-2xl">
           <span className="w-14 h-14 rounded-full bg-surface-muted inline-flex items-center justify-center mb-5">
             <IconMessageCircle width="22" height="22" className="text-text-muted" />
@@ -79,7 +130,7 @@ export default function MessengerPage() {
                 <button
                   key={c.id}
                   type="button"
-                  onClick={() => setActiveId(c.id)}
+                  onClick={() => openConversation(c.id)}
                   className={`cursor-pointer w-full text-left px-4 py-3.5 border-b border-border flex items-center gap-3 transition-colors ${
                     activeId === c.id ? 'bg-green-tint' : 'hover:bg-surface-muted'
                   }`}
@@ -88,7 +139,14 @@ export default function MessengerPage() {
                     {c.sellerName?.charAt(0)?.toUpperCase() || '?'}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block font-semibold text-[13.5px] text-ink truncate">{c.sellerName}</span>
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-[13.5px] text-ink truncate">{c.sellerName}</span>
+                      {c.unread > 0 && (
+                        <span className="shrink-0 w-4.5 h-4.5 min-w-[18px] rounded-full bg-orange text-white text-[10px] font-bold flex items-center justify-center px-1">
+                          {c.unread}
+                        </span>
+                      )}
+                    </span>
                     <span className="block text-xs text-text-muted truncate">{last ? last.text : 'No messages yet'}</span>
                   </span>
                 </button>
@@ -117,8 +175,8 @@ export default function MessengerPage() {
                   {active.messages.length === 0 && (
                     <p className="text-sm text-text-muted text-center my-auto">Say hi to {active.sellerName} to start the conversation.</p>
                   )}
-                  {active.messages.map((m) => (
-                    <div key={m.id} className={`max-w-[75%] ${m.from === 'buyer' ? 'self-end items-end' : 'self-start items-start'} flex flex-col`}>
+                  {active.messages.map((m, i) => (
+                    <div key={i} className={`max-w-[75%] ${m.from === 'buyer' ? 'self-end items-end' : 'self-start items-start'} flex flex-col`}>
                       <div
                         className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
                           m.from === 'buyer' ? 'bg-green text-white rounded-br-sm' : 'bg-surface-muted text-ink rounded-bl-sm'
@@ -132,6 +190,8 @@ export default function MessengerPage() {
                   <div ref={bottomRef} />
                 </div>
 
+                {error && <p className="text-xs text-orange-text px-4 pb-1">{error}</p>}
+
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -144,14 +204,15 @@ export default function MessengerPage() {
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     placeholder={`Message ${active.sellerName}…`}
-                    className="flex-1 px-3.5 py-2.5 border border-border rounded-full text-sm outline-none focus:border-green bg-white"
+                    disabled={sending}
+                    className="flex-1 px-3.5 py-2.5 border border-border rounded-full text-sm outline-none focus:border-green bg-white disabled:opacity-60"
                   />
                   <button
                     type="submit"
-                    disabled={!draft.trim()}
+                    disabled={!draft.trim() || sending}
                     className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 bg-green hover:bg-green-hover text-white font-semibold text-sm px-5 py-2.5 rounded-full transition-colors"
                   >
-                    Send
+                    {sending ? 'Sending…' : 'Send'}
                   </button>
                 </form>
               </>

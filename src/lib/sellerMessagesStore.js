@@ -1,60 +1,24 @@
-// Seller-side view over the shared conversation store (see messagesStore.js) — scoped to this
-// seller account. When the seller has no real buyer conversations yet, seeds a few demo threads
-// (from this seller's actual customers when there are any, see SellerCustomers /
-// GET /api/seller/customers) so the inbox doesn't start out looking broken/empty; those demo
-// threads live in the same shared store as real ones, so replying to them works the same way.
-import {
-  conversationsForSeller,
-  getOrCreateConversation,
-  sendMessage as sendShared,
-  markRead as markSharedRead,
-  MESSAGES_UPDATED_EVENT,
-} from './messagesStore';
+// Seller-side view over the server-backed conversation store (see server/src/models/Conversation.js
+// and the "Messages" section of server/src/routes/seller.routes.js) — thin wrapper so
+// SellerMessages/SellerLayout don't call the raw API shape directly. Scoped to the signed-in
+// seller by their auth token server-side, not passed here.
+import { seller as sellerApi } from './api';
 
-const FALLBACK_BUYERS = ['Al-Noor Traders', 'Zenith Imports Co.', 'Blue Ocean Textiles'];
-
-function toSellerView(conv) {
-  return { id: conv.id, buyerCompany: conv.buyerName, unread: conv.sellerUnread || 0, messages: conv.messages };
+export async function loadConversations() {
+  const { conversations } = await sellerApi.messages();
+  return conversations;
 }
 
-function mapForSeller(sellerId) {
-  return conversationsForSeller(sellerId).map(toSellerView);
+export async function sendSellerMessage(conversationId, text) {
+  const { conversation } = await sellerApi.sendMessage(conversationId, text);
+  return conversation;
 }
 
-function seedDemoConversations(sellerId, buyerNames) {
-  const names = buyerNames && buyerNames.length > 0 ? buyerNames.slice(0, 4) : FALLBACK_BUYERS;
-  names.forEach((name, i) => {
-    const conv = getOrCreateConversation(sellerId, undefined, `demo_buyer_${sellerId}_${i}`, name);
-    if (conv.messages.length === 0) {
-      sendShared(conv.id, 'buyer', 'Hi, is this item still in stock?');
-      sendShared(conv.id, 'buyer', "What's your best price for a bulk order?");
-    }
-  });
-}
-
-export function loadConversations(sellerId) {
-  if (!sellerId) return [];
-  return mapForSeller(sellerId);
-}
-
-export function loadOrSeedConversations(sellerId, buyerNames) {
-  if (!sellerId) return [];
-  const existing = mapForSeller(sellerId);
-  if (existing.length > 0) return existing;
-  seedDemoConversations(sellerId, buyerNames);
-  return mapForSeller(sellerId);
-}
-
-export function sendSellerMessage(conversationId, text) {
-  sendShared(conversationId, 'seller', text);
-}
-
-export function markSellerRead(conversationId) {
-  markSharedRead(conversationId, 'seller');
+export async function markSellerRead(conversationId) {
+  const { conversation } = await sellerApi.markMessageRead(conversationId);
+  return conversation;
 }
 
 export function totalUnread(conversations) {
   return conversations.reduce((sum, c) => sum + (c.unread || 0), 0);
 }
-
-export { MESSAGES_UPDATED_EVENT };
