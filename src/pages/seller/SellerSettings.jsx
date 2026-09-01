@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { categories } from '../../data/mockData';
 import { seller } from '../../lib/api';
 import Toast from '../../components/Toast';
 import { IconCheck } from '../../components/icons';
+import CategoryPicker from '../../components/CategoryPicker';
 
 export default function SellerSettings() {
   const { user, updateProfile, applyUserUpdate } = useAuth();
@@ -101,17 +101,13 @@ export default function SellerSettings() {
             </div>
           </div>
 
-          <div>
-            <label className={labelClass}>Main product category</label>
-            <select value={form.category} onChange={set('category')} className={fieldClass}>
-              <option value="">Not set</option>
-              {categories.map((c) => (
-                <option key={c.key} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <CategoryPicker
+            value={form.category}
+            onChange={(name) => setForm((f) => ({ ...f, category: name }))}
+            fieldClass={fieldClass}
+            labelClass={labelClass}
+            label="Main product category"
+          />
         </div>
 
         <button

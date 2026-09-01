@@ -4,7 +4,7 @@ import { IconChevronDown } from './icons';
 
 // Searchable "Category" combobox for the seller product form — same combobox pattern as
 // LocationDropdown, but grouped by category group and filtered across name + keywords.
-export default function CategoryPicker({ value, onChange, fieldClass, labelClass }) {
+export default function CategoryPicker({ value, onChange, fieldClass, labelClass, label = 'Category' }) {
   const [query, setQuery] = useState(value || '');
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -64,7 +64,7 @@ export default function CategoryPicker({ value, onChange, fieldClass, labelClass
   return (
     <div ref={rootRef} className="relative">
       <label htmlFor={inputId} className={labelClass}>
-        Category
+        {label}
       </label>
       <div className="relative">
         <input
