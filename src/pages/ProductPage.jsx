@@ -11,6 +11,8 @@ import {
   certifications,
   productSoldCount,
   productHighlights,
+  companyProfile,
+  packagingShipping,
 } from '../data/mockData';
 import { catalog, sellers } from '../lib/api';
 import { parseMoqNumber } from '../lib/moq';
@@ -35,6 +37,9 @@ import ProductTabs from '../components/product/ProductTabs';
 import ProductSpecifications from '../components/product/ProductSpecifications';
 import ProductFeatures from '../components/product/ProductFeatures';
 import SellerInfoSection from '../components/product/SellerInfoSection';
+import CompanyProfileSection from '../components/product/CompanyProfileSection';
+import PackagingShipping from '../components/product/PackagingShipping';
+import TrustBadges from '../components/product/TrustBadges';
 import CertificationsSection from '../components/product/CertificationsSection';
 import ReviewsSection from '../components/product/ReviewsSection';
 import FaqSection from '../components/product/FaqSection';
@@ -319,21 +324,29 @@ export default function ProductPage() {
       label: 'Product Details',
       content: (
         <div className="flex flex-col gap-6 sm:gap-8">
-          <SectionCard title="Bulk Pricing" subtitle="Unit price drops automatically at higher order quantities">
-            <div className="grid grid-cols-1 sm:grid-cols-3 border border-border rounded-2xl overflow-hidden">
-              {priceTiers(product.price).map((tier, i, arr) => (
-                <div
-                  key={tier.range}
-                  className={`px-5 py-[18px] ${i < arr.length - 1 ? 'border-b sm:border-b-0 sm:border-r border-border' : ''} ${i === arr.length - 1 ? 'bg-green-tint' : 'bg-white'}`}
-                >
-                  <div className="font-mono text-[11px] text-text-muted mb-1.5">{tier.range}</div>
-                  <div className="font-display font-bold text-xl text-green">{tier.price}</div>
-                  <div className="text-[11.5px] text-text-muted">PKR / {product.unit}</div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
+          {/* Wholesale-tier pricing only makes sense for B2B sourcing — a Daraz-style single/
+              few-unit consumer buy has nothing to tier. */}
+          {product.b2bEnabled && (
+            <SectionCard title="Bulk Pricing" subtitle="Unit price drops automatically at higher order quantities">
+              <div className="grid grid-cols-1 sm:grid-cols-3 border border-border rounded-2xl overflow-hidden">
+                {priceTiers(product.price).map((tier, i, arr) => (
+                  <div
+                    key={tier.range}
+                    className={`px-5 py-[18px] ${i < arr.length - 1 ? 'border-b sm:border-b-0 sm:border-r border-border' : ''} ${i === arr.length - 1 ? 'bg-green-tint' : 'bg-white'}`}
+                  >
+                    <div className="font-mono text-[11px] text-text-muted mb-1.5">{tier.range}</div>
+                    <div className="font-display font-bold text-xl text-green">{tier.price}</div>
+                    <div className="text-[11.5px] text-text-muted">PKR / {product.unit}</div>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          )}
           <ProductSpecifications specs={productSpecifications(product)} />
+          {/* Alibaba-style supplier context — business type, staff, main markets, packaging and
+              lead time — shown only for B2B listings, where a buyer actually needs it. */}
+          {product.b2bEnabled && storeSeller && <CompanyProfileSection profile={companyProfile(storeSeller)} />}
+          {product.b2bEnabled && <PackagingShipping info={packagingShipping(product)} />}
           {storeSeller && <SellerInfoSection seller={storeSeller} rating={product.rating} />}
           <FaqSection faqs={productFaqs(product)} />
         </div>
@@ -437,6 +450,10 @@ export default function ProductPage() {
 
           {/* MOQ / stock / shipping / delivery quick facts */}
           <QuickFacts product={product} outOfStock={outOfStock} b2bEnabled={product.b2bEnabled} />
+
+          {/* Alibaba-style trust strip — Trade Assurance / verified seller reassurance right by
+              the price, where a sourcing buyer expects it. Daraz-style B2C listings skip it. */}
+          {product.b2bEnabled && <TrustBadges className="mb-5" />}
 
           {actionError && <p className="text-sm text-orange-text mb-3">{actionError}</p>}
 

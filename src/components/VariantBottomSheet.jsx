@@ -92,7 +92,7 @@ export default function VariantBottomSheet({ product, open, initialVariant = nul
           {product.variants?.length > 0 && (
             <div>
               <div className="text-[13.5px] font-semibold text-ink-soft mb-3">
-                Color Family: <span className="text-ink font-bold">{selectedVariant?.name}</span>
+                Options: <span className="text-ink font-bold">{selectedVariant?.name}</span>
               </div>
               <div className="grid grid-cols-4 gap-2.5">
                 {product.variants.map((variant) => (

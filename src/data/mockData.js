@@ -344,13 +344,28 @@ const hashString = (str) => {
 
 export const productDescription = (product) =>
   (product.description && product.description.trim()) ||
-  `${product.name} is supplied directly from ${product.seller}'s production facility${
-    product.location ? ` in ${product.location}` : ""
-  }. Manufactured to consistent quality standards for bulk B2B orders, this listing is backed by verified production capacity, flexible minimum order quantities, and dependable lead times — built for importers, distributors, and retail buyers sourcing at scale.`;
+  (product.b2bEnabled
+    ? `${product.name} is supplied directly from ${product.seller}'s production facility${
+        product.location ? ` in ${product.location}` : ""
+      }. Manufactured to consistent quality standards for bulk B2B orders, this listing is backed by verified production capacity, flexible minimum order quantities, and dependable lead times — built for importers, distributors, and retail buyers sourcing at scale.`
+    : `${product.name} is sold by ${product.seller}${
+        product.location ? ` from ${product.location}` : ""
+      } — a verified seller offering a genuine product, secure checkout, and easy 14-day returns.`);
 
+// B2B specs read like a supplier listing (MOQ, supply ability, payment terms); B2C specs read
+// like a retail listing (return/warranty, authenticity) — same shopper never sees the wrong set.
 export const productSpecifications = (product) => {
   if (Array.isArray(product.specifications) && product.specifications.length > 0) {
     return product.specifications.map((s) => [s.label, s.value]);
+  }
+  if (!product.b2bEnabled) {
+    return [
+      ["Category", product.category],
+      ["Country of Origin", product.location || "Pakistan"],
+      ["Authenticity", "100% genuine — buyer guarantee"],
+      ["Return Policy", "14-day easy return"],
+      ["Warranty", "Standard seller warranty"],
+    ];
   }
   return [
     ["Category", product.category],
@@ -365,14 +380,22 @@ export const productSpecifications = (product) => {
   ];
 };
 
-export const productFeatures = (product) => [
-  `Consistent quality across every ${product.unit || "unit"} of ${(product.category || "product").toLowerCase()}`,
-  "Flexible order sizes from sample to full container load",
-  "Dedicated quality-control checks before dispatch",
-  "Custom branding and private labeling available on request",
-  "Responsive seller support for order tracking and documentation",
-  "Competitive tiered pricing for bulk buyers",
-];
+export const productFeatures = (product) =>
+  product.b2bEnabled
+    ? [
+        `Consistent quality across every ${product.unit || "unit"} of ${(product.category || "product").toLowerCase()}`,
+        "Flexible order sizes from sample to full container load",
+        "Dedicated quality-control checks before dispatch",
+        "Custom branding and private labeling available on request",
+        "Responsive seller support for order tracking and documentation",
+        "Competitive tiered pricing for bulk buyers",
+      ]
+    : [
+        "Fast, reliable delivery with real-time order tracking",
+        "14-day easy return if it's not the right fit",
+        "Verified seller — genuine, authentic products only",
+        "Secure checkout with buyer protection on every order",
+      ];
 
 export const packagingShipping = (product) => {
   const h = hashString(product.id);

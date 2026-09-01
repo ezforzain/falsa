@@ -1,6 +1,6 @@
 import { IconCheck } from './icons';
 
-// A single selectable option in a "Color Family" grid — image + name, with a distinct
+// A single selectable option in a variant/options grid — image + name, with a distinct
 // selected state (orange border, light orange fill, checkmark badge). Truncates long names to
 // two lines instead of overflowing the card.
 export default function VariantCard({ variant, selected, onSelect }) {
