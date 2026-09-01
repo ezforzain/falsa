@@ -5,12 +5,10 @@ import {
   productDescription,
   productSpecifications,
   productFeatures,
-  packagingShipping,
   productReviewSummary,
   productReviews,
   productFaqs,
   certifications,
-  companyProfile,
   productSoldCount,
   productHighlights,
 } from '../data/mockData';
@@ -28,7 +26,6 @@ import ChatButton from '../components/ChatButton';
 import VariantBottomSheet from '../components/VariantBottomSheet';
 import FirstVisitSignupPrompt from '../components/FirstVisitSignupPrompt';
 import SectionCard from '../components/product/SectionCard';
-import TrustBadges from '../components/product/TrustBadges';
 import QuickFacts from '../components/product/QuickFacts';
 import PriceBox from '../components/product/PriceBox';
 import FeatureBadges from '../components/product/FeatureBadges';
@@ -36,9 +33,7 @@ import StickyActionBar from '../components/product/StickyActionBar';
 import ProductTabs from '../components/product/ProductTabs';
 import ProductSpecifications from '../components/product/ProductSpecifications';
 import ProductFeatures from '../components/product/ProductFeatures';
-import PackagingShipping from '../components/product/PackagingShipping';
 import SellerInfoSection from '../components/product/SellerInfoSection';
-import CompanyProfileSection from '../components/product/CompanyProfileSection';
 import CertificationsSection from '../components/product/CertificationsSection';
 import ReviewsSection from '../components/product/ReviewsSection';
 import FaqSection from '../components/product/FaqSection';
@@ -276,7 +271,6 @@ export default function ProductPage() {
   const images = product.images?.length ? product.images : product.img ? [product.img] : [];
   const reviewSummary = productReviewSummary(product);
   const reviews = productReviews(product);
-  const profile = companyProfile(storeSeller);
   const soldCount = productSoldCount(product);
   const highlights = productHighlights(product);
 
@@ -302,8 +296,6 @@ export default function ProductPage() {
             <p className="text-[14.5px] text-text leading-relaxed m-0">{productDescription(product)}</p>
           </SectionCard>
           <ProductFeatures features={productFeatures(product)} />
-          <PackagingShipping info={packagingShipping(product)} />
-          {storeSeller && <CompanyProfileSection profile={profile} />}
           <CertificationsSection items={certifications} />
         </div>
       ),
@@ -391,10 +383,15 @@ export default function ProductPage() {
 
         {/* Info */}
         <div className="lg:sticky lg:top-24">
-          <div className="inline-flex items-center gap-2 bg-green-tint text-green text-xs font-bold px-3.5 py-1.5 rounded-full mb-4">
-            <IconShield strokeWidth="2.2" />
-            Verified seller · 100% Trusted
-          </div>
+          {/* Was showing unconditionally on every product regardless of the seller's actual
+              status — only a real admin-approved verified seller (product.verified, see
+              catalog.routes.js's serializeProduct) should get this claim. */}
+          {product.verified && (
+            <div className="inline-flex items-center gap-2 bg-green-tint text-green text-xs font-bold px-3.5 py-1.5 rounded-full mb-4">
+              <IconShield strokeWidth="2.2" />
+              Verified seller · 100% Trusted
+            </div>
+          )}
 
           <h1 className="font-display text-[26px] sm:text-[32px] lg:text-[36px] font-bold m-0 mb-4 tracking-tight leading-[1.14] text-balance">
             {product.name}
@@ -419,9 +416,6 @@ export default function ProductPage() {
 
           {/* MOQ / stock / shipping / delivery quick facts */}
           <QuickFacts product={product} outOfStock={outOfStock} />
-
-          {/* Trust badges */}
-          <TrustBadges className="mb-6" />
 
           {actionError && <p className="text-sm text-orange-text mb-3">{actionError}</p>}
 
