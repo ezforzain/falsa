@@ -51,6 +51,18 @@ export function validateAvatarImageFile(file) {
   return null;
 }
 
+// Profile banner uploads — same backend/limits as avatars and product photos, just its own
+// message so a rejected file says "banner" instead of "image".
+export const ALLOWED_BANNER_IMAGE_TYPES = ALLOWED_PRODUCT_IMAGE_TYPES;
+export const MAX_BANNER_IMAGE_BYTES = MAX_PRODUCT_IMAGE_BYTES;
+
+export function validateBannerImageFile(file) {
+  if (!file) return 'Please choose a photo.';
+  if (!ALLOWED_BANNER_IMAGE_TYPES.includes(file.type)) return 'Only JPG, PNG, or WEBP images are allowed.';
+  if (file.size > MAX_BANNER_IMAGE_BYTES) return 'Banner image must be 8MB or smaller.';
+  return null;
+}
+
 export function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

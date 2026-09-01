@@ -125,6 +125,7 @@ export const auth = {
   updateProfile: (payload) => request('/api/auth/profile', { method: 'PATCH', body: payload, auth: true }),
   updatePreferences: (payload) => request('/api/auth/preferences', { method: 'PATCH', body: payload, auth: true }),
   updateAvatar: (avatarUrl) => request('/api/auth/avatar', { method: 'PATCH', body: { avatarUrl }, auth: true }),
+  updateBanner: (bannerUrl) => request('/api/auth/banner', { method: 'PATCH', body: { bannerUrl }, auth: true }),
   verifyEmail: (token) => request('/api/auth/verify-email', { method: 'POST', body: { token } }),
   resendVerificationEmail: () => request('/api/auth/verify-email/resend', { method: 'POST', auth: true }),
   changePassword: (payload) => request('/api/auth/password', { method: 'PATCH', body: payload, auth: true }),
@@ -140,6 +141,15 @@ export const catalog = {
   mobileCategories: () => request('/api/categories/mobile'),
   mobileTabs: () => request('/api/mobile-tabs'),
   hashtags: (q) => request(`/api/hashtags?q=${encodeURIComponent(q)}`),
+  hashtagProducts: (tag) => request(`/api/hashtags/${encodeURIComponent(tag)}`),
+  suggestHashtags: ({ title, category, description, exclude } = {}) => {
+    const params = new URLSearchParams();
+    if (title) params.set('title', title);
+    if (category) params.set('category', category);
+    if (description) params.set('description', description);
+    if (exclude?.length) params.set('exclude', exclude.join(','));
+    return request(`/api/hashtags/suggest?${params.toString()}`);
+  },
   products: ({ category, q } = {}) => {
     const params = new URLSearchParams();
     if (category) params.set('category', category);
