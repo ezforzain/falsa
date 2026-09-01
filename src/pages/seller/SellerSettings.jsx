@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { categories } from '../../data/mockData';
+import { seller } from '../../lib/api';
 import Toast from '../../components/Toast';
 import { IconCheck } from '../../components/icons';
 
 export default function SellerSettings() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, applyUserUpdate } = useAuth();
   const [form, setForm] = useState({
     companyName: user.companyName || '',
     phone: user.phone || '',
@@ -16,7 +17,18 @@ export default function SellerSettings() {
   const [error, setError] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
 
+  const [bankForm, setBankForm] = useState({
+    bankName: user.bankName || '',
+    accountTitle: user.accountTitle || '',
+    accountNumber: user.accountNumber || '',
+    iban: user.iban || '',
+  });
+  const [bankLoading, setBankLoading] = useState(false);
+  const [bankError, setBankError] = useState(null);
+  const [bankToastVisible, setBankToastVisible] = useState(false);
+
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const setBank = (key) => (e) => setBankForm((f) => ({ ...f, [key]: e.target.value }));
 
   const submit = async () => {
     if (!form.companyName.trim()) {
@@ -32,6 +44,24 @@ export default function SellerSettings() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const submitBank = async () => {
+    if (!bankForm.bankName.trim() || !bankForm.accountTitle.trim() || !bankForm.accountNumber.trim() || !bankForm.iban.trim()) {
+      setBankError('Please fill in all four fields — this is what Falsafah needs to pay you out.');
+      return;
+    }
+    setBankLoading(true);
+    setBankError(null);
+    try {
+      const { user: updated } = await seller.updateBankDetails(bankForm);
+      applyUserUpdate(updated);
+      setBankToastVisible(true);
+    } catch (err) {
+      setBankError(err.message);
+    } finally {
+      setBankLoading(false);
     }
   };
 
@@ -97,6 +127,46 @@ export default function SellerSettings() {
         </button>
       </div>
 
+      <div className="bg-white border border-border rounded-2xl p-6 mt-4">
+        <h2 className="font-display text-lg font-bold text-ink mb-1">Bank details</h2>
+        <p className="text-sm text-text mb-5">Required before you can ship an order with Falsafah — this is how payouts reach you.</p>
+
+        {bankError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-5">{bankError}</p>}
+
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className={labelClass}>Bank name</label>
+            <input type="text" value={bankForm.bankName} onChange={setBank('bankName')} placeholder="e.g. Meezan Bank" className={fieldClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Account title</label>
+            <input type="text" value={bankForm.accountTitle} onChange={setBank('accountTitle')} className={fieldClass} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Account number</label>
+              <input type="text" value={bankForm.accountNumber} onChange={setBank('accountNumber')} className={fieldClass} />
+            </div>
+            <div>
+              <label className={labelClass}>IBAN</label>
+              <input type="text" value={bankForm.iban} onChange={setBank('iban')} placeholder="PK00XXXX0000000000000000" className={fieldClass} />
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={submitBank}
+          disabled={bankLoading}
+          className="mt-6 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-sm py-3 px-7 rounded-full shadow-[0_6px_16px_rgba(14,90,70,0.25)] transition-colors"
+        >
+          {bankLoading && (
+            <span className="w-3.5 h-3.5 border-2 border-white/35 rounded-full inline-block" style={{ borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
+          )}
+          {bankLoading ? 'Saving…' : 'Save bank details'}
+        </button>
+      </div>
+
       <div className="flex items-start gap-3 bg-white border border-border rounded-2xl p-5 mt-4">
         <span className="w-8 h-8 rounded-lg bg-green-tint flex items-center justify-center shrink-0">
           <IconCheck width="15" height="15" className="text-green" />
@@ -108,6 +178,7 @@ export default function SellerSettings() {
       </div>
 
       <Toast message="Profile updated successfully" show={toastVisible} onHide={() => setToastVisible(false)} />
+      <Toast message="Bank details saved" show={bankToastVisible} onHide={() => setBankToastVisible(false)} />
     </div>
   );
 }

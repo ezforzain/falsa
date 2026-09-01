@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { nanoid } from 'nanoid';
 import { SellerProduct } from '../models/SellerProduct.js';
 import { SellerOrder, ORDER_STATUSES } from '../models/SellerOrder.js';
 import { Seller } from '../models/Seller.js';
@@ -7,6 +8,8 @@ import { Payout } from '../models/Payout.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { syncSellerProductToCatalog, removeSellerProductFromCatalog } from '../utils/publicCatalogSync.js';
+
+const BANK_FIELDS = ['bankName', 'accountTitle', 'accountNumber', 'iban'];
 
 const router = Router();
 router.use(requireAuth, requireRole('seller'));
@@ -220,6 +223,82 @@ router.patch(
     order.status = status;
     await order.save();
     res.json({ order: serializeOrder(order) });
+  })
+);
+
+// Ship Now — "falsafah" auto-generates a tracking id under the platform's own in-house courier
+// (gated on the seller having bank details on file, since that's how they'd get paid out for a
+// platform-handled shipment); "self" takes whatever courier name/tracking id the seller enters.
+// Either way this can only ever be called once per order — see the 409 below — so the shipping
+// info (and the label built from it) is effectively immutable once set.
+router.patch(
+  '/orders/:id/ship',
+  asyncHandler(async (req, res) => {
+    const order = await SellerOrder.findOne({ _id: req.params.id, sellerId: req.user._id });
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+    if (order.shippingMethod) {
+      return res.status(409).json({ message: 'This order has already been shipped.' });
+    }
+
+    const { method } = req.body;
+    if (method === 'falsafah') {
+      const missingBankField = BANK_FIELDS.find((key) => !req.user[key]);
+      if (missingBankField) {
+        return res.status(400).json({ message: 'Please add your bank details before shipping with Falsafah.' });
+      }
+      order.courierName = 'Falsafah Express';
+      order.trackingId = `FE-${nanoid(10).toUpperCase()}`;
+    } else if (method === 'self') {
+      const courierName = String(req.body.courierName || '').trim();
+      const trackingId = String(req.body.trackingId || '').trim();
+      if (!courierName || !trackingId) {
+        return res.status(400).json({ message: 'Please enter both the courier name and tracking id.' });
+      }
+      order.courierName = courierName;
+      order.trackingId = trackingId;
+    } else {
+      return res.status(400).json({ message: 'Invalid shipping method.' });
+    }
+
+    order.shippingMethod = method;
+    order.status = 'Shipped';
+    order.shippedAt = new Date();
+    await order.save();
+    res.json({ order: serializeOrder(order) });
+  })
+);
+
+// Second step for the Falsafah label: the client renders + uploads the PNG (needs the tracking
+// id from the /ship response above first), then hands back the resulting URL here. Locked once
+// set, same as /ship, so a generated label can't be swapped out afterwards.
+router.patch(
+  '/orders/:id/label',
+  asyncHandler(async (req, res) => {
+    const order = await SellerOrder.findOne({ _id: req.params.id, sellerId: req.user._id });
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+    if (order.shippingMethod !== 'falsafah') {
+      return res.status(400).json({ message: 'This order was not shipped with Falsafah.' });
+    }
+    if (order.labelUrl) {
+      return res.status(409).json({ message: 'A label has already been generated for this order.' });
+    }
+    const labelUrl = String(req.body.labelUrl || '').trim();
+    if (!labelUrl) return res.status(400).json({ message: 'Missing label URL.' });
+    order.labelUrl = labelUrl;
+    await order.save();
+    res.json({ order: serializeOrder(order) });
+  })
+);
+
+router.patch(
+  '/bank-details',
+  asyncHandler(async (req, res) => {
+    const { bankName, accountTitle, accountNumber, iban } = req.body;
+    for (const [key, value] of Object.entries({ bankName, accountTitle, accountNumber, iban })) {
+      if (value !== undefined) req.user[key] = String(value).trim() || null;
+    }
+    await req.user.save();
+    res.json({ user: req.user.toPublicJSON() });
   })
 );
 

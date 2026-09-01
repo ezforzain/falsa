@@ -11,6 +11,7 @@ import catalogRoutes from './routes/catalog.routes.js';
 import marketplaceRoutes from './routes/marketplace.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import checkoutRoutes from './routes/checkout.routes.js';
+import ordersRoutes from './routes/orders.routes.js';
 import sellersRoutes from './routes/sellers.routes.js';
 import sellerPortalRoutes from './routes/seller.routes.js';
 import adminRoutes from './routes/admin.routes.js';
@@ -97,6 +98,7 @@ export function createApp() {
   app.use('/api/marketplace', marketplaceRoutes);
   app.use('/api/cart', cartRoutes);
   app.use('/api/checkout', checkoutRoutes);
+  app.use('/api/orders', ordersRoutes);
   app.use('/api/sellers', sellersRoutes);
   app.use('/api/seller', sellerPortalRoutes);
   app.use('/api/admin', adminRoutes);

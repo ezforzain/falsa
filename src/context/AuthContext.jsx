@@ -77,6 +77,10 @@ export function AuthProvider({ children }) {
     setUser((prev) => (prev ? { ...prev, emailVerified: true } : prev));
   };
 
+  // For endpoints outside auth.routes.js (e.g. seller.updateBankDetails) that return a fresh
+  // user object of their own — lets the caller sync context state without a dedicated method here.
+  const applyUserUpdate = (updated) => setUser(updated);
+
   const logout = async () => {
     try {
       await auth.logout();
@@ -98,6 +102,7 @@ export function AuthProvider({ children }) {
     updateAvatar,
     resendVerificationEmail,
     markEmailVerified,
+    applyUserUpdate,
     changePassword,
     logout,
   };

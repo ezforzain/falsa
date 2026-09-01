@@ -359,6 +359,11 @@ export default function AccountCenterPage() {
           </div>
         </section>
 
+        {/* My Orders — visible to every signed-in user, buyers included */}
+        <SectionCard icon={IconReceipt} title={t('accountCenter.myOrdersTitle')} description={t('accountCenter.myOrdersDesc')}>
+          <NavCard icon={IconReceipt} label={t('accountCenter.myOrders')} to="/orders" />
+        </SectionCard>
+
         {/* Password & Security */}
         <SectionCard icon={IconKey} title={t('accountCenter.securityTitle')} description={t('accountCenter.securityDesc')}>
           <ChangePasswordForm t={t} changePassword={changePassword} onSuccess={() => showToast(t('accountCenter.passwordUpdated'))} />

@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react';
 import { seller } from '../../lib/api';
 import { formatPKR } from '../../data/mockData';
+import { useAuth } from '../../context/AuthContext';
 import { IconReceipt } from '../../components/icons';
+import ShipOrderModal from '../../components/seller/ShipOrderModal';
 import { ORDER_STATUSES, statusBadgeClass } from './statusStyles';
 
+const BANK_FIELDS = ['bankName', 'accountTitle', 'accountNumber', 'iban'];
+
 export default function SellerOrders() {
+  const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
   const [rowError, setRowError] = useState(null);
+  const [shippingOrder, setShippingOrder] = useState(null);
+
+  const bankComplete = BANK_FIELDS.every((key) => Boolean(user?.[key]));
 
   useEffect(() => {
     seller
@@ -18,6 +26,10 @@ export default function SellerOrders() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleShipped = (updated) => {
+    setOrders((current) => current.map((o) => (o.id === updated.id ? updated : o)));
+  };
 
   const handleStatusChange = async (order, status) => {
     if (status === order.status) return;
@@ -73,14 +85,23 @@ export default function SellerOrders() {
                   <th className="px-5 py-3 font-semibold">Total</th>
                   <th className="px-5 py-3 font-semibold">Date</th>
                   <th className="px-5 py-3 font-semibold">Status</th>
+                  <th className="px-5 py-3 font-semibold">Shipping</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((o) => (
                   <tr key={o.id} className="border-b border-border last:border-0 align-top">
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4 max-w-[200px]">
                       <div className="font-semibold text-ink">{o.buyerCompany}</div>
-                      <div className="text-xs text-text-muted">{o.buyerCountry}</div>
+                      {o.shippingAddress ? (
+                        <div className="text-xs text-text-muted leading-relaxed mt-0.5">
+                          {o.shippingAddress.phone}
+                          <br />
+                          {o.shippingAddress.address}, {o.shippingAddress.city}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-text-muted">{o.buyerCountry}</div>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-text-muted max-w-[180px]">{o.productName}</td>
                     <td className="px-5 py-4 text-ink-soft whitespace-nowrap">{o.qty.toLocaleString('en-US')}</td>
@@ -103,6 +124,29 @@ export default function SellerOrders() {
                       </select>
                       {rowError?.id === o.id && <div className="text-[11px] text-orange-text mt-1.5 max-w-[140px]">{rowError.message}</div>}
                     </td>
+                    <td className="px-5 py-4 whitespace-nowrap">
+                      {o.shippingMethod ? (
+                        <div className="text-xs">
+                          <div className="font-semibold text-ink">{o.courierName}</div>
+                          <div className="text-text-muted">{o.trackingId}</div>
+                          {o.labelUrl && (
+                            <a href={o.labelUrl} download className="text-green font-semibold hover:underline">
+                              Download label
+                            </a>
+                          )}
+                        </div>
+                      ) : o.status === 'Processing' ? (
+                        <button
+                          type="button"
+                          onClick={() => setShippingOrder(o)}
+                          className="cursor-pointer bg-green hover:bg-green-hover text-white text-xs font-semibold px-3.5 py-2 rounded-full transition-colors"
+                        >
+                          Ship Now
+                        </button>
+                      ) : (
+                        <span className="text-xs text-text-muted">Mark Processing first</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -110,6 +154,15 @@ export default function SellerOrders() {
           </div>
         </div>
       )}
+
+      <ShipOrderModal
+        open={Boolean(shippingOrder)}
+        order={shippingOrder}
+        sellerName={user?.companyName}
+        bankComplete={bankComplete}
+        onClose={() => setShippingOrder(null)}
+        onShipped={handleShipped}
+      />
     </div>
   );
 }

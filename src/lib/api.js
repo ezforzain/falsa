@@ -232,6 +232,9 @@ export const seller = {
   deleteProduct: (id) => request(`/api/seller/products/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
   orders: () => request('/api/seller/orders', { auth: true }),
   updateOrderStatus: (id, status) => request(`/api/seller/orders/${encodeURIComponent(id)}`, { method: 'PATCH', body: { status }, auth: true }),
+  shipOrder: (id, payload) => request(`/api/seller/orders/${encodeURIComponent(id)}/ship`, { method: 'PATCH', body: payload, auth: true }),
+  setOrderLabel: (id, labelUrl) => request(`/api/seller/orders/${encodeURIComponent(id)}/label`, { method: 'PATCH', body: { labelUrl }, auth: true }),
+  updateBankDetails: (payload) => request('/api/seller/bank-details', { method: 'PATCH', body: payload, auth: true }),
   getStoreProfile: () => request('/api/seller/store', { auth: true }),
   updateStoreProfile: (payload) => request('/api/seller/store', { method: 'PATCH', body: payload, auth: true }),
   analytics: () => request('/api/seller/analytics', { auth: true }),
@@ -239,6 +242,12 @@ export const seller = {
   promotions: () => request('/api/seller/promotions', { auth: true }),
   payouts: () => request('/api/seller/payouts', { auth: true }),
   customers: () => request('/api/seller/customers', { auth: true }),
+};
+
+// ---------- Buyer "My Orders" ----------
+
+export const myOrders = {
+  list: () => request('/api/orders', { auth: true }),
 };
 
 // ---------- Sellers directory (Store Profile + Verified Store badge) ----------

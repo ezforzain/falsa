@@ -10,6 +10,7 @@ import SearchPage from './pages/SearchPage';
 import ProductPage from './pages/ProductPage';
 import StorePage from './pages/StorePage';
 import CartPage from './pages/CartPage';
+import OrdersPage from './pages/OrdersPage';
 import CategoriesPage from './pages/CategoriesPage';
 import MessengerPage from './pages/MessengerPage';
 import AccountPage from './pages/AccountPage';
@@ -52,6 +53,7 @@ export default function App() {
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/store/:id" element={<StorePage />} />
           <Route path="/cart" element={<CartPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/messenger" element={<MessengerPage />} />
           <Route path="/account" element={<AccountPage />} />

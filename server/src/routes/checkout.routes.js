@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { Cart } from '../models/Cart.js';
 import { Product } from '../models/Product.js';
+import { SellerOrder } from '../models/SellerOrder.js';
+import { User } from '../models/User.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { parsePrice } from '../utils/price.js';
 import { ensureGuestId } from '../middleware/guest.js';
@@ -10,11 +12,11 @@ const router = Router();
 
 const ADDRESS_FIELDS = ['fullName', 'phone', 'city', 'address'];
 
-// No real payment gateway here — "checkout" reads the current cart, snapshots a total and
-// order id, then clears it. That's the whole order lifecycle this endpoint models; there's no
-// persisted buyer order history yet (mirrors the mock exactly). Placing an order does require
-// sign-in (see requireAuth below) so the delivery address has somewhere to auto-save to — the
-// cart itself stays guest-id-scoped, unchanged, so signing in doesn't move or merge it.
+// No real payment gateway here — "checkout" reads the current cart, snapshots a total and order
+// id, clears it, and creates one SellerOrder per cart line item (see below) so sellers see real
+// buyer orders instead of only admin-seeded test data. Placing an order does require sign-in (see
+// requireAuth below) so the delivery address has somewhere to auto-save to — the cart itself
+// stays guest-id-scoped, unchanged, so signing in doesn't move or merge it.
 router.post(
   '/',
   requireAuth,
@@ -39,6 +41,10 @@ router.post(
       return res.status(400).json({ message: 'Your cart is empty.' });
     }
 
+    // Cache the owning seller User per Seller-directory id — several cart lines can belong to
+    // the same store, and this avoids a repeat lookup per line.
+    const ownerBySellerId = new Map();
+
     let subtotal = 0;
     let itemCount = 0;
     for (const item of cart.items) {
@@ -46,6 +52,30 @@ router.post(
       if (!product) continue;
       subtotal += parsePrice(product.price) * item.qty;
       itemCount += item.qty;
+
+      const sellerKey = product.sellerId?.toString();
+      if (!sellerKey) continue;
+      if (!ownerBySellerId.has(sellerKey)) {
+        ownerBySellerId.set(sellerKey, await User.findOne({ sellerId: product.sellerId }));
+      }
+      const owner = ownerBySellerId.get(sellerKey);
+
+      // No linked seller account (should be unreachable — every published listing has one, see
+      // publicCatalogSync.js) — skip rather than create an order nobody can ever see or ship.
+      if (!owner) continue;
+
+      await SellerOrder.create({
+        sellerId: owner._id,
+        buyerId: req.user._id,
+        buyerCompany: savedAddress.fullName,
+        buyerCountry: req.user.country || 'Pakistan',
+        productId: product._id,
+        productName: product.name,
+        productImg: product.img || null,
+        qty: item.qty,
+        unitPrice: parsePrice(product.price),
+        shippingAddress: savedAddress,
+      });
     }
 
     // Auto-save — submitting an address at checkout (first time or via Edit) is what persists
