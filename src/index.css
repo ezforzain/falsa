@@ -177,6 +177,36 @@ body {
   animation: badgePop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Loyalty badge on the profile page (see LoyaltyBadge.jsx) — a small, playful "look at me" wiggle
+   re-triggered every 10s by swapping the element's `key`, rather than looping the keyframe itself
+   (a looping animation would never let it sit still, and a straight loop reads as broken/jittery
+   rather than an intentional little tap on the shoulder). */
+@keyframes badgeShake {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  15% {
+    transform: rotate(-9deg);
+  }
+  30% {
+    transform: rotate(8deg);
+  }
+  45% {
+    transform: rotate(-6deg);
+  }
+  60% {
+    transform: rotate(4deg);
+  }
+  75% {
+    transform: rotate(-2deg);
+  }
+}
+
+.animate-badge-shake {
+  animation: badgeShake 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  transform-origin: 50% 65%;
+}
+
 @keyframes splashLogoIn {
   from {
     opacity: 0;

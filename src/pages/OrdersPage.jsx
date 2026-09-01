@@ -1,16 +1,21 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { myOrders } from '../lib/api';
 import { formatPKR } from '../data/mockData';
 import { IconUser, IconReceipt, IconTruck } from '../components/icons';
-import { statusBadgeClass } from './seller/statusStyles';
+import { statusBadgeClass, ORDER_STATUSES } from './seller/statusStyles';
 
 export default function OrdersPage() {
   const { isAuthenticated } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Deep-linked from the profile page's order-status tiles (e.g. /orders?status=Shipped) — kept
+  // in the URL (rather than plain useState) so that link actually lands filtered, and so
+  // reloading/sharing the filtered view works too.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeStatus = searchParams.get('status') || 'All';
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -20,6 +25,15 @@ export default function OrdersPage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [isAuthenticated]);
+
+  const setActiveStatus = (status) => {
+    setSearchParams(status === 'All' ? {} : { status });
+  };
+
+  const visibleOrders = useMemo(
+    () => (activeStatus === 'All' ? orders : orders.filter((o) => o.status === activeStatus)),
+    [orders, activeStatus]
+  );
 
   if (!isAuthenticated) {
     return (
@@ -48,6 +62,25 @@ export default function OrdersPage() {
         <p className="text-sm text-text mt-1">Everything you've bought, with live shipping and tracking status.</p>
       </div>
 
+      {!loading && !error && orders.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar mb-5 -mx-1 px-1">
+          {['All', ...ORDER_STATUSES].map((status) => (
+            <button
+              key={status}
+              type="button"
+              onClick={() => setActiveStatus(status)}
+              className={`shrink-0 cursor-pointer text-[12.5px] font-semibold px-3.5 py-1.5 rounded-full border transition-colors ${
+                activeStatus === status
+                  ? 'bg-green text-white border-green'
+                  : 'bg-surface text-ink-soft border-border hover:bg-surface-muted'
+              }`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading && (
         <div className="flex flex-col gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -69,9 +102,18 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {!loading && !error && orders.length > 0 && (
+      {!loading && !error && orders.length > 0 && visibleOrders.length === 0 && (
+        <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
+          <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center mb-4">
+            <IconReceipt width="24" height="24" className="text-green" />
+          </span>
+          <p className="text-sm text-text">No orders with status "{activeStatus}" yet.</p>
+        </div>
+      )}
+
+      {!loading && !error && visibleOrders.length > 0 && (
         <div className="flex flex-col gap-3">
-          {orders.map((o) => (
+          {visibleOrders.map((o) => (
             <div key={o.id} className="bg-surface border border-border rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4">
               {o.productImg && (
                 <img src={o.productImg} alt={o.productName} className="w-full sm:w-20 h-32 sm:h-20 rounded-xl object-cover shrink-0" />

@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProfileDrawer } from '../context/ProfileDrawerContext';
+import { myOrders } from '../lib/api';
+import { computeLoyaltyTier } from '../lib/loyalty';
 import {
   IconUser,
   IconMenu,
@@ -10,11 +12,14 @@ import {
   IconPin,
   IconClock,
   IconShield,
-  IconCheck,
   IconEdit,
 } from '../components/icons';
 import VerifiedBadge from '../components/VerifiedBadge';
-import AvatarUploader from '../components/AvatarUploader';
+import Avatar from '../components/Avatar';
+import EditProfileSheet from '../components/EditProfileSheet';
+import LoyaltyBadge from '../components/LoyaltyBadge';
+import OrderStatusQuickLinks from '../components/OrderStatusQuickLinks';
+import ProfileViewHistoryRail from '../components/ProfileViewHistoryRail';
 import Toast from '../components/Toast';
 
 const ROLE_LABEL = { buyer: 'Buyer', seller: 'Seller', admin: 'Admin' };
@@ -40,85 +45,6 @@ function InfoRow({ icon, label, children }) {
         <span className="block text-[10.5px] font-semibold uppercase tracking-wide text-text-muted">{label}</span>
         <span className="block text-[13.5px] font-medium text-ink truncate">{children}</span>
       </span>
-    </div>
-  );
-}
-
-const fieldClass =
-  'w-full px-3.5 py-2.5 border border-border rounded-xl text-[14px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
-const fieldLabelClass = 'block text-[11.5px] font-semibold text-text-muted uppercase tracking-wide mb-1.5';
-
-// Replaces the read-only info grid in place while active — see PATCH /api/auth/profile
-// (server/src/routes/auth.routes.js), which only ever accepts companyName/phone/country/category.
-// Email isn't editable here (or on the server route) since it's tied to sign-in and verification.
-function ProfileEditForm({ user, updateProfile, onSaved, onCancel }) {
-  const [form, setForm] = useState({
-    companyName: user.companyName || '',
-    phone: user.phone || '',
-    country: user.country || '',
-  });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
-
-  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
-
-  const submit = async () => {
-    if (!form.companyName.trim()) {
-      setError('Name is required.');
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      await updateProfile(form);
-      onSaved();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-3.5">
-      {error && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5">{error}</p>}
-
-      <div>
-        <label className={fieldLabelClass}>Name</label>
-        <input type="text" value={form.companyName} onChange={set('companyName')} className={fieldClass} />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-        <div>
-          <label className={fieldLabelClass}>Phone</label>
-          <input type="text" value={form.phone} onChange={set('phone')} placeholder="+92 300 0000000" className={fieldClass} />
-        </div>
-        <div>
-          <label className={fieldLabelClass}>Country</label>
-          <input type="text" value={form.country} onChange={set('country')} className={fieldClass} />
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2.5 mt-1">
-        <button
-          type="button"
-          onClick={submit}
-          disabled={saving}
-          className="flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover active:translate-y-0 text-white font-semibold text-[13.5px] py-2.5 px-5 rounded-full shadow-[0_6px_16px_rgba(14,90,70,0.25)] hover:-translate-y-0.5 transition-all"
-        >
-          {saving && (
-            <span className="w-3.5 h-3.5 border-2 border-white/35 rounded-full inline-block" style={{ borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
-          )}
-          {saving ? 'Saving…' : 'Save changes'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={saving}
-          className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 text-text-muted hover:text-ink font-semibold text-[13.5px] py-2.5 px-4 rounded-full hover:bg-surface-muted transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
     </div>
   );
 }
@@ -154,7 +80,7 @@ function EmailVerifyNotice({ email, resend }) {
         </p>
         {state === 'sent' ? (
           <p className="text-[12.5px] font-semibold text-green m-0 flex items-center gap-1.5">
-            <IconCheck width="13" height="13" /> Email sent — check your inbox.
+            Email sent — check your inbox.
           </p>
         ) : (
           <a
@@ -170,17 +96,37 @@ function EmailVerifyNotice({ email, resend }) {
   );
 }
 
-
-// "My Profile" — just the profile itself now. Orders, seller tools, settings, support, and
-// sign-out all moved into the Facebook-style account menu — see AccountMenuContent. The
-// trigger for it only ever appears here: Header's hamburger only renders while viewing this
-// page (desktop), and this page renders bare on mobile (no Header at all — see MainLayout's
-// bare-route list), so it needs its own trigger too, rather than relying on the bottom nav.
+// "My Profile" — a TikTok-style hero (banner, centered avatar, name, @handle, a loyalty badge
+// driven by real order history) plus a Daraz-style order-status shortcut row and a YouTube-style
+// "Recently Viewed" history rail. Orders, seller tools, settings, support, and sign-out all live
+// in the Facebook-style account menu — see AccountMenuContent. The trigger for it only ever
+// appears here: Header's hamburger only renders while viewing this page (desktop), and this page
+// renders bare on mobile (no Header at all — see MainLayout's bare-route list), so it needs its
+// own trigger too, rather than relying on the bottom nav.
 export default function AccountPage() {
-  const { user, isAuthenticated, resendVerificationEmail, updateProfile } = useAuth();
+  const { user, isAuthenticated, resendVerificationEmail } = useAuth();
   const { open: openAccountMenu } = useProfileDrawer();
-  const [editing, setEditing] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [savedToastVisible, setSavedToastVisible] = useState(false);
+  const [orders, setOrders] = useState([]);
+
+  // Powers both the loyalty badge (delivered-order count/spend, see lib/loyalty.js) and the
+  // order-status quick links below it — one fetch for both.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    myOrders
+      .list()
+      .then((res) => {
+        if (!cancelled) setOrders(res.orders);
+      })
+      .catch(() => {
+        // Non-critical — the loyalty badge and quick links just show as empty/new.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
 
   const TopBar = (
     <div className="flex items-center justify-between gap-3 mb-1.5">
@@ -223,93 +169,106 @@ export default function AccountPage() {
   }
 
   const isSeller = user.role === 'seller';
+  const tier = computeLoyaltyTier(orders);
 
   return (
     <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20 animate-fade-up">
       <div className="max-w-[640px] mx-auto">
         {TopBar}
         <p className="text-sm text-text-muted mb-6 flex items-center gap-1.5 flex-wrap">
-          Orders, settings, and more now live in the account menu
+          Settings, support, and sign-out live in the account menu
           <IconMenu width="14" height="14" className="text-text-muted" />
           — tap it above.
         </p>
 
         <div className="bg-surface border border-border rounded-3xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_36px_-12px_rgba(0,0,0,0.12)] overflow-hidden">
-          {/* Brand banner — the avatar overlaps its bottom edge, giving the card a proper
-              "profile" hero treatment instead of sitting flush in a flat box. */}
-          <div className="relative h-20 sm:h-24 bg-gradient-to-br from-green-deep via-green to-green-hover overflow-hidden">
-            <div className="absolute -top-10 -right-6 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
-            <div className="absolute -bottom-16 left-10 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
-            {!editing && (
-              <button
-                type="button"
-                onClick={() => setEditing(true)}
-                aria-label="Edit profile"
-                title="Edit profile"
-                className="absolute top-3 right-3 sm:top-4 sm:right-4 cursor-pointer flex items-center gap-1.5 bg-white/15 hover:bg-white/25 active:bg-white/30 text-white text-[12.5px] font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors"
-              >
-                <IconEdit width="13" height="13" />
-                Edit
-              </button>
+          {/* Brand banner — the avatar overlaps its bottom edge, TikTok-style, instead of sitting
+              flush in a flat box. Shows the account's own uploaded banner once set (see
+              BannerUploader inside EditProfileSheet), otherwise the same green gradient as before. */}
+          <div className="relative h-28 sm:h-36 bg-gradient-to-br from-green-deep via-green to-green-hover overflow-hidden">
+            {user.bannerUrl ? (
+              <img src={user.bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <>
+                <div className="absolute -top-10 -right-6 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
+                <div className="absolute -bottom-16 left-10 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+              </>
             )}
           </div>
 
-          <div className="px-5 sm:px-8 pb-6 sm:pb-8">
-            <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-6 -mt-10 sm:-mt-12 text-center sm:text-left">
-              <AvatarUploader size={88} avatarClassName="ring-[5px] ring-surface" />
-              <div className="min-w-0 flex-1 w-full sm:pb-1">
-                <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                  <p className="font-display text-[19px] sm:text-[22px] font-bold text-ink truncate m-0 tracking-tight max-w-full">
-                    {user.companyName}
-                  </p>
-                  {isSeller && user.verified && <VerifiedBadge size={17} />}
-                </div>
-                <div className="flex items-center justify-center sm:justify-start gap-2 mt-1.5 flex-wrap">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-green bg-green-tint px-2.5 py-1 rounded-full">
-                    {isSeller && <IconShield width="11" height="11" />}
-                    {ROLE_LABEL[user.role] || user.role}
-                  </span>
-                  <MemberSince date={user.createdAt} />
-                </div>
-              </div>
+          <div className="px-5 sm:px-8 pb-6 sm:pb-8 flex flex-col items-center text-center -mt-11 sm:-mt-12">
+            <Avatar src={user.avatarUrl} size={92} iconSize={40} className="ring-[5px] ring-surface" />
+
+            <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+              <p className="font-display text-[20px] sm:text-[22px] font-bold text-ink truncate m-0 tracking-tight max-w-full">
+                {user.companyName}
+              </p>
+              {isSeller && user.verified && <VerifiedBadge size={17} />}
+            </div>
+            {user.handle && <p className="text-[13px] text-text-muted mt-0.5">@{user.handle}</p>}
+
+            <div className="flex items-center justify-center gap-2 mt-2.5 flex-wrap">
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-green bg-green-tint px-2.5 py-1 rounded-full">
+                {isSeller && <IconShield width="11" height="11" />}
+                {ROLE_LABEL[user.role] || user.role}
+              </span>
+              <MemberSince date={user.createdAt} />
             </div>
 
-            <div className="h-px bg-border my-6" />
+            <button
+              type="button"
+              onClick={() => setEditOpen(true)}
+              className="mt-4 cursor-pointer inline-flex items-center gap-1.5 bg-surface-muted hover:bg-border/60 active:scale-[0.97] text-ink font-semibold text-[13px] px-5 py-2.5 rounded-full border border-border transition-all"
+            >
+              <IconEdit width="13" height="13" />
+              Edit Profile
+            </button>
 
-            {editing ? (
-              <ProfileEditForm
-                user={user}
-                updateProfile={updateProfile}
-                onSaved={() => {
-                  setEditing(false);
-                  setSavedToastVisible(true);
-                }}
-                onCancel={() => setEditing(false)}
-              />
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {user.email && (
-                  <InfoRow icon={<IconMail width="14" height="14" />} label="Email">
-                    {user.email}
-                  </InfoRow>
-                )}
-                {user.phone && (
-                  <InfoRow icon={<IconPhone width="14" height="14" />} label="Phone">
-                    {user.phone}
-                  </InfoRow>
-                )}
-                {user.country && (
-                  <InfoRow icon={<IconPin width="14" height="14" />} label="Country">
-                    {user.country}
-                  </InfoRow>
-                )}
-              </div>
-            )}
+            <div className="mt-4">
+              <LoyaltyBadge tier={tier} />
+            </div>
+          </div>
+
+          <div className="h-px bg-border mx-5 sm:mx-8" />
+
+          <div className="px-5 sm:px-8 py-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {user.email && (
+                <InfoRow icon={<IconMail width="14" height="14" />} label="Email">
+                  {user.email}
+                </InfoRow>
+              )}
+              {user.phone && (
+                <InfoRow icon={<IconPhone width="14" height="14" />} label="Phone">
+                  {user.phone}
+                </InfoRow>
+              )}
+              {user.country && (
+                <InfoRow icon={<IconPin width="14" height="14" />} label="Country">
+                  {user.country}
+                </InfoRow>
+              )}
+            </div>
           </div>
         </div>
 
+        <div className="mt-4">
+          <OrderStatusQuickLinks orders={orders} />
+        </div>
+
+        <ProfileViewHistoryRail />
+
         {!user.emailVerified && <EmailVerifyNotice email={user.email} resend={resendVerificationEmail} />}
       </div>
+
+      <EditProfileSheet
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        onSaved={() => {
+          setEditOpen(false);
+          setSavedToastVisible(true);
+        }}
+      />
 
       <Toast message="Profile updated" show={savedToastVisible} onHide={() => setSavedToastVisible(false)} />
     </main>
