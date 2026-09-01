@@ -3,6 +3,9 @@ import { Product } from '../models/Product.js';
 import { Category, MobileTab } from '../models/Category.js';
 import { SpotlightEntry } from '../models/SpotlightEntry.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { normalizeHashtag, computeTagPopularity, topTagsFor, bumpHashtagStats } from '../utils/hashtags.js';
+import { suggestHashtags } from '../utils/hashtagSuggest.js';
+import { rankOnly } from '../utils/marketplaceRanking.js';
 
 const router = Router();
 
@@ -89,9 +92,29 @@ router.get(
 router.get(
   '/products/:id',
   asyncHandler(async (req, res) => {
-    const product = await Product.findById(req.params.id).populate('sellerId', 'verified');
+    // Atomically bump the view counter on every load and use the post-increment doc, rather than
+    // a separate fire-and-forget update, so the count shown to the buyer (and later to the seller,
+    // see GET /seller/products) is never one view behind.
+    const product = await Product.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } }, { new: true }).populate(
+      'sellerId',
+      'verified'
+    );
     if (!product) return res.status(404).json({ message: 'Product not found.' });
-    res.json({ product: serializeProduct(product) });
+    const serialized = serializeProduct(product);
+
+    // YouTube-style "max 3 hashtags under the product" — pick the product's own tags
+    // that currently have the most real popularity signal (see utils/hashtags.js),
+    // rather than always showing whichever 3 the seller happened to type first.
+    if (Array.isArray(serialized.tags) && serialized.tags.length > 0) {
+      const popularity = await computeTagPopularity(serialized.tags);
+      serialized.topTags = topTagsFor(serialized.tags, popularity);
+      // "Product views" trending signal — fire-and-forget, never blocks the response.
+      bumpHashtagStats(serialized.tags, 'views');
+    } else {
+      serialized.topTags = [];
+    }
+
+    res.json({ product: serialized });
   })
 );
 
@@ -116,6 +139,44 @@ router.get(
       { $limit: 8 },
     ]);
     res.json({ hashtags });
+  })
+);
+
+// Rule-based AI hashtag suggestions from whatever the seller has typed so far (title/
+// category/description) — see utils/hashtagSuggest.js. `exclude` (comma-separated) is
+// the seller's current tag list, so already-added tags are never suggested again.
+router.get(
+  '/hashtags/suggest',
+  asyncHandler(async (req, res) => {
+    const { title, description, category } = req.query;
+    const exclude = String(req.query.exclude || '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const suggestions = suggestHashtags({ title, description, category, exclude });
+    res.json({ suggestions });
+  })
+);
+
+// Hashtag discovery/results page: every active product carrying this tag, ranked by
+// the same relevance/popularity/availability signal the marketplace tabs use (see
+// rankOnly in marketplaceRanking.js) rather than plain recency — never shows products
+// that don't actually carry the tag.
+router.get(
+  '/hashtags/:tag',
+  asyncHandler(async (req, res) => {
+    const tag = normalizeHashtag(req.params.tag);
+    if (!tag) return res.json({ tag: req.params.tag, products: [] });
+
+    const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const products = await Product.find({ tags: { $regex: `^${escaped}$`, $options: 'i' } }).populate(
+      'sellerId',
+      'verified'
+    );
+    const ranked = rankOnly(products);
+    // "Searches/clicks" trending signal — a hashtag results page load counts as one.
+    bumpHashtagStats([tag], 'searches');
+    res.json({ tag, products: ranked.map(serializeProduct) });
   })
 );
 

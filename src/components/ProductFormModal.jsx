@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import ProductImagesUploader from './ProductImagesUploader';
 import CategoryPicker from './CategoryPicker';
 import HashtagTextarea from './HashtagTextarea';
+import HashtagChipInput from './HashtagChipInput';
+import HashtagAiSuggestions from './HashtagAiSuggestions';
+import { mergeHashtags } from '../lib/hashtags';
 import { getCategoryTemplate, suggestCategories } from '../data/productCategories';
 import { IconBox, IconChevronDown, IconClose, IconPlus, IconSparkle, IconTrash } from './icons';
 
@@ -19,6 +22,7 @@ const emptyForm = {
   stock: '',
   status: 'active',
   images: [],
+  tags: [],
   b2bEnabled: false,
   freeShipping: true,
   worldwideFreeShipping: false,
@@ -99,7 +103,9 @@ export default function ProductFormModal({ open, product, loading, error, onClos
   const isEdit = Boolean(product);
   const template = form.category ? getCategoryTemplate(form.category) : null;
   const suggestions = useMemo(() => (form.category ? [] : suggestCategories(form.name, 3)), [form.name, form.category]);
-  const tags = useMemo(() => extractHashtags(form.description), [form.description]);
+  // #hashtags typed inline in the description (item 7: extra hashtags can live only in the
+  // description) — merged with the explicit chip list (form.tags) at submit time below.
+  const descriptionTags = useMemo(() => extractHashtags(form.description), [form.description]);
 
   useEffect(() => {
     if (!open) return;
@@ -119,6 +125,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       stock: String(product.stock),
       status: product.status,
       images: product.images && product.images.length > 0 ? product.images : product.img ? [product.img] : [],
+      tags: Array.isArray(product.tags) ? product.tags : [],
       b2bEnabled: Boolean(product.b2bEnabled),
       freeShipping: product.freeShipping !== false,
       worldwideFreeShipping: Boolean(product.worldwideFreeShipping),
@@ -227,7 +234,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       b2bEnabled: form.b2bEnabled,
       freeShipping: form.freeShipping,
       worldwideFreeShipping: form.freeShipping && form.worldwideFreeShipping,
-      tags,
+      tags: mergeHashtags(form.tags, descriptionTags),
       specifications,
       variantAxes: template
         ? template.variantAxes
@@ -278,16 +285,37 @@ export default function ProductFormModal({ open, product, loading, error, onClos
               rows={3}
               className={`${fieldClass} resize-none`}
             />
-            {tags.length > 0 && (
+            {descriptionTags.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                <span className="text-[11.5px] font-semibold text-ink-soft">{tags.length} tag{tags.length !== 1 ? 's' : ''}:</span>
-                {tags.map((tag) => (
+                <span className="text-[11.5px] font-semibold text-ink-soft">
+                  {descriptionTags.length} tag{descriptionTags.length !== 1 ? 's' : ''} in description:
+                </span>
+                {descriptionTags.map((tag) => (
                   <span key={tag} className="text-[11.5px] font-semibold text-green bg-green/10 rounded-full px-2.5 py-0.5">
                     #{tag}
                   </span>
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Explicit hashtag editor — separate from the description's inline #hashtag typing
+              above. Up to 3 of whichever of these tags turn out most popular show under the
+              product on its page; the rest stay reachable from the description there. */}
+          <div>
+            <label className={labelClass}>Hashtags (optional)</label>
+            <HashtagChipInput value={form.tags} onChange={(tags) => setForm((f) => ({ ...f, tags }))} fieldClass={fieldClass} />
+            <HashtagAiSuggestions
+              title={form.name}
+              category={form.category}
+              description={form.description}
+              exclude={form.tags}
+              onAdd={(tag) =>
+                setForm((f) =>
+                  f.tags.some((t) => t.toLowerCase() === tag.toLowerCase()) ? f : { ...f, tags: [...f.tags, tag] }
+                )
+              }
+            />
           </div>
 
           {/* Listing type — decides whether this is a normal single-product B2C listing (kept
