@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import ProductImagesUploader from './ProductImagesUploader';
 import CategoryPicker from './CategoryPicker';
+import HashtagTextarea from './HashtagTextarea';
 import { getCategoryTemplate, suggestCategories } from '../data/productCategories';
 import { IconBox, IconChevronDown, IconClose, IconPlus, IconSparkle, IconTrash } from './icons';
 
@@ -270,9 +271,9 @@ export default function ProductFormModal({ open, product, loading, error, onClos
 
           <div>
             <label className={labelClass}>Description (optional)</label>
-            <textarea
+            <HashtagTextarea
               value={form.description}
-              onChange={set('description')}
+              onChange={(description) => setForm((f) => ({ ...f, description }))}
               placeholder="Describe the product — materials, grade, use case… use #hashtags to help buyers find it"
               rows={3}
               className={`${fieldClass} resize-none`}

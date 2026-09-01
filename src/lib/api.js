@@ -139,6 +139,7 @@ export const catalog = {
   categories: () => request('/api/categories'),
   mobileCategories: () => request('/api/categories/mobile'),
   mobileTabs: () => request('/api/mobile-tabs'),
+  hashtags: (q) => request(`/api/hashtags?q=${encodeURIComponent(q)}`),
   products: ({ category, q } = {}) => {
     const params = new URLSearchParams();
     if (category) params.set('category', category);

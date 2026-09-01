@@ -95,6 +95,30 @@ router.get(
   })
 );
 
+// YouTube-style "#hashtag as you type" suggestions: for each tag starting with the query,
+// how many products carry it and how many distinct sellers have used it — drives the live
+// suggestion dropdown in the seller's product form (see HashtagSuggestions.jsx). Popularity
+// (product count) is real, derived straight from the public catalog, not seeded/faked.
+router.get(
+  '/hashtags',
+  asyncHandler(async (req, res) => {
+    const q = String(req.query.q || '')
+      .trim()
+      .replace(/^#/, '');
+    if (!q) return res.json({ hashtags: [] });
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const hashtags = await Product.aggregate([
+      { $unwind: '$tags' },
+      { $match: { tags: { $regex: `^${escaped}`, $options: 'i' } } },
+      { $group: { _id: { $toLower: '$tags' }, tag: { $first: '$tags' }, productCount: { $sum: 1 }, sellers: { $addToSet: '$sellerId' } } },
+      { $project: { _id: 0, tag: 1, productCount: 1, sellerCount: { $size: '$sellers' } } },
+      { $sort: { productCount: -1 } },
+      { $limit: 8 },
+    ]);
+    res.json({ hashtags });
+  })
+);
+
 router.get(
   '/spotlight/featured-section',
   asyncHandler(async (req, res) => {
