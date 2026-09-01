@@ -56,7 +56,7 @@ export default function SellerInfoSection({ seller, rating }) {
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
-          <ChatButton />
+          <ChatButton sellerId={seller.id} sellerName={seller.name} />
           <FollowButton sellerId={seller.id} initialFollowing={seller.following} />
           <Link
             to={`/store/${seller.id}`}

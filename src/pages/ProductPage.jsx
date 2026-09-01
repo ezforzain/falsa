@@ -464,7 +464,7 @@ export default function ProductPage() {
             >
               {outOfStock ? 'Out of stock' : 'Add to Cart'}
             </button>
-            <ChatButton />
+            <ChatButton sellerId={storeSeller?.id} sellerName={storeSeller?.name} />
             <ShareButton title={product.name} />
           </div>
           <div ref={ctaSentinelRef} />

@@ -47,7 +47,7 @@ function generateGuestId() {
   });
 }
 
-function getGuestId() {
+export function getGuestId() {
   let id = localStorage.getItem(GUEST_ID_KEY);
   if (!id) {
     id = generateGuestId();
