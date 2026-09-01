@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { seller } from '../../lib/api';
+import { formatPKR } from '../../data/mockData';
 import { IconSparkle } from '../../components/icons';
 
 const STATUS_STYLES = {
@@ -12,13 +13,23 @@ function statusBadgeClass(status) {
   return STATUS_STYLES[status] || 'bg-surface-muted text-text-muted';
 }
 
+// Quick-fill shortcuts, not a hard menu — the seller can still type any amount. These are
+// stated estimates shown to help the seller pick a reasonable budget, not a guarantee — there's
+// no real ad-serving/billing behind them (the app has no payment gateway); admin sees the number
+// on the request the same way it already sees the note field.
+const BUDGET_SUGGESTIONS = [
+  { amount: 300, views: '~1,000 views' },
+  { amount: 600, views: '~2,500 views' },
+  { amount: 1200, views: '~6,000 views' },
+];
+
 export default function SellerPromotions() {
   const [products, setProducts] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [form, setForm] = useState({ productId: '', spotlightType: 'featured', note: '' });
+  const [form, setForm] = useState({ productId: '', spotlightType: 'featured', budgetPkr: '', note: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
@@ -44,9 +55,12 @@ export default function SellerPromotions() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const { request } = await seller.requestPromotion(form);
+      const { request } = await seller.requestPromotion({
+        ...form,
+        budgetPkr: form.budgetPkr === '' ? undefined : Number(form.budgetPkr),
+      });
       setRequests((current) => [request, ...current]);
-      setForm({ productId: '', spotlightType: 'featured', note: '' });
+      setForm({ productId: '', spotlightType: 'featured', budgetPkr: '', note: '' });
     } catch (err) {
       setSubmitError(err.message);
     } finally {
@@ -107,6 +121,33 @@ export default function SellerPromotions() {
                   </select>
                 </div>
                 <div>
+                  <label className={labelClass}>Budget (Rs, optional)</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={form.budgetPkr}
+                    onChange={(e) => setForm((f) => ({ ...f, budgetPkr: e.target.value.replace(/[^\d]/g, '') }))}
+                    placeholder="e.g. 500"
+                    className={fieldClass}
+                  />
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {BUDGET_SUGGESTIONS.map((s) => (
+                      <button
+                        key={s.amount}
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, budgetPkr: String(s.amount) }))}
+                        className={`text-[11.5px] font-semibold px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${
+                          form.budgetPkr === String(s.amount)
+                            ? 'border-green text-green bg-green-tint'
+                            : 'border-border text-ink-soft bg-white hover:border-green/40'
+                        }`}
+                      >
+                        {formatPKR(s.amount)} → {s.views}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
                   <label className={labelClass}>Note to admin (optional)</label>
                   <textarea
                     value={form.note}
@@ -143,7 +184,9 @@ export default function SellerPromotions() {
                   <div className="min-w-0">
                     <div className="font-semibold text-[14.5px] text-ink truncate">{r.productName}</div>
                     <div className="text-xs text-text-muted capitalize">
-                      {r.spotlightType} · requested {new Date(r.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {r.spotlightType}
+                      {r.budgetPkr && <> · budget {formatPKR(r.budgetPkr)}</>}
+                      {' '}· requested {new Date(r.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </div>
                     {r.status === 'rejected' && r.rejectionReason && (
                       <div className="text-xs text-orange-text mt-1">Reason: {r.rejectionReason}</div>

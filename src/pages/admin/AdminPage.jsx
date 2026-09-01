@@ -944,6 +944,11 @@ export default function AdminPage() {
                         <div className="text-xs text-text-muted truncate">
                           {req.sellerName || 'Unknown seller'} · requesting{' '}
                           <span className="font-semibold text-ink-soft capitalize">{req.spotlightType}</span>
+                          {req.budgetPkr && (
+                            <>
+                              {' '}· budget <span className="font-semibold text-ink-soft">{formatPKR(req.budgetPkr)}</span>
+                            </>
+                          )}
                           {req.note && ` · "${req.note}"`}
                         </div>
                       </div>

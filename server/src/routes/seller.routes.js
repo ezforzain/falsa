@@ -421,9 +421,12 @@ function serializePromotionRequest(doc) {
 router.post(
   '/promotions',
   asyncHandler(async (req, res) => {
-    const { productId, spotlightType, note } = req.body;
+    const { productId, spotlightType, note, budgetPkr } = req.body;
     if (!productId || !['featured', 'sponsored'].includes(spotlightType)) {
       return res.status(400).json({ message: 'A product and promotion type are required.' });
+    }
+    if (budgetPkr !== undefined && budgetPkr !== null && (!Number.isFinite(budgetPkr) || budgetPkr <= 0)) {
+      return res.status(400).json({ message: 'Budget must be a positive number.' });
     }
     const product = await SellerProduct.findOne({ _id: productId, sellerId: req.user._id, status: 'active' });
     if (!product) return res.status(404).json({ message: 'Listing not found or not active.' });
@@ -439,6 +442,7 @@ router.post(
       productName: product.name,
       spotlightType,
       note: note || '',
+      budgetPkr: Number.isFinite(budgetPkr) && budgetPkr > 0 ? budgetPkr : null,
     });
     res.status(201).json({ request: serializePromotionRequest(request) });
   })

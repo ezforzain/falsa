@@ -10,6 +10,10 @@ const promotionRequestSchema = new mongoose.Schema(
     productName: { type: String, required: true },
     spotlightType: { type: String, enum: ['featured', 'sponsored'], required: true },
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    // How much the seller says they want to spend boosting this listing — a stated estimate the
+    // admin sees when reviewing, same trust level as `note`. Not tied to any real billing/ad
+    // spend (the app has no payment gateway); optional, defaults unset.
+    budgetPkr: { type: Number, default: null },
     note: { type: String, default: '' },
     rejectionReason: { type: String, default: null },
     reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
