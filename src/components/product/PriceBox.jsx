@@ -4,8 +4,10 @@ import { IconStar } from '../icons';
 // Amazon/Temu/Daraz-style price block: big current price, struck-through original price, and an
 // explicit "Save Rs X (Y% OFF)" callout — plus the rating + sold-count line right underneath,
 // since on those apps the two always sit together as the page's main trust/urgency signal.
-export default function PriceBox({ product, rating, reviewCount, soldCount }) {
-  const currentPrice = parsePrice(product.price);
+// priceOverride lets a selected variant's own price (see VariantPicker) take over from the
+// base product price shown here, without touching the underlying product object.
+export default function PriceBox({ product, rating, reviewCount, soldCount, priceOverride }) {
+  const currentPrice = typeof priceOverride === 'number' ? priceOverride : parsePrice(product.price);
   const discountPercent = product.discountPercent || 0;
   const originalPrice = discountPercent > 0 ? currentPrice / (1 - discountPercent / 100) : null;
 

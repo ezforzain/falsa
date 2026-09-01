@@ -24,6 +24,7 @@ import StoreCard from '../components/StoreCard';
 import ShareButton from '../components/ShareButton';
 import ChatButton from '../components/ChatButton';
 import VariantBottomSheet from '../components/VariantBottomSheet';
+import VariantPicker from '../components/product/VariantPicker';
 import FirstVisitSignupPrompt from '../components/FirstVisitSignupPrompt';
 import SectionCard from '../components/product/SectionCard';
 import QuickFacts from '../components/product/QuickFacts';
@@ -60,6 +61,7 @@ export default function ProductPage() {
   const [storeSeller, setStoreSeller] = useState(null);
   const [catalogProducts, setCatalogProducts] = useState([]);
 
+  const [selectedVariant, setSelectedVariant] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetLoading, setSheetLoading] = useState(false);
   const [sheetError, setSheetError] = useState(null);
@@ -100,6 +102,13 @@ export default function ProductPage() {
       cancelled = true;
     };
   }, [id]);
+
+  // Keep the inline VariantPicker's selection in sync with whichever product is actually loaded
+  // — resets to the first variant (or none) every time the page navigates to a different product.
+  useEffect(() => {
+    setSelectedVariant(product?.variants?.[0] || null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
 
   // Loads the Store Card once the product (and its sellerId) is known — separate from the
   // product fetch above so a slow/failed seller lookup never blocks rendering the product itself.
@@ -373,10 +382,12 @@ export default function ProductPage() {
             thumbHeightClassName="h-[56px] sm:h-[68px] lg:h-[78px]"
             fit="contain"
             badge={
-              <span className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-white/94 text-green text-[11px] sm:text-xs font-bold px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 pointer-events-none">
-                <IconTrendingUp />
-                Trending #1
-              </span>
+              product.trendingOrder != null ? (
+                <span className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-white/94 text-green text-[11px] sm:text-xs font-bold px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 pointer-events-none">
+                  <IconTrendingUp />
+                  Trending #{product.trendingOrder}
+                </span>
+              ) : null
             }
           />
         </div>
@@ -405,8 +416,18 @@ export default function ProductPage() {
 
           {/* Price — sticky-styled buy box: current/original/savings + rating + sold count */}
           <div className="bg-surface-muted/60 border border-border rounded-2xl px-5 py-5 mb-5">
-            <PriceBox product={product} rating={reviewSummary.rating} reviewCount={reviewSummary.total} soldCount={soldCount} />
+            <PriceBox
+              product={product}
+              rating={reviewSummary.rating}
+              reviewCount={reviewSummary.total}
+              soldCount={soldCount}
+              priceOverride={selectedVariant?.price}
+            />
           </div>
+
+          {/* Daraz-style pack/variant picker — visible on the page itself, not only inside the
+              Add to Cart sheet, so a buyer sees and can pick a variant before tapping anything. */}
+          <VariantPicker variants={product.variants} selected={selectedVariant} onSelect={setSelectedVariant} />
 
           {highlights.length > 0 && (
             <div className="mb-5">
@@ -415,7 +436,7 @@ export default function ProductPage() {
           )}
 
           {/* MOQ / stock / shipping / delivery quick facts */}
-          <QuickFacts product={product} outOfStock={outOfStock} />
+          <QuickFacts product={product} outOfStock={outOfStock} b2bEnabled={product.b2bEnabled} />
 
           {actionError && <p className="text-sm text-orange-text mb-3">{actionError}</p>}
 
@@ -433,7 +454,7 @@ export default function ProductPage() {
               {ordering && (
                 <span className="w-4 h-4 border-[2.5px] border-white/35 rounded-full inline-block" style={{ borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
               )}
-              {outOfStock ? 'Out of stock' : ordering ? 'Placing order…' : 'Order Now'}
+              {outOfStock ? 'Out of stock' : ordering ? (product.b2bEnabled ? 'Placing order…' : 'Placing…') : product.b2bEnabled ? 'Order Now' : 'Buy Now'}
             </button>
             <button
               type="button"
@@ -469,6 +490,7 @@ export default function ProductPage() {
       <VariantBottomSheet
         product={product}
         open={sheetOpen}
+        initialVariant={selectedVariant}
         loading={sheetLoading}
         error={sheetError}
         onClose={() => setSheetOpen(false)}
@@ -483,6 +505,7 @@ export default function ProductPage() {
           outOfStock={outOfStock}
           onOrderNow={handleOrderNow}
           onAddToCart={openQuantityModal}
+          priceOverride={selectedVariant?.price}
         />
       )}
       </main>

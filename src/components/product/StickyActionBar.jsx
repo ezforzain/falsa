@@ -8,8 +8,8 @@ const ABOVE_BOTTOM_NAV = 'calc(72px + max(env(safe-area-inset-bottom), 12px))';
 // inline buy box further up the page (see ProductPage's IntersectionObserver), so the primary
 // actions are always one tap away while browsing Description/Specs/Reviews/etc. Sits above the
 // bottom tab bar, never on top of it.
-export default function StickyActionBar({ product, ordering, outOfStock, onOrderNow, onAddToCart }) {
-  const currentPrice = parsePrice(product.price);
+export default function StickyActionBar({ product, ordering, outOfStock, onOrderNow, onAddToCart, priceOverride }) {
+  const currentPrice = typeof priceOverride === 'number' ? priceOverride : parsePrice(product.price);
   const discountPercent = product.discountPercent || 0;
   const originalPrice = discountPercent > 0 ? currentPrice / (1 - discountPercent / 100) : null;
 

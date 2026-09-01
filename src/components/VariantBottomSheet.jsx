@@ -10,7 +10,7 @@ import { IconClose } from './icons';
 // overlay, lets the buyer pick a "Color Family" option and a quantity, then confirms via a
 // sticky Buy Now footer. `onBuyNow({ variant, qty })` is left to the caller (e.g. add-to-cart +
 // navigate) so this component stays presentation-only and reusable outside ProductPage too.
-export default function VariantBottomSheet({ product, open, loading = false, error = null, onClose, onConfirm }) {
+export default function VariantBottomSheet({ product, open, initialVariant = null, loading = false, error = null, onClose, onConfirm }) {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const moqMin = parseMoqNumber(product?.moq) || 1;
   const [qty, setQty] = useState(moqMin);
@@ -18,10 +18,11 @@ export default function VariantBottomSheet({ product, open, loading = false, err
 
   useEffect(() => {
     if (open && product) {
-      setSelectedVariant(product.variants?.[0] || null);
+      setSelectedVariant(initialVariant || product.variants?.[0] || null);
       setQty(parseMoqNumber(product.moq) || 1);
       setPendingIntent(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, product]);
 
   useEffect(() => {
