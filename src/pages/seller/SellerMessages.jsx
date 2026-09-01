@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { seller } from '../../lib/api';
-import { loadOrSeedConversations, saveConversations } from '../../lib/sellerMessagesStore';
+import { loadOrSeedConversations, sendSellerMessage, markSellerRead, MESSAGES_UPDATED_EVENT } from '../../lib/sellerMessagesStore';
 import { IconChevronLeft, IconMessageCircle } from '../../components/icons';
 
 function formatTime(at) {
@@ -17,9 +17,6 @@ export default function SellerMessages() {
   const [activeId, setActiveId] = useState(null);
   const [draft, setDraft] = useState('');
   const bottomRef = useRef(null);
-  // Guards the persistence effect below from firing on the initial (already-persisted) load —
-  // only writes back to storage once the seller actually changes something.
-  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -29,19 +26,15 @@ export default function SellerMessages() {
         const names = res.customers.map((c) => c.buyerCompany);
         setConversations(loadOrSeedConversations(user.id, names));
       })
-      .catch(() => setConversations(loadOrSeedConversations(user.id)))
-      .finally(() => {
-        hasLoadedRef.current = true;
-      });
+      .catch(() => setConversations(loadOrSeedConversations(user.id)));
   }, [user?.id]);
 
-  // Persisting here (rather than inline in the state updaters below) keeps the localStorage
-  // write + cross-component event dispatch out of the render phase, where React can invoke a
-  // state updater more than once and warn about setState-during-render in SellerLayout.
   useEffect(() => {
-    if (!hasLoadedRef.current) return;
-    saveConversations(user.id, conversations);
-  }, [user?.id, conversations]);
+    if (!user?.id) return;
+    const refresh = () => setConversations(loadOrSeedConversations(user.id));
+    window.addEventListener(MESSAGES_UPDATED_EVENT, refresh);
+    return () => window.removeEventListener(MESSAGES_UPDATED_EVENT, refresh);
+  }, [user?.id]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'nearest' });
@@ -51,14 +44,13 @@ export default function SellerMessages() {
 
   const openConversation = (id) => {
     setActiveId(id);
-    setConversations((current) => current.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
+    markSellerRead(id);
   };
 
   const sendMessage = () => {
     const text = draft.trim();
     if (!text || !active) return;
-    const message = { id: `${active.id}_${Date.now()}`, from: 'seller', text, at: Date.now() };
-    setConversations((current) => current.map((c) => (c.id === active.id ? { ...c, messages: [...c.messages, message] } : c)));
+    sendSellerMessage(active.id, text);
     setDraft('');
   };
 

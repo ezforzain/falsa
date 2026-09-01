@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getGuestId } from '../lib/api';
-import { getOrCreateConversation, loadConversations, saveConversations } from '../lib/buyerMessagesStore';
+import { getOrCreateConversation, loadConversations, sendBuyerMessage, MESSAGES_UPDATED_EVENT } from '../lib/buyerMessagesStore';
 import { IconChevronLeft, IconMessageCircle } from '../components/icons';
 
 function formatTime(at) {
@@ -17,33 +17,32 @@ export default function MessengerPage() {
   const { user } = useAuth();
   const location = useLocation();
   const buyerId = user?.id || getGuestId();
+  const buyerName = user?.companyName || 'Guest buyer';
 
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [draft, setDraft] = useState('');
   const bottomRef = useRef(null);
-  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     const targetSeller = location.state?.sellerId ? { id: location.state.sellerId, name: location.state.sellerName } : null;
     if (targetSeller) {
-      const { conversation, conversations: all } = getOrCreateConversation(buyerId, targetSeller);
+      const { conversation, conversations: all } = getOrCreateConversation(buyerId, targetSeller, buyerName);
       setConversations(all);
       setActiveId(conversation.id);
     } else {
       setConversations(loadConversations(buyerId));
     }
-    hasLoadedRef.current = true;
     // Only re-run when the buyer or the incoming seller target actually changes — not on every
-    // conversations update, which would otherwise re-seed/re-select on our own writes below.
+    // conversations update.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buyerId, location.state?.sellerId]);
 
   useEffect(() => {
-    if (!hasLoadedRef.current) return;
-    saveConversations(buyerId, conversations);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversations]);
+    const refresh = () => setConversations(loadConversations(buyerId));
+    window.addEventListener(MESSAGES_UPDATED_EVENT, refresh);
+    return () => window.removeEventListener(MESSAGES_UPDATED_EVENT, refresh);
+  }, [buyerId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'nearest' });
@@ -54,8 +53,7 @@ export default function MessengerPage() {
   const sendMessage = () => {
     const text = draft.trim();
     if (!text || !active) return;
-    const message = { id: `${active.id}_${Date.now()}`, from: 'buyer', text, at: Date.now() };
-    setConversations((current) => current.map((c) => (c.id === active.id ? { ...c, messages: [...c.messages, message] } : c)));
+    sendBuyerMessage(active.id, text);
     setDraft('');
   };
 
