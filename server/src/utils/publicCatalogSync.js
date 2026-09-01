@@ -80,6 +80,7 @@ export async function syncSellerProductToCatalog(sellerProduct, ownerUser) {
         stock: v.stock,
       })),
       shipping: sellerProduct.shipping || {},
+      priceTiers: Array.isArray(sellerProduct.priceTiers) ? sellerProduct.priceTiers : [],
     },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );

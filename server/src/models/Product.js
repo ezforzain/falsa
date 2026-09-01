@@ -20,6 +20,13 @@ const shippingSchema = new mongoose.Schema(
 
 const specSchema = new mongoose.Schema({ label: String, value: String }, { _id: false });
 
+// B2B-only bulk/volume pricing the seller entered — maxQty null means "and above". Entirely
+// optional, only meaningful when b2bEnabled is true.
+const priceTierSchema = new mongoose.Schema(
+  { minQty: Number, maxQty: { type: Number, default: null }, price: Number },
+  { _id: false }
+);
+
 const reviewSchema = new mongoose.Schema(
   {
     author: String,
@@ -88,6 +95,7 @@ const productSchema = new mongoose.Schema(
     // #hashtags from the seller's description, surfaced for search/discovery.
     tags: { type: [String], default: [] },
     shipping: { type: shippingSchema, default: () => ({}) },
+    priceTiers: { type: [priceTierSchema], default: [] },
   },
   { timestamps: true }
 );

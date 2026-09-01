@@ -44,6 +44,12 @@ const sellerProductSchema = new mongoose.Schema(
       // Only meaningful when freeShipping is false.
       shippingFee: { type: Number, default: null },
     },
+    // B2B-only bulk/volume pricing — entirely optional, shown in the seller form's B2B section
+    // (see ProductFormModal.jsx) when b2bEnabled is set. maxQty null means "and above".
+    priceTiers: {
+      type: [{ minQty: Number, maxQty: { type: Number, default: null }, price: Number }],
+      default: [],
+    },
   },
   { timestamps: true }
 );

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import ProductImagesUploader from './ProductImagesUploader';
 import CategoryPicker from './CategoryPicker';
 import { getCategoryTemplate, suggestCategories } from '../data/productCategories';
-import { IconClose } from './icons';
+import { IconBox, IconChevronDown, IconClose, IconPlus, IconSparkle, IconTrash } from './icons';
 
 const MAX_IMAGES = 6;
 const DISPATCH_OPTIONS = ['Same day', '1-2 days', '3-5 days', '1 week+'];
@@ -25,6 +25,7 @@ const emptyForm = {
   variantAxes: {},
   variants: [],
   shipping: { weightKg: '', lengthCm: '', widthCm: '', heightCm: '', dispatchTime: '', shipsFrom: '', shippingFee: '' },
+  priceTiers: [],
 };
 
 function extractHashtags(text) {
@@ -72,8 +73,28 @@ function cartesianVariants(axesMap, template, basePrice) {
   return combos.map((parts) => ({ name: parts.join(' / '), price: basePrice || '', stock: '' }));
 }
 
+// Collapsible section wrapper shared by Product details/Variants, Shipping, and the B2B block —
+// a click on the header toggles it, so a seller can fold away whichever parts they aren't
+// touching right now instead of scrolling one long flat form.
+function Section({ title, open, onToggle, children }) {
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between gap-2 px-3.5 py-3 text-left cursor-pointer bg-surface-muted/60 hover:bg-surface-muted transition-colors"
+      >
+        <span className="text-[13px] font-bold text-ink">{title}</span>
+        <IconChevronDown width="14" height="14" className={`text-text-muted shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && <div className="p-3.5 flex flex-col gap-3">{children}</div>}
+    </div>
+  );
+}
+
 export default function ProductFormModal({ open, product, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
+  const [openSections, setOpenSections] = useState({ details: true, shipping: true, b2b: true });
   const isEdit = Boolean(product);
   const template = form.category ? getCategoryTemplate(form.category) : null;
   const suggestions = useMemo(() => (form.category ? [] : suggestCategories(form.name, 3)), [form.name, form.category]);
@@ -112,6 +133,11 @@ export default function ProductFormModal({ open, product, loading, error, onClos
         shipsFrom: product.shipping?.shipsFrom || '',
         shippingFee: product.shipping?.shippingFee ?? '',
       },
+      priceTiers: (product.priceTiers || []).map((t) => ({
+        minQty: t.minQty ?? '',
+        maxQty: t.maxQty ?? '',
+        price: t.price ?? '',
+      })),
     });
   }, [open, product]);
 
@@ -148,6 +174,15 @@ export default function ProductFormModal({ open, product, loading, error, onClos
   const setVariantField = (index, key) => (e) =>
     setForm((f) => ({ ...f, variants: f.variants.map((v, i) => (i === index ? { ...v, [key]: e.target.value } : v)) }));
   const setShippingField = (key) => (e) => setForm((f) => ({ ...f, shipping: { ...f.shipping, [key]: e.target.value } }));
+  const toggleSection = (key) => setOpenSections((s) => ({ ...s, [key]: !s[key] }));
+
+  const setListingType = (b2bEnabled) => setForm((f) => ({ ...f, b2bEnabled }));
+
+  const addPriceTier = () =>
+    setForm((f) => ({ ...f, priceTiers: [...f.priceTiers, { minQty: '', maxQty: '', price: '' }] }));
+  const removePriceTier = (index) => setForm((f) => ({ ...f, priceTiers: f.priceTiers.filter((_, i) => i !== index) }));
+  const setPriceTierField = (index, key) => (e) =>
+    setForm((f) => ({ ...f, priceTiers: f.priceTiers.map((t, i) => (i === index ? { ...t, [key]: e.target.value } : t)) }));
 
   const submit = () => {
     const specifications = template
@@ -168,6 +203,14 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       shipsFrom: form.shipping.shipsFrom.trim(),
       shippingFee: form.freeShipping || form.shipping.shippingFee === '' ? null : Number(form.shipping.shippingFee),
     };
+
+    // Skippable — only rows where the seller actually filled in a min quantity and a price are
+    // kept; a half-filled row is dropped rather than saved as a broken tier.
+    const priceTiers = form.b2bEnabled
+      ? form.priceTiers
+          .filter((t) => t.minQty !== '' && t.price !== '')
+          .map((t) => ({ minQty: Number(t.minQty), maxQty: t.maxQty === '' ? null : Number(t.maxQty), price: Number(t.price) }))
+      : [];
 
     onSubmit({
       name: form.name.trim(),
@@ -192,6 +235,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
         : [],
       variants,
       shipping,
+      priceTiers,
     });
   };
 
@@ -216,6 +260,10 @@ export default function ProductFormModal({ open, product, loading, error, onClos
 
         <div className="flex flex-col gap-4">
           <div>
+            <p className={labelClass}>Basic Info</p>
+          </div>
+
+          <div>
             <label className={labelClass}>Product name</label>
             <input type="text" value={form.name} onChange={set('name')} placeholder="e.g. Cotton Twill Fabric 280 GSM" className={fieldClass} />
           </div>
@@ -239,6 +287,43 @@ export default function ProductFormModal({ open, product, loading, error, onClos
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Listing type — decides whether this is a normal single-product B2C listing (kept
+              exactly as it's always worked, variants included) or a B2B listing, which trades the
+              consumer-facing variant matrix emphasis for the optional bulk-pricing section below.
+              This drives the same b2bEnabled flag the B2B marketplace tab already reads — just
+              surfaced as a clear choice instead of a checkbox buried under Shipping. */}
+          <div>
+            <label className={labelClass}>Listing type</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setListingType(false)}
+                className={`flex items-center gap-2.5 px-4 py-3 border-[1.5px] rounded-xl cursor-pointer transition-colors text-left ${
+                  !form.b2bEnabled ? 'border-green bg-green-tint' : 'border-border hover:border-border-strong'
+                }`}
+              >
+                <IconSparkle width="16" height="16" className={!form.b2bEnabled ? 'text-green' : 'text-text-muted'} />
+                <span className="min-w-0">
+                  <span className={`block text-[13.5px] font-semibold ${!form.b2bEnabled ? 'text-green' : 'text-ink-soft'}`}>Spotlight (B2C)</span>
+                  <span className="block text-[11px] text-text-muted">Single product, buyer-facing</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setListingType(true)}
+                className={`flex items-center gap-2.5 px-4 py-3 border-[1.5px] rounded-xl cursor-pointer transition-colors text-left ${
+                  form.b2bEnabled ? 'border-orange bg-orange-tint' : 'border-border hover:border-border-strong'
+                }`}
+              >
+                <IconBox width="16" height="16" className={form.b2bEnabled ? 'text-orange-text' : 'text-text-muted'} />
+                <span className="min-w-0">
+                  <span className={`block text-[13.5px] font-semibold ${form.b2bEnabled ? 'text-orange-text' : 'text-ink-soft'}`}>B2B</span>
+                  <span className="block text-[11px] text-text-muted">Bulk orders, wholesale</span>
+                </span>
+              </button>
+            </div>
           </div>
 
           <div>
@@ -295,81 +380,80 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             <input type="text" value={form.sku} onChange={set('sku')} placeholder="Auto-generated if left blank" className={fieldClass} />
           </div>
 
-          {template && template.attributes.length > 0 && (
-            <div className="border border-border rounded-lg p-3.5">
-              <p className={sectionTitleClass}>Product details</p>
-              <div className="flex flex-col gap-3">
-                {template.attributes.map((attr) => (
-                  <div key={attr.key}>
-                    <label className={labelClass}>{attr.label} (optional)</label>
-                    <input
-                      type="text"
-                      value={form.specifications[attr.key] || ''}
-                      onChange={setSpec(attr.key)}
-                      placeholder={attr.placeholder}
-                      className={fieldClass}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <div>
+            <label className={labelClass}>Photos (optional)</label>
+            <ProductImagesUploader images={form.images} onChange={setImages} max={MAX_IMAGES} />
+          </div>
 
-          {template && template.variantAxes.length > 0 && (
-            <div className="border border-border rounded-lg p-3.5">
-              <p className={sectionTitleClass}>Variants (optional)</p>
-              <div className="flex flex-col gap-3">
-                {template.variantAxes.map((axis) => (
-                  <div key={axis.key}>
-                    <label className={labelClass}>{axis.label} options</label>
-                    <input
-                      type="text"
-                      value={form.variantAxes[axis.key] || ''}
-                      onChange={setAxis(axis.key)}
-                      placeholder={axis.placeholder}
-                      className={fieldClass}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              {form.variants.length > 0 && (
-                <div className="mt-3.5 flex flex-col gap-2">
-                  <p className="text-[11.5px] font-semibold text-ink-soft">Fill in stock for each variant you're offering:</p>
-                  {form.variants.map((v, i) => (
-                    <div key={v.name} className="grid grid-cols-[1fr_90px_80px] gap-2 items-center">
-                      <span className="text-[12.5px] text-ink truncate" title={v.name}>
-                        {v.name}
-                      </span>
+          {template && (template.attributes.length > 0 || template.variantAxes.length > 0) && (
+            <Section title="Product details & Variants" open={openSections.details} onToggle={() => toggleSection('details')}>
+              {template.attributes.length > 0 && (
+                <div className="flex flex-col gap-3">
+                  {template.attributes.map((attr) => (
+                    <div key={attr.key}>
+                      <label className={labelClass}>{attr.label} (optional)</label>
                       <input
                         type="text"
-                        inputMode="numeric"
-                        value={v.price}
-                        onChange={setVariantField(i, 'price')}
-                        placeholder={form.price || 'Price'}
-                        className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
-                      />
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={v.stock}
-                        onChange={setVariantField(i, 'stock')}
-                        placeholder="Stock"
-                        className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                        value={form.specifications[attr.key] || ''}
+                        onChange={setSpec(attr.key)}
+                        placeholder={attr.placeholder}
+                        className={fieldClass}
                       />
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+
+              {template.variantAxes.length > 0 && (
+                <div className="flex flex-col gap-3">
+                  <p className={sectionTitleClass}>Variants (optional)</p>
+                  {template.variantAxes.map((axis) => (
+                    <div key={axis.key}>
+                      <label className={labelClass}>{axis.label} options</label>
+                      <input
+                        type="text"
+                        value={form.variantAxes[axis.key] || ''}
+                        onChange={setAxis(axis.key)}
+                        placeholder={axis.placeholder}
+                        className={fieldClass}
+                      />
+                    </div>
+                  ))}
+
+                  {form.variants.length > 0 && (
+                    <div className="mt-1 flex flex-col gap-2">
+                      <p className="text-[11.5px] font-semibold text-ink-soft">Fill in stock for each variant you're offering:</p>
+                      {form.variants.map((v, i) => (
+                        <div key={v.name} className="grid grid-cols-[1fr_90px_80px] gap-2 items-center">
+                          <span className="text-[12.5px] text-ink truncate" title={v.name}>
+                            {v.name}
+                          </span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={v.price}
+                            onChange={setVariantField(i, 'price')}
+                            placeholder={form.price || 'Price'}
+                            className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                          />
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={v.stock}
+                            onChange={setVariantField(i, 'stock')}
+                            placeholder="Stock"
+                            className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </Section>
           )}
 
-          <div className="flex flex-col gap-2.5 border border-border rounded-lg p-3.5">
-            <p className={sectionTitleClass}>Shipping information</p>
-            <label className="flex items-center gap-2.5 text-[13.5px] font-medium text-ink cursor-pointer">
-              <input type="checkbox" checked={form.b2bEnabled} onChange={toggle('b2bEnabled')} className="w-4 h-4 accent-green cursor-pointer" />
-              List this product on the B2B marketplace
-            </label>
+          <Section title="Shipping" open={openSections.shipping} onToggle={() => toggleSection('shipping')}>
             <label className="flex items-center gap-2.5 text-[13.5px] font-medium text-ink cursor-pointer">
               <input type="checkbox" checked={form.freeShipping} onChange={toggle('freeShipping')} className="w-4 h-4 accent-green cursor-pointer" />
               Free shipping
@@ -399,7 +483,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3 mt-1">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelClass}>Weight (kg)</label>
                 <input
@@ -443,12 +527,72 @@ export default function ProductFormModal({ open, product, loading, error, onClos
                 ))}
               </select>
             </div>
-          </div>
+          </Section>
 
-          <div>
-            <label className={labelClass}>Photos (optional)</label>
-            <ProductImagesUploader images={form.images} onChange={setImages} max={MAX_IMAGES} />
-          </div>
+          {form.b2bEnabled && (
+            <Section title="B2B Information" open={openSections.b2b} onToggle={() => toggleSection('b2b')}>
+              <p className="text-[12px] text-text-muted -mt-1">
+                Everything here is optional — buyers already see your MOQ and base price. Add bulk pricing only if you want to
+                offer a discount at higher quantities.
+              </p>
+
+              {form.priceTiers.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-[1fr_1fr_1fr_28px] gap-2 text-[11px] font-semibold text-text-muted px-0.5">
+                    <span>Min qty</span>
+                    <span>Max qty</span>
+                    <span>Price/unit (Rs)</span>
+                    <span />
+                  </div>
+                  {form.priceTiers.map((t, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_1fr_1fr_28px] gap-2 items-center">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={t.minQty}
+                        onChange={setPriceTierField(i, 'minQty')}
+                        placeholder="100"
+                        className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                      />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={t.maxQty}
+                        onChange={setPriceTierField(i, 'maxQty')}
+                        placeholder="and above"
+                        className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                      />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={t.price}
+                        onChange={setPriceTierField(i, 'price')}
+                        placeholder="600"
+                        className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePriceTier(i)}
+                        aria-label="Remove price tier"
+                        className="cursor-pointer flex items-center justify-center text-text-muted hover:text-orange-text p-1"
+                      >
+                        <IconTrash width="13" height="13" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={addPriceTier}
+                className="self-start flex items-center gap-1.5 text-[12.5px] font-semibold text-green hover:underline cursor-pointer"
+              >
+                <IconPlus width="13" height="13" />
+                Add price tier
+              </button>
+            </Section>
+          )}
         </div>
 
         <div className="flex gap-3 mt-6">

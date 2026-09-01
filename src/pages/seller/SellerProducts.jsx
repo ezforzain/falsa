@@ -60,7 +60,14 @@ export default function SellerProducts() {
         await seller.updateProduct(editingProduct.id, payload);
         showToast('Listing updated successfully');
       } else {
-        await seller.createProduct(payload);
+        const { product: created } = await seller.createProduct(payload);
+        // POST /products' field allowlist doesn't know about priceTiers yet (B2B bulk pricing —
+        // see ProductFormModal.jsx) — the base listing is created exactly as before, then this
+        // one extra PATCH (already a generic passthrough) adds the tiers. A no-op when there
+        // aren't any, so a normal B2C listing still creates in a single request.
+        if (payload.priceTiers?.length > 0) {
+          await seller.updateProduct(created.id, { priceTiers: payload.priceTiers });
+        }
         showToast('Listing added successfully');
       }
       setFormOpen(false);
