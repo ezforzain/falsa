@@ -287,6 +287,11 @@ export default function ProductPage() {
   const reviews = productReviews(product);
   const soldCount = productSoldCount(product);
   const highlights = productHighlights(product);
+  // Up to 3 most-relevant/trending hashtags (server-ranked, see topTagsFor in
+  // server/src/utils/hashtags.js) shown right under the title; any of the product's other
+  // tags stay reachable from the description instead of cluttering the top of the page.
+  const topTags = product.topTags || [];
+  const extraTags = (product.tags || []).filter((t) => !topTags.some((top) => top.toLowerCase() === t.toLowerCase()));
 
   const sameCategory = catalogProducts.filter((p) => p.id !== product.id && p.category === product.category);
   const relatedProducts = sameCategory.slice(0, 4);
@@ -308,6 +313,22 @@ export default function ProductPage() {
         <div className="flex flex-col gap-6 sm:gap-8">
           <SectionCard title="Product Description">
             <p className="text-[14.5px] text-text leading-relaxed m-0">{productDescription(product)}</p>
+            {/* Any hashtags beyond the top 3 shown under the title stay reachable here,
+                instead of cluttering the top of the page — still clickable/discoverable. */}
+            {extraTags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 mt-4 pt-4 border-t border-border">
+                <span className="text-[12px] font-semibold text-ink-soft">Tags:</span>
+                {extraTags.map((tag) => (
+                  <Link
+                    key={tag}
+                    to={`/hashtag/${encodeURIComponent(tag)}`}
+                    className="text-[12px] font-semibold text-green bg-green/10 hover:bg-green/15 rounded-full px-2.5 py-0.5 no-underline transition-colors"
+                  >
+                    #{tag}
+                  </Link>
+                ))}
+              </div>
+            )}
           </SectionCard>
           <ProductFeatures features={productFeatures(product)} />
           <CertificationsSection items={certifications} />
@@ -417,9 +438,25 @@ export default function ProductPage() {
             </div>
           )}
 
-          <h1 className="font-display text-[26px] sm:text-[32px] lg:text-[36px] font-bold m-0 mb-4 tracking-tight leading-[1.14] text-balance">
+          <h1 className="font-display text-[26px] sm:text-[32px] lg:text-[36px] font-bold m-0 mb-2 tracking-tight leading-[1.14] text-balance">
             {product.name}
           </h1>
+
+          {/* YouTube-style hashtag row — max 3, clickable, only the tags currently ranked
+              most relevant/trending for this product (see topTags above). */}
+          {topTags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              {topTags.map((tag) => (
+                <Link
+                  key={tag}
+                  to={`/hashtag/${encodeURIComponent(tag)}`}
+                  className="text-[12.5px] font-semibold text-green bg-green-tint hover:bg-green/15 rounded-full px-3 py-1 no-underline transition-colors"
+                >
+                  #{tag}
+                </Link>
+              ))}
+            </div>
+          )}
 
           {storeSeller ? (
             <StoreCard rating={product.rating} seller={storeSeller} />

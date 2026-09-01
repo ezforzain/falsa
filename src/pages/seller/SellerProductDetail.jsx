@@ -6,7 +6,7 @@ import ProductFormModal from '../../components/ProductFormModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import Toast from '../../components/Toast';
 import ImageGallery from '../../components/ImageGallery';
-import { IconArrowRight, IconBox, IconEdit, IconTrash } from '../../components/icons';
+import { IconArrowRight, IconBox, IconEdit, IconEye, IconTrash } from '../../components/icons';
 
 export default function SellerProductDetail() {
   const { id } = useParams();
@@ -186,10 +186,16 @@ export default function SellerProductDetail() {
                 label: 'Created',
                 value: new Date(product.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
               },
+              { label: 'Views', value: (product.views || 0).toLocaleString('en-US'), icon: true },
             ].map((row) => (
               <div key={row.label} className="bg-white border border-border rounded-xl px-4 py-3">
                 <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-1">{row.label}</div>
-                <div className={`text-sm font-semibold ${row.label === 'Stock' && product.stock === 0 ? 'text-orange-text' : 'text-ink'}`}>
+                <div
+                  className={`flex items-center gap-1.5 text-sm font-semibold ${
+                    row.label === 'Stock' && product.stock === 0 ? 'text-orange-text' : 'text-ink'
+                  }`}
+                >
+                  {row.icon && <IconEye width="14" height="14" className="text-text-muted" />}
                   {row.value}
                 </div>
               </div>
