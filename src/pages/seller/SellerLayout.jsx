@@ -40,12 +40,14 @@ export default function SellerLayout() {
   const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
-    if (!user?.id) return;
-    const refresh = () => setUnreadMessages(totalUnread(loadConversations(user.id)));
+    // Conversations are keyed by the public Seller/store id (same one buyers see on the product
+    // page), not this account's own User id — those are two different records server-side.
+    if (!user?.sellerId) return;
+    const refresh = () => setUnreadMessages(totalUnread(loadConversations(user.sellerId)));
     refresh();
     window.addEventListener(MESSAGES_UPDATED_EVENT, refresh);
     return () => window.removeEventListener(MESSAGES_UPDATED_EVENT, refresh);
-  }, [user?.id]);
+  }, [user?.sellerId]);
 
   if (status === 'loading') {
     return (

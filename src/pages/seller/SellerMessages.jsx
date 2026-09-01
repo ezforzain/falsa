@@ -18,23 +18,27 @@ export default function SellerMessages() {
   const [draft, setDraft] = useState('');
   const bottomRef = useRef(null);
 
+  // Conversations are keyed by the public Seller/store id (same one buyers see on the product
+  // page and message via ChatButton), not this account's own User id — those are two different
+  // records server-side (see User.sellerId), and using the wrong one meant a buyer's message
+  // never showed up here.
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.sellerId) return;
     seller
       .customers()
       .then((res) => {
         const names = res.customers.map((c) => c.buyerCompany);
-        setConversations(loadOrSeedConversations(user.id, names));
+        setConversations(loadOrSeedConversations(user.sellerId, names));
       })
-      .catch(() => setConversations(loadOrSeedConversations(user.id)));
-  }, [user?.id]);
+      .catch(() => setConversations(loadOrSeedConversations(user.sellerId)));
+  }, [user?.sellerId]);
 
   useEffect(() => {
-    if (!user?.id) return;
-    const refresh = () => setConversations(loadOrSeedConversations(user.id));
+    if (!user?.sellerId) return;
+    const refresh = () => setConversations(loadOrSeedConversations(user.sellerId));
     window.addEventListener(MESSAGES_UPDATED_EVENT, refresh);
     return () => window.removeEventListener(MESSAGES_UPDATED_EVENT, refresh);
-  }, [user?.id]);
+  }, [user?.sellerId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'nearest' });
