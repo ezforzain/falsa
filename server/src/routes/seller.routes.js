@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { nanoid } from 'nanoid';
 import { SellerProduct } from '../models/SellerProduct.js';
+import { Product } from '../models/Product.js';
 import { SellerOrder, ORDER_STATUSES } from '../models/SellerOrder.js';
 import { Seller } from '../models/Seller.js';
 import { PromotionRequest } from '../models/PromotionRequest.js';
@@ -9,6 +10,7 @@ import { Conversation } from '../models/Conversation.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { syncSellerProductToCatalog, removeSellerProductFromCatalog } from '../utils/publicCatalogSync.js';
+import { normalizeHashtagList } from '../utils/hashtags.js';
 
 const BANK_FIELDS = ['bankName', 'accountTitle', 'accountNumber', 'iban'];
 
@@ -23,9 +25,13 @@ function generateSku(category) {
   return `${prefix}-${suffix}`;
 }
 
-function serializeProduct(doc) {
+// `views` isn't a SellerProduct field — it only exists on the public catalog Product doc that
+// this listing syncs to (see publicCatalogSync.js, which shares the same _id), and only once the
+// listing is active and has actually synced. `views` defaults to 0 for anything not yet published
+// (drafts) so the seller portal never shows "undefined" views.
+function serializeProduct(doc, views = 0) {
   const p = doc.toObject();
-  return { ...p, id: p._id };
+  return { ...p, id: p._id, views };
 }
 
 function serializeOrder(doc) {
@@ -59,7 +65,11 @@ router.get(
   '/products',
   asyncHandler(async (req, res) => {
     const products = await SellerProduct.find({ sellerId: req.user._id }).sort({ createdAt: -1 });
-    res.json({ products: products.map(serializeProduct) });
+    // Product's `_id` is a plain string (see the model comment), not an ObjectId, so the ids must
+    // be stringified before querying it — an ObjectId $in wouldn't match.
+    const catalogViews = await Product.find({ _id: { $in: products.map((p) => p._id.toString()) } }, 'views').lean();
+    const viewsById = new Map(catalogViews.map((p) => [p._id, p.views || 0]));
+    res.json({ products: products.map((p) => serializeProduct(p, viewsById.get(p._id.toString()) || 0)) });
   })
 );
 
@@ -68,7 +78,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const product = await SellerProduct.findOne({ _id: req.params.id, sellerId: req.user._id });
     if (!product) return res.status(404).json({ message: 'Listing not found.' });
-    res.json({ product: serializeProduct(product) });
+    const catalogProduct = await Product.findById(product._id.toString(), 'views').lean();
+    res.json({ product: serializeProduct(product, catalogProduct?.views || 0) });
   })
 );
 
@@ -139,7 +150,9 @@ router.post(
       b2bEnabled: Boolean(b2bEnabled),
       freeShipping: freeShipping !== false,
       worldwideFreeShipping: Boolean(worldwideFreeShipping),
-      tags: Array.isArray(tags) ? tags : [],
+      // Normalized + de-duped server-side too (the chip input already does this
+      // client-side) so the backend never trusts unnormalized/duplicate hashtags.
+      tags: normalizeHashtagList(tags),
       specifications: Array.isArray(specifications) ? specifications : [],
       variantAxes: Array.isArray(variantAxes) ? variantAxes : [],
       variants: Array.isArray(variants) ? variants : [],
@@ -187,10 +200,12 @@ router.patch(
       patch.images = patch.images.length > 0 ? patch.images : product.images;
       patch.img = patch.images[0];
     }
+    if (patch.tags !== undefined) patch.tags = normalizeHashtagList(patch.tags);
     product.set(patch);
     await product.save();
     await syncSellerProductToCatalog(product, req.user);
-    res.json({ product: serializeProduct(product) });
+    const catalogProduct = await Product.findById(product._id.toString(), 'views').lean();
+    res.json({ product: serializeProduct(product, catalogProduct?.views || 0) });
   })
 );
 

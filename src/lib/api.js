@@ -140,6 +140,15 @@ export const catalog = {
   mobileCategories: () => request('/api/categories/mobile'),
   mobileTabs: () => request('/api/mobile-tabs'),
   hashtags: (q) => request(`/api/hashtags?q=${encodeURIComponent(q)}`),
+  hashtagProducts: (tag) => request(`/api/hashtags/${encodeURIComponent(tag)}`),
+  suggestHashtags: ({ title, category, description, exclude } = {}) => {
+    const params = new URLSearchParams();
+    if (title) params.set('title', title);
+    if (category) params.set('category', category);
+    if (description) params.set('description', description);
+    if (exclude?.length) params.set('exclude', exclude.join(','));
+    return request(`/api/hashtags/suggest?${params.toString()}`);
+  },
   products: ({ category, q } = {}) => {
     const params = new URLSearchParams();
     if (category) params.set('category', category);
