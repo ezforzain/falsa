@@ -19,16 +19,24 @@ import {
   IconAlertCircle,
   IconBox,
   IconChevronDown,
-  IconClose,
+  IconChevronRight,
+  IconClock,
   IconEdit,
-  IconFile,
+  IconGrid,
+  IconHome,
   IconLayers,
   IconLogout,
   IconPlus,
   IconReceipt,
+  IconSettings,
   IconShield,
+  IconSliders,
   IconSparkle,
+  IconStore,
   IconTrash,
+  IconTrendingUp,
+  IconUser,
+  IconWallet,
 } from '../../components/icons';
 import logoMark from '../../assets/logo-mark.png';
 
@@ -58,7 +66,7 @@ const FILTER_TYPE_LABELS = {
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
+    <div className="bg-surface border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
       <div className="font-semibold text-ink mb-1">{label}</div>
       {payload.map((p) => (
         <div key={p.dataKey} className="text-text-muted">
@@ -730,7 +738,7 @@ export default function AdminPage() {
   if (user.role !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream px-4">
-        <div className="max-w-[420px] text-center bg-white border border-border rounded-2xl shadow-xl p-8">
+        <div className="max-w-[420px] text-center bg-surface border border-border rounded-2xl shadow-xl p-8">
           <span className="w-14 h-14 rounded-full bg-orange-tint inline-flex items-center justify-center mb-5">
             <IconAlertCircle width="26" height="26" className="text-orange-text" />
           </span>
@@ -780,8 +788,8 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-cream font-sans text-ink flex flex-col">
-      <header className="bg-green-deep text-white sticky top-0 z-40">
-        <div className="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4 h-16">
+      <header className="bg-green-deep text-white sticky top-0 z-40 shadow-[0_1px_0_rgba(255,255,255,0.06)]">
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4 h-16">
           <Link to="/" className="flex items-center gap-2 no-underline shrink-0">
             <img src={logoMark} alt="" className="w-9 h-9 object-contain" />
             <span className="hidden sm:flex flex-col leading-none">
@@ -812,26 +820,29 @@ export default function AdminPage() {
       </header>
 
       <main className="flex-1 max-w-[1100px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-up">
-        <div className="flex items-center gap-2 mb-8 border-b border-border overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1 mb-8 border-b border-border overflow-x-auto no-scrollbar">
           {[
-            { key: 'overview', label: 'Overview' },
-            { key: 'products', label: 'Products' },
-            { key: 'orders', label: 'Orders' },
-            { key: 'stores', label: 'Verified Stores' },
-            { key: 'users', label: 'Users' },
-            { key: 'categories', label: 'Categories' },
-            { key: 'filters', label: 'Filters' },
-            { key: 'reports', label: 'Reports' },
-            { key: 'settings', label: 'Settings' },
+            { key: 'overview', label: 'Overview', icon: IconHome },
+            { key: 'products', label: 'Products', icon: IconBox },
+            { key: 'orders', label: 'Orders', icon: IconReceipt },
+            { key: 'stores', label: 'Verified Stores', icon: IconStore },
+            { key: 'users', label: 'Users', icon: IconUser },
+            { key: 'categories', label: 'Categories', icon: IconGrid },
+            { key: 'filters', label: 'Filters', icon: IconSliders },
+            { key: 'reports', label: 'Reports', icon: IconTrendingUp },
+            { key: 'settings', label: 'Settings', icon: IconSettings },
           ].map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`cursor-pointer whitespace-nowrap text-sm font-semibold px-1 pb-3 -mb-px border-b-2 transition-colors ${
-                activeTab === tab.key ? 'text-green border-green' : 'text-text-muted border-transparent hover:text-ink'
+              className={`cursor-pointer whitespace-nowrap flex items-center gap-1.5 text-sm font-semibold px-3 py-2.5 -mb-px rounded-t-lg border-b-2 transition-colors ${
+                activeTab === tab.key
+                  ? 'text-green border-green bg-green-tint/60'
+                  : 'text-text-muted border-transparent hover:text-ink hover:bg-surface-muted'
               }`}
             >
+              <tab.icon width="15" height="15" />
               {tab.label}
             </button>
           ))}
@@ -847,26 +858,32 @@ export default function AdminPage() {
             {overviewLoading && (
               <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="animate-pulse bg-white border border-border rounded-2xl h-[92px]" />
+                  <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl h-[92px]" />
                 ))}
               </div>
             )}
 
             {!overviewLoading && overviewError && (
-              <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{overviewError}</div>
+              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{overviewError}</div>
             )}
 
             {!overviewLoading && !overviewError && overview && (
               <>
                 <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
                   {[
-                    { label: 'Total sellers', value: overview.totals.sellers.toLocaleString('en-US') },
-                    { label: 'Total products', value: overview.totals.products.toLocaleString('en-US') },
-                    { label: 'Total orders', value: overview.totals.orders.toLocaleString('en-US') },
-                    { label: 'Total revenue', value: formatPKR(overview.totals.revenue) },
-                    { label: 'Pending orders', value: overview.totals.pendingOrders.toLocaleString('en-US') },
+                    { label: 'Total sellers', value: overview.totals.sellers.toLocaleString('en-US'), icon: IconStore, tint: 'bg-green-tint text-green' },
+                    { label: 'Total products', value: overview.totals.products.toLocaleString('en-US'), icon: IconBox, tint: 'bg-orange-tint text-orange-text' },
+                    { label: 'Total orders', value: overview.totals.orders.toLocaleString('en-US'), icon: IconReceipt, tint: 'bg-green-tint text-green' },
+                    { label: 'Total revenue', value: formatPKR(overview.totals.revenue), icon: IconWallet, tint: 'bg-orange-tint text-orange-text' },
+                    { label: 'Pending orders', value: overview.totals.pendingOrders.toLocaleString('en-US'), icon: IconClock, tint: 'bg-orange-tint text-orange-text' },
                   ].map((stat) => (
-                    <div key={stat.label} className="bg-white border border-border rounded-2xl p-5">
+                    <div
+                      key={stat.label}
+                      className="bg-surface border border-border rounded-2xl p-5 transition-all hover:shadow-md hover:-translate-y-0.5"
+                    >
+                      <span className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${stat.tint}`}>
+                        <stat.icon width="17" height="17" />
+                      </span>
                       <div className="font-display text-xl font-bold text-ink">{stat.value}</div>
                       <div className="text-xs text-text-muted mt-0.5">{stat.label}</div>
                     </div>
@@ -874,16 +891,30 @@ export default function AdminPage() {
                 </div>
 
                 <div className="grid gap-6 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-                  <div className="bg-white border border-border rounded-2xl overflow-hidden">
-                    <div className="px-5 py-3.5 border-b border-border">
+                  <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
                       <h2 className="font-display text-[15px] font-bold text-ink">Recent orders</h2>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('orders')}
+                        className="cursor-pointer text-xs font-semibold text-green hover:text-green-hover flex items-center gap-1"
+                      >
+                        View all
+                        <IconChevronRight width="12" height="12" />
+                      </button>
                     </div>
                     {overview.recentOrders.length === 0 ? (
                       <p className="text-sm text-text-muted p-6 text-center">No orders yet.</p>
                     ) : (
                       overview.recentOrders.map((o) => (
-                        <div key={o.id} className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border last:border-0">
-                          <div className="min-w-0">
+                        <div
+                          key={o.id}
+                          className="flex items-center gap-3 px-5 py-3 border-b border-border last:border-0 hover:bg-surface-muted transition-colors"
+                        >
+                          <span className="shrink-0 w-8 h-8 rounded-full bg-green-tint text-green flex items-center justify-center">
+                            <IconReceipt width="14" height="14" />
+                          </span>
+                          <div className="min-w-0 flex-1">
                             <div className="font-semibold text-[13.5px] text-ink truncate">{o.buyerCompany}</div>
                             <div className="text-xs text-text-muted truncate">{o.sellerName} · {o.productName}</div>
                           </div>
@@ -896,16 +927,30 @@ export default function AdminPage() {
                     )}
                   </div>
 
-                  <div className="bg-white border border-border rounded-2xl overflow-hidden">
-                    <div className="px-5 py-3.5 border-b border-border">
+                  <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
                       <h2 className="font-display text-[15px] font-bold text-ink">Recent seller registrations</h2>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('stores')}
+                        className="cursor-pointer text-xs font-semibold text-green hover:text-green-hover flex items-center gap-1"
+                      >
+                        View all
+                        <IconChevronRight width="12" height="12" />
+                      </button>
                     </div>
                     {overview.recentSellers.length === 0 ? (
                       <p className="text-sm text-text-muted p-6 text-center">No sellers yet.</p>
                     ) : (
                       overview.recentSellers.map((s) => (
-                        <div key={s.id} className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border last:border-0">
-                          <div className="min-w-0">
+                        <div
+                          key={s.id}
+                          className="flex items-center gap-3 px-5 py-3 border-b border-border last:border-0 hover:bg-surface-muted transition-colors"
+                        >
+                          <span className="shrink-0 w-8 h-8 rounded-full bg-orange-tint text-orange-text flex items-center justify-center">
+                            <IconStore width="14" height="14" />
+                          </span>
+                          <div className="min-w-0 flex-1">
                             <div className="font-semibold text-[13.5px] text-ink truncate">{s.companyName}</div>
                             <div className="text-xs text-text-muted truncate">{s.email}</div>
                           </div>
@@ -928,7 +973,7 @@ export default function AdminPage() {
         {activeTab === 'products' && (
           <>
             {!promotionsLoading && !promotionsError && promotionRequests.some((r) => r.status === 'pending') && (
-              <div className="bg-white border border-border rounded-2xl overflow-hidden mb-6">
+              <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-6">
                 <div className="flex items-center gap-2 px-5 py-3.5 border-b border-border bg-orange-tint/40">
                   <IconSparkle width="14" height="14" className="text-orange shrink-0" />
                   <h2 className="font-display text-[15px] font-bold text-ink">
@@ -965,7 +1010,7 @@ export default function AdminPage() {
                           <button
                             type="button"
                             onClick={() => setRejectingPromoId(null)}
-                            className="cursor-pointer bg-white border border-border text-ink-soft font-semibold text-xs px-3 py-2 rounded-full hover:bg-surface-muted transition-colors"
+                            className="cursor-pointer bg-surface border border-border text-ink-soft font-semibold text-xs px-3 py-2 rounded-full hover:bg-surface-muted transition-colors"
                           >
                             Cancel
                           </button>
@@ -987,7 +1032,7 @@ export default function AdminPage() {
                               setRejectingPromoId(req.id);
                               setPromoRejectReason('');
                             }}
-                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-white border border-border text-orange-text font-semibold text-xs px-4 py-2 rounded-full hover:bg-orange-tint transition-colors"
+                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-surface border border-border text-orange-text font-semibold text-xs px-4 py-2 rounded-full hover:bg-orange-tint transition-colors"
                           >
                             Reject
                           </button>
@@ -1024,19 +1069,19 @@ export default function AdminPage() {
             {productsLoading && (
               <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="animate-pulse bg-white border border-border rounded-2xl h-[220px]" />
+                  <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl h-[220px]" />
                 ))}
               </div>
             )}
 
             {!productsLoading && productsError && (
-              <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">
+              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">
                 {productsError}
               </div>
             )}
 
             {!productsLoading && !productsError && products.length === 0 && (
-              <div className="bg-white border border-dashed border-border-strong rounded-2xl p-10 text-center">
+              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
                 <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center mb-4">
                   <IconBox width="24" height="24" className="text-green" />
                 </span>
@@ -1054,7 +1099,7 @@ export default function AdminPage() {
             {!productsLoading && !productsError && products.length > 0 && (
               <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
                 {products.map((p) => (
-                  <div key={p.id} className="bg-white border border-border rounded-2xl overflow-hidden">
+                  <div key={p.id} className="bg-surface border border-border rounded-2xl overflow-hidden">
                     <div className="h-[130px] relative overflow-hidden">
                       <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
                       {p.images?.length > 1 && (
@@ -1084,7 +1129,7 @@ export default function AdminPage() {
                         <button
                           type="button"
                           onClick={() => openEditProduct(p)}
-                          className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer bg-white border border-border text-ink-soft font-semibold text-xs py-2 rounded-lg hover:bg-surface-muted transition-colors"
+                          className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer bg-surface border border-border text-ink-soft font-semibold text-xs py-2 rounded-lg hover:bg-surface-muted transition-colors"
                         >
                           <IconEdit width="13" height="13" />
                           Edit
@@ -1092,7 +1137,7 @@ export default function AdminPage() {
                         <button
                           type="button"
                           onClick={() => setDeleteProductTarget(p)}
-                          className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer bg-white border border-border text-orange-text font-semibold text-xs py-2 rounded-lg hover:bg-orange-tint transition-colors"
+                          className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer bg-surface border border-border text-orange-text font-semibold text-xs py-2 rounded-lg hover:bg-orange-tint transition-colors"
                         >
                           <IconTrash width="13" height="13" />
                           Delete
@@ -1173,7 +1218,7 @@ export default function AdminPage() {
 
         {actionError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-5">{actionError}</p>}
 
-        <div className="bg-white border border-border rounded-2xl overflow-hidden">
+        <div className="bg-surface border border-border rounded-2xl overflow-hidden">
           {loading && (
             <div className="p-6 flex flex-col gap-3">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -1213,7 +1258,7 @@ export default function AdminPage() {
                     onClick={() => toggleOfficialStore(s)}
                     className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 font-semibold text-xs px-4 py-2 rounded-full transition-colors ${
                       s.officialStore
-                        ? 'bg-white border border-border text-text hover:bg-surface-muted'
+                        ? 'bg-surface border border-border text-text hover:bg-surface-muted'
                         : 'bg-orange hover:bg-orange-hover text-white'
                     }`}
                   >
@@ -1225,7 +1270,7 @@ export default function AdminPage() {
                     onClick={() => toggleVerified(s)}
                     className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 font-semibold text-xs px-4 py-2 rounded-full transition-colors ${
                       s.verified
-                        ? 'bg-white border border-border text-text hover:bg-surface-muted'
+                        ? 'bg-surface border border-border text-text hover:bg-surface-muted'
                         : 'bg-green hover:bg-green-hover text-white'
                     }`}
                   >
@@ -1262,12 +1307,12 @@ export default function AdminPage() {
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
                 placeholder="Search by name, email, or phone…"
-                className="flex-1 min-w-[220px] px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                className="flex-1 min-w-[220px] px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
               />
               <select
                 value={userRoleFilter}
                 onChange={(e) => setUserRoleFilter(e.target.value)}
-                className="px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                className="px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
               >
                 <option value="">All roles</option>
                 <option value="buyer">Buyers</option>
@@ -1282,7 +1327,7 @@ export default function AdminPage() {
               </button>
             </form>
 
-            <div className="bg-white border border-border rounded-2xl overflow-hidden">
+            <div className="bg-surface border border-border rounded-2xl overflow-hidden">
               {usersLoading && (
                 <div className="p-6 flex flex-col gap-3">
                   {Array.from({ length: 5 }).map((_, i) => (
@@ -1327,7 +1372,7 @@ export default function AdminPage() {
                           <button
                             type="button"
                             onClick={() => toggleUserExpand(u)}
-                            className="cursor-pointer bg-white border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
+                            className="cursor-pointer bg-surface border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
                           >
                             {expandedUserId === u.id ? 'Close' : 'Payouts'}
                           </button>
@@ -1335,7 +1380,7 @@ export default function AdminPage() {
                         <button
                           type="button"
                           onClick={() => openEditUser(u)}
-                          className="cursor-pointer bg-white border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
+                          className="cursor-pointer bg-surface border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
                         >
                           Edit
                         </button>
@@ -1346,7 +1391,7 @@ export default function AdminPage() {
                           style={u.verified ? undefined : { backgroundColor: '#3B82F6' }}
                           className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 font-semibold text-xs px-3.5 py-2 rounded-full transition-colors ${
                             u.verified
-                              ? 'bg-white border border-border text-text hover:bg-surface-muted'
+                              ? 'bg-surface border border-border text-text hover:bg-surface-muted'
                               : 'text-white hover:brightness-110'
                           }`}
                         >
@@ -1372,7 +1417,7 @@ export default function AdminPage() {
                             className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 font-semibold text-xs px-3.5 py-2 rounded-full border border-border transition-colors ${
                               banningUserId === u.id
                                 ? 'bg-orange-tint text-orange-text'
-                                : 'bg-white text-orange-text hover:bg-orange-tint'
+                                : 'bg-surface text-orange-text hover:bg-orange-tint'
                             }`}
                           >
                             {banningUserId === u.id ? 'Cancel' : 'Ban'}
@@ -1382,7 +1427,7 @@ export default function AdminPage() {
                           type="button"
                           disabled={u.id === user.id}
                           onClick={() => setDeleteUserTarget(u)}
-                          className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center bg-white border border-border text-orange-text p-2 rounded-full hover:bg-orange-tint transition-colors"
+                          className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center bg-surface border border-border text-orange-text p-2 rounded-full hover:bg-orange-tint transition-colors"
                           aria-label="Delete user"
                         >
                           <IconTrash width="13" height="13" />
@@ -1400,7 +1445,7 @@ export default function AdminPage() {
                               inputMode="numeric"
                               value={banDays}
                               onChange={(e) => setBanDays(e.target.value.replace(/[^\d]/g, ''))}
-                              className="w-[90px] px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                              className="w-[90px] px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
                             />
                           </div>
                           <button
@@ -1415,7 +1460,7 @@ export default function AdminPage() {
                             type="button"
                             disabled={banPending}
                             onClick={() => setPermanentBanTarget(u)}
-                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-white border border-orange text-orange-text font-semibold text-xs px-4 py-2.5 rounded-full hover:bg-orange-tint transition-colors"
+                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-surface border border-orange text-orange-text font-semibold text-xs px-4 py-2.5 rounded-full hover:bg-orange-tint transition-colors"
                           >
                             Permanent ban
                           </button>
@@ -1432,7 +1477,7 @@ export default function AdminPage() {
                         {!userPayoutsLoading && userPayouts.length > 0 && (
                           <div className="flex flex-col gap-2 mb-4">
                             {userPayouts.map((p) => (
-                              <div key={p.id} className="flex items-center justify-between gap-3 bg-white border border-border rounded-lg px-3.5 py-2.5 text-sm">
+                              <div key={p.id} className="flex items-center justify-between gap-3 bg-surface border border-border rounded-lg px-3.5 py-2.5 text-sm">
                                 <div className="min-w-0">
                                   <span className="font-semibold text-ink">Rs {Number(p.amount).toLocaleString('en-US')}</span>
                                   <span className="text-xs text-text-muted ml-2 capitalize">{p.method.replace('_', ' ')}</span>
@@ -1458,7 +1503,7 @@ export default function AdminPage() {
                               inputMode="numeric"
                               value={payoutForm.amount}
                               onChange={(e) => setPayoutForm((f) => ({ ...f, amount: e.target.value }))}
-                              className="w-[120px] px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                              className="w-[120px] px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
                             />
                           </div>
                           <div>
@@ -1466,7 +1511,7 @@ export default function AdminPage() {
                             <select
                               value={payoutForm.method}
                               onChange={(e) => setPayoutForm((f) => ({ ...f, method: e.target.value }))}
-                              className="px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                              className="px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
                             >
                               <option value="bank_transfer">Bank transfer</option>
                               <option value="cash">Cash</option>
@@ -1479,7 +1524,7 @@ export default function AdminPage() {
                               type="text"
                               value={payoutForm.reference}
                               onChange={(e) => setPayoutForm((f) => ({ ...f, reference: e.target.value }))}
-                              className="w-[150px] px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                              className="w-[150px] px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
                             />
                           </div>
                           <button
@@ -1535,12 +1580,12 @@ export default function AdminPage() {
                 value={orderSearch}
                 onChange={(e) => setOrderSearch(e.target.value)}
                 placeholder="Search by buyer, product, or seller…"
-                className="flex-1 min-w-[220px] px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                className="flex-1 min-w-[220px] px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
               />
               <select
                 value={orderStatusFilter}
                 onChange={(e) => setOrderStatusFilter(e.target.value)}
-                className="px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                className="px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
               >
                 <option value="">All statuses</option>
                 {ORDER_STATUSES.map((s) => (
@@ -1560,17 +1605,17 @@ export default function AdminPage() {
             {ordersLoading && (
               <div className="flex flex-col gap-3">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="animate-pulse h-16 bg-white border border-border rounded-2xl" />
+                  <div key={i} className="animate-pulse h-16 bg-surface border border-border rounded-2xl" />
                 ))}
               </div>
             )}
 
             {!ordersLoading && ordersError && (
-              <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{ordersError}</div>
+              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{ordersError}</div>
             )}
 
             {!ordersLoading && !ordersError && ordersList.length === 0 && (
-              <div className="bg-white border border-dashed border-border-strong rounded-2xl p-10 text-center">
+              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
                 <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center mb-4">
                   <IconReceipt width="24" height="24" className="text-green" />
                 </span>
@@ -1579,7 +1624,7 @@ export default function AdminPage() {
             )}
 
             {!ordersLoading && !ordersError && ordersList.length > 0 && (
-              <div className="bg-white border border-border rounded-2xl overflow-hidden">
+              <div className="bg-surface border border-border rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm min-w-[720px]">
                     <thead>
@@ -1652,17 +1697,17 @@ export default function AdminPage() {
             {categoriesLoading && (
               <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="animate-pulse h-16 bg-white border border-border rounded-2xl" />
+                  <div key={i} className="animate-pulse h-16 bg-surface border border-border rounded-2xl" />
                 ))}
               </div>
             )}
 
             {!categoriesLoading && categoriesError && (
-              <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{categoriesError}</div>
+              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{categoriesError}</div>
             )}
 
             {!categoriesLoading && !categoriesError && categoriesList.length === 0 && (
-              <div className="bg-white border border-dashed border-border-strong rounded-2xl p-10 text-center">
+              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
                 <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center mb-4">
                   <IconLayers width="24" height="24" className="text-green" />
                 </span>
@@ -1673,7 +1718,7 @@ export default function AdminPage() {
             {!categoriesLoading && !categoriesError && categoriesList.length > 0 && (
               <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
                 {categoriesList.map((c) => (
-                  <div key={c.id} className="bg-white border border-border rounded-2xl p-4 flex items-center justify-between gap-3">
+                  <div key={c.id} className="bg-surface border border-border rounded-2xl p-4 flex items-center justify-between gap-3">
                     <div className="min-w-0 flex items-center gap-2.5">
                       <span className="w-8 h-8 rounded-lg bg-green-tint flex items-center justify-center shrink-0">
                         {c.icon ? (
@@ -1694,7 +1739,7 @@ export default function AdminPage() {
                         type="button"
                         onClick={() => openEditCategory(c)}
                         aria-label="Edit category"
-                        className="cursor-pointer flex items-center justify-center bg-white border border-border text-ink-soft p-2 rounded-full hover:bg-surface-muted transition-colors"
+                        className="cursor-pointer flex items-center justify-center bg-surface border border-border text-ink-soft p-2 rounded-full hover:bg-surface-muted transition-colors"
                       >
                         <IconEdit width="13" height="13" />
                       </button>
@@ -1702,7 +1747,7 @@ export default function AdminPage() {
                         type="button"
                         onClick={() => setDeleteCategoryTarget(c)}
                         aria-label="Delete category"
-                        className="cursor-pointer flex items-center justify-center bg-white border border-border text-orange-text p-2 rounded-full hover:bg-orange-tint transition-colors"
+                        className="cursor-pointer flex items-center justify-center bg-surface border border-border text-orange-text p-2 rounded-full hover:bg-orange-tint transition-colors"
                       >
                         <IconTrash width="13" height="13" />
                       </button>
@@ -1727,13 +1772,13 @@ export default function AdminPage() {
             {filtersLoading && (
               <div className="flex flex-col gap-4">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="animate-pulse h-40 bg-white border border-border rounded-2xl" />
+                  <div key={i} className="animate-pulse h-40 bg-surface border border-border rounded-2xl" />
                 ))}
               </div>
             )}
 
             {!filtersLoading && filtersError && (
-              <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{filtersError}</div>
+              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{filtersError}</div>
             )}
 
             {!filtersLoading && !filtersError && (
@@ -1741,13 +1786,13 @@ export default function AdminPage() {
                 {FILTER_SECTIONS.map((section) => {
                   const sectionFilters = filtersList.filter((f) => f.section === section.key).sort((a, b) => a.order - b.order);
                   return (
-                    <div key={section.key} className="bg-white border border-border rounded-2xl overflow-hidden">
+                    <div key={section.key} className="bg-surface border border-border rounded-2xl overflow-hidden">
                       <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-border">
                         <h2 className="font-display text-[15px] font-bold text-ink">{section.label}</h2>
                         <button
                           type="button"
                           onClick={() => openAddFilter(section.key)}
-                          className="cursor-pointer flex items-center gap-1.5 bg-white border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
+                          className="cursor-pointer flex items-center gap-1.5 bg-surface border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
                         >
                           <IconPlus width="13" height="13" />
                           Add filter
@@ -1808,7 +1853,7 @@ export default function AdminPage() {
                                 type="button"
                                 onClick={() => openEditFilter(f)}
                                 aria-label="Edit filter"
-                                className="cursor-pointer flex items-center justify-center bg-white border border-border text-ink-soft p-2 rounded-full hover:bg-surface-muted transition-colors"
+                                className="cursor-pointer flex items-center justify-center bg-surface border border-border text-ink-soft p-2 rounded-full hover:bg-surface-muted transition-colors"
                               >
                                 <IconEdit width="13" height="13" />
                               </button>
@@ -1816,7 +1861,7 @@ export default function AdminPage() {
                                 type="button"
                                 onClick={() => setDeleteFilterTarget(f)}
                                 aria-label="Delete filter"
-                                className="cursor-pointer flex items-center justify-center bg-white border border-border text-orange-text p-2 rounded-full hover:bg-orange-tint transition-colors"
+                                className="cursor-pointer flex items-center justify-center bg-surface border border-border text-orange-text p-2 rounded-full hover:bg-orange-tint transition-colors"
                               >
                                 <IconTrash width="13" height="13" />
                               </button>
@@ -1841,37 +1886,37 @@ export default function AdminPage() {
 
             {reportsLoading && (
               <div className="flex flex-col gap-4">
-                <div className="animate-pulse bg-white border border-border rounded-2xl h-[280px]" />
-                <div className="animate-pulse bg-white border border-border rounded-2xl h-[240px]" />
+                <div className="animate-pulse bg-surface border border-border rounded-2xl h-[280px]" />
+                <div className="animate-pulse bg-surface border border-border rounded-2xl h-[240px]" />
               </div>
             )}
 
             {!reportsLoading && reportsError && (
-              <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{reportsError}</div>
+              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{reportsError}</div>
             )}
 
             {!reportsLoading && !reportsError && reports && (
               <>
                 <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-                  <div className="bg-white border border-border rounded-2xl p-5">
+                  <div className="bg-surface border border-border rounded-2xl p-5">
                     <div className="font-display text-xl font-bold text-ink">
                       {formatPKR(reports.daily.reduce((sum, d) => sum + d.revenue, 0))}
                     </div>
                     <div className="text-xs text-text-muted mt-0.5">Revenue (last 30 days)</div>
                   </div>
-                  <div className="bg-white border border-border rounded-2xl p-5">
+                  <div className="bg-surface border border-border rounded-2xl p-5">
                     <div className="font-display text-xl font-bold text-ink">{reports.daily.reduce((sum, d) => sum + d.orders, 0)}</div>
                     <div className="text-xs text-text-muted mt-0.5">Orders (last 30 days)</div>
                   </div>
                   {Object.entries(reports.statusBreakdown).map(([statusKey, count]) => (
-                    <div key={statusKey} className="bg-white border border-border rounded-2xl p-5">
+                    <div key={statusKey} className="bg-surface border border-border rounded-2xl p-5">
                       <div className="font-display text-xl font-bold text-ink">{count}</div>
                       <div className="text-xs text-text-muted mt-0.5">{statusKey} orders</div>
                     </div>
                   ))}
                 </div>
 
-                <div className="bg-white border border-border rounded-2xl p-5 mb-6">
+                <div className="bg-surface border border-border rounded-2xl p-5 mb-6">
                   <h2 className="font-display text-base font-bold text-ink mb-4">Revenue trend</h2>
                   <div className="h-[260px]">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1896,7 +1941,7 @@ export default function AdminPage() {
                 </div>
 
                 <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-                  <div className="bg-white border border-border rounded-2xl p-5">
+                  <div className="bg-surface border border-border rounded-2xl p-5">
                     <h2 className="font-display text-base font-bold text-ink mb-4">Top sellers by revenue</h2>
                     {reports.sellerPerformance.length === 0 ? (
                       <p className="text-sm text-text-muted py-6 text-center">No sales yet.</p>
@@ -1923,7 +1968,7 @@ export default function AdminPage() {
                     )}
                   </div>
 
-                  <div className="bg-white border border-border rounded-2xl p-5">
+                  <div className="bg-surface border border-border rounded-2xl p-5">
                     <h2 className="font-display text-base font-bold text-ink mb-4">Orders by status</h2>
                     <div className="h-[240px]">
                       <ResponsiveContainer width="100%" height="100%">
@@ -1969,7 +2014,7 @@ export default function AdminPage() {
             </div>
 
             <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-              <div className="bg-white border border-border rounded-2xl p-5">
+              <div className="bg-surface border border-border rounded-2xl p-5">
                 <h2 className="font-display text-base font-bold text-ink mb-4">Your profile</h2>
                 {profileSaveError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-4">{profileSaveError}</p>}
                 <div className="flex flex-col gap-3.5">
@@ -1979,7 +2024,7 @@ export default function AdminPage() {
                       type="text"
                       value={profileForm.companyName}
                       onChange={(e) => setProfileForm((f) => ({ ...f, companyName: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                      className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
                     />
                   </div>
                   <div>
@@ -1988,7 +2033,7 @@ export default function AdminPage() {
                       type="text"
                       value={profileForm.phone}
                       onChange={(e) => setProfileForm((f) => ({ ...f, phone: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                      className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
                     />
                   </div>
                   <div>
@@ -1997,7 +2042,7 @@ export default function AdminPage() {
                       type="text"
                       value={profileForm.country}
                       onChange={(e) => setProfileForm((f) => ({ ...f, country: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                      className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
                     />
                   </div>
                   <div className="text-xs text-text-muted">Email: {user.email}</div>
@@ -2012,7 +2057,7 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="bg-white border border-border rounded-2xl p-5">
+              <div className="bg-surface border border-border rounded-2xl p-5">
                 <h2 className="font-display text-base font-bold text-ink mb-4">Marketplace settings</h2>
                 {settingsLoading && <div className="animate-pulse h-40 bg-surface-muted rounded-xl" />}
                 {!settingsLoading && settingsError && <p className="text-sm text-orange-text">{settingsError}</p>}
@@ -2025,7 +2070,7 @@ export default function AdminPage() {
                         type="text"
                         value={settingsForm.siteName}
                         onChange={(e) => setSettingsForm((f) => ({ ...f, siteName: e.target.value }))}
-                        className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                        className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
                       />
                     </div>
                     <div>
@@ -2034,7 +2079,7 @@ export default function AdminPage() {
                         type="email"
                         value={settingsForm.supportEmail}
                         onChange={(e) => setSettingsForm((f) => ({ ...f, supportEmail: e.target.value }))}
-                        className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                        className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -2045,7 +2090,7 @@ export default function AdminPage() {
                           inputMode="decimal"
                           value={settingsForm.commissionRatePercent}
                           onChange={(e) => setSettingsForm((f) => ({ ...f, commissionRatePercent: e.target.value }))}
-                          className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                          className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
                         />
                       </div>
                       <div>
@@ -2054,7 +2099,7 @@ export default function AdminPage() {
                           type="text"
                           value={settingsForm.currency}
                           onChange={(e) => setSettingsForm((f) => ({ ...f, currency: e.target.value }))}
-                          className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white"
+                          className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
                         />
                       </div>
                     </div>
