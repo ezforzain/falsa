@@ -101,6 +101,10 @@ export default function AdminPage() {
   const [orderFormOpen, setOrderFormOpen] = useState(false);
   const [orderFormLoading, setOrderFormLoading] = useState(false);
   const [orderFormError, setOrderFormError] = useState(null);
+  // Live TCS tracking, fetched per order on demand (see GET /api/admin/orders/:id/tcs/track) —
+  // keyed by order id so multiple rows can be checked independently.
+  const [tcsTrackingById, setTcsTrackingById] = useState({});
+  const [tcsTrackingLoadingId, setTcsTrackingLoadingId] = useState(null);
 
   const [categoriesList, setCategoriesList] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -134,6 +138,12 @@ export default function AdminPage() {
   const [profileForm, setProfileForm] = useState({ companyName: '', phone: '', country: '' });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaveError, setProfileSaveError] = useState(null);
+
+  // TCS cost centers are fetched on demand (not on every settings load) since it's a live call to
+  // TCS's own Cost Center Inquiry API — see GET /api/admin/tcs/cost-centers.
+  const [tcsCostCenters, setTcsCostCenters] = useState(null);
+  const [tcsCostCentersLoading, setTcsCostCentersLoading] = useState(false);
+  const [tcsCostCentersError, setTcsCostCentersError] = useState(null);
 
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -332,6 +342,18 @@ export default function AdminPage() {
     }
   };
 
+  const handleTrackTcsOrder = async (order) => {
+    setTcsTrackingLoadingId(order.id);
+    try {
+      const { tracking } = await adminOrders.trackTcs(order.id);
+      setTcsTrackingById((current) => ({ ...current, [order.id]: { tracking, error: null } }));
+    } catch (err) {
+      setTcsTrackingById((current) => ({ ...current, [order.id]: { tracking: null, error: err.message } }));
+    } finally {
+      setTcsTrackingLoadingId(null);
+    }
+  };
+
   const handleCreateOrder = async (payload) => {
     setOrderFormLoading(true);
     setOrderFormError(null);
@@ -478,6 +500,9 @@ export default function AdminPage() {
         commissionRatePercent: Number(settingsForm.commissionRatePercent),
         currency: settingsForm.currency,
         maintenanceMode: settingsForm.maintenanceMode,
+        tcsCostCenterCode: settingsForm.tcsCostCenterCode,
+        tcsServiceCode: settingsForm.tcsServiceCode,
+        tcsDefaultWeightKg: Number(settingsForm.tcsDefaultWeightKg),
       });
       setSettingsForm(updated);
       showToast('Marketplace settings saved');
@@ -485,6 +510,19 @@ export default function AdminPage() {
       setSettingsSaveError(err.message);
     } finally {
       setSettingsSaving(false);
+    }
+  };
+
+  const loadTcsCostCenters = async () => {
+    setTcsCostCentersLoading(true);
+    setTcsCostCentersError(null);
+    try {
+      const { costCenters } = await admin.tcsCostCenters();
+      setTcsCostCenters(costCenters);
+    } catch (err) {
+      setTcsCostCentersError(err.message);
+    } finally {
+      setTcsCostCentersLoading(false);
     }
   };
 
@@ -1626,7 +1664,7 @@ export default function AdminPage() {
             {!ordersLoading && !ordersError && ordersList.length > 0 && (
               <div className="bg-surface border border-border rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm min-w-[720px]">
+                  <table className="w-full text-sm min-w-[880px]">
                     <thead>
                       <tr className="border-b border-border text-left text-xs text-text-muted uppercase tracking-wide">
                         <th className="px-5 py-3 font-semibold">Seller</th>
@@ -1636,6 +1674,7 @@ export default function AdminPage() {
                         <th className="px-5 py-3 font-semibold">Total</th>
                         <th className="px-5 py-3 font-semibold">Date</th>
                         <th className="px-5 py-3 font-semibold">Status</th>
+                        <th className="px-5 py-3 font-semibold">Shipping</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1666,6 +1705,42 @@ export default function AdminPage() {
                               ))}
                             </select>
                             {orderRowError?.id === o.id && <div className="text-[11px] text-orange-text mt-1.5 max-w-[140px]">{orderRowError.message}</div>}
+                          </td>
+                          <td className="px-5 py-4 min-w-[180px]">
+                            {o.shippingMethod === 'falsafah' ? (
+                              <div className="text-xs">
+                                <div className="font-semibold text-ink">{o.courierName}</div>
+                                <div className="text-text-muted">CN: {o.trackingId}</div>
+                                {o.labelUrl && (
+                                  <a href={o.labelUrl} download className="text-green font-semibold hover:underline block mt-0.5">
+                                    Download label
+                                  </a>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleTrackTcsOrder(o)}
+                                  disabled={tcsTrackingLoadingId === o.id}
+                                  className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 text-ink-soft font-semibold hover:underline mt-1"
+                                >
+                                  {tcsTrackingLoadingId === o.id ? 'Checking…' : 'Track shipment'}
+                                </button>
+                                {tcsTrackingById[o.id]?.error && (
+                                  <div className="text-orange-text mt-1">{tcsTrackingById[o.id].error}</div>
+                                )}
+                                {tcsTrackingById[o.id]?.tracking && (
+                                  <div className="mt-1 text-text-muted">
+                                    {tcsTrackingById[o.id].tracking.deliveryinfo?.[0]?.status || 'Status unavailable'}
+                                  </div>
+                                )}
+                              </div>
+                            ) : o.shippingMethod ? (
+                              <div className="text-xs">
+                                <div className="font-semibold text-ink">{o.courierName}</div>
+                                <div className="text-text-muted">{o.trackingId}</div>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-text-muted">Not shipped yet</span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -2119,6 +2194,85 @@ export default function AdminPage() {
                       className="self-start cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-sm px-5 py-2.5 rounded-full transition-colors"
                     >
                       {settingsSaving ? 'Saving…' : 'Save settings'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-surface border border-border rounded-2xl p-5">
+                <h2 className="font-display text-base font-bold text-ink mb-1">TCS shipping</h2>
+                <p className="text-xs text-text-muted mb-4">
+                  One-time setup — once these are set, every seller's "Ship with Falsafah" click books a real TCS Courier shipment
+                  automatically, with no extra input from them.
+                </p>
+                {!settingsLoading && !settingsError && settingsForm && (
+                  <div className="flex flex-col gap-3.5">
+                    <div>
+                      <label className="block text-[12.5px] font-semibold text-ink-soft mb-1.5">Cost center</label>
+                      {tcsCostCenters ? (
+                        <select
+                          value={settingsForm.tcsCostCenterCode || ''}
+                          onChange={(e) => setSettingsForm((f) => ({ ...f, tcsCostCenterCode: e.target.value }))}
+                          className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
+                        >
+                          <option value="">Select a cost center…</option>
+                          {tcsCostCenters.map((c) => (
+                            <option key={c.costcentercode} value={c.costcentercode}>
+                              {c.costcentercode} — {c.costcentername}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={settingsForm.tcsCostCenterCode || ''}
+                            onChange={(e) => setSettingsForm((f) => ({ ...f, tcsCostCenterCode: e.target.value }))}
+                            placeholder="e.g. 001 - LHR"
+                            className="flex-1 px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
+                          />
+                          <button
+                            type="button"
+                            onClick={loadTcsCostCenters}
+                            disabled={tcsCostCentersLoading}
+                            className="shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-surface border border-border text-ink-soft font-semibold text-xs px-3.5 py-2.5 rounded-lg hover:bg-surface-muted transition-colors"
+                          >
+                            {tcsCostCentersLoading ? 'Loading…' : 'Load from TCS'}
+                          </button>
+                        </div>
+                      )}
+                      {tcsCostCentersError && <p className="text-xs text-orange-text mt-1.5">{tcsCostCentersError}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-[12.5px] font-semibold text-ink-soft mb-1.5">Service code</label>
+                      <input
+                        type="text"
+                        value={settingsForm.tcsServiceCode || ''}
+                        onChange={(e) => setSettingsForm((f) => ({ ...f, tcsServiceCode: e.target.value }))}
+                        placeholder="e.g. O"
+                        className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[12.5px] font-semibold text-ink-soft mb-1.5">Default parcel weight (kg)</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={settingsForm.tcsDefaultWeightKg ?? ''}
+                        onChange={(e) => setSettingsForm((f) => ({ ...f, tcsDefaultWeightKg: e.target.value }))}
+                        className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
+                      />
+                      <p className="text-[11.5px] text-text-muted mt-1.5">
+                        Used for every booking until per-product weight is tracked — TCS requires at least 0.5kg.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSaveSettings}
+                      disabled={settingsSaving}
+                      className="self-start cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-sm px-5 py-2.5 rounded-full transition-colors"
+                    >
+                      {settingsSaving ? 'Saving…' : 'Save TCS settings'}
                     </button>
                   </div>
                 )}

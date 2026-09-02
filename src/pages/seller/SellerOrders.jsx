@@ -16,6 +16,9 @@ export default function SellerOrders() {
   const [updatingId, setUpdatingId] = useState(null);
   const [rowError, setRowError] = useState(null);
   const [shippingOrder, setShippingOrder] = useState(null);
+  // Live TCS tracking, fetched per row on demand (see GET /api/seller/orders/:id/tcs/track).
+  const [trackingById, setTrackingById] = useState({});
+  const [trackingLoadingId, setTrackingLoadingId] = useState(null);
 
   const bankComplete = BANK_FIELDS.every((key) => Boolean(user?.[key]));
 
@@ -29,6 +32,18 @@ export default function SellerOrders() {
 
   const handleShipped = (updated) => {
     setOrders((current) => current.map((o) => (o.id === updated.id ? updated : o)));
+  };
+
+  const handleTrack = async (order) => {
+    setTrackingLoadingId(order.id);
+    try {
+      const { tracking } = await seller.trackOrder(order.id);
+      setTrackingById((current) => ({ ...current, [order.id]: { tracking, error: null } }));
+    } catch (err) {
+      setTrackingById((current) => ({ ...current, [order.id]: { tracking: null, error: err.message } }));
+    } finally {
+      setTrackingLoadingId(null);
+    }
   };
 
   const handleStatusChange = async (order, status) => {
@@ -130,9 +145,25 @@ export default function SellerOrders() {
                           <div className="font-semibold text-ink">{o.courierName}</div>
                           <div className="text-text-muted">{o.trackingId}</div>
                           {o.labelUrl && (
-                            <a href={o.labelUrl} download className="text-green font-semibold hover:underline">
+                            <a href={o.labelUrl} download className="text-green font-semibold hover:underline block mt-0.5">
                               Download label
                             </a>
+                          )}
+                          {o.shippingMethod === 'falsafah' && (
+                            <button
+                              type="button"
+                              onClick={() => handleTrack(o)}
+                              disabled={trackingLoadingId === o.id}
+                              className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 text-ink-soft font-semibold hover:underline block mt-0.5"
+                            >
+                              {trackingLoadingId === o.id ? 'Checking…' : 'Track'}
+                            </button>
+                          )}
+                          {trackingById[o.id]?.error && <div className="text-orange-text mt-1">{trackingById[o.id].error}</div>}
+                          {trackingById[o.id]?.tracking && (
+                            <div className="text-text-muted mt-1">
+                              {trackingById[o.id].tracking.deliveryinfo?.[0]?.status || 'Status unavailable'}
+                            </div>
                           )}
                         </div>
                       ) : o.status === 'Processing' ? (
@@ -158,7 +189,6 @@ export default function SellerOrders() {
       <ShipOrderModal
         open={Boolean(shippingOrder)}
         order={shippingOrder}
-        sellerName={user?.companyName}
         bankComplete={bankComplete}
         onClose={() => setShippingOrder(null)}
         onShipped={handleShipped}

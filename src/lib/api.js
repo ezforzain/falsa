@@ -244,7 +244,11 @@ export const seller = {
   orders: () => request('/api/seller/orders', { auth: true }),
   updateOrderStatus: (id, status) => request(`/api/seller/orders/${encodeURIComponent(id)}`, { method: 'PATCH', body: { status }, auth: true }),
   shipOrder: (id, payload) => request(`/api/seller/orders/${encodeURIComponent(id)}/ship`, { method: 'PATCH', body: payload, auth: true }),
-  setOrderLabel: (id, labelUrl) => request(`/api/seller/orders/${encodeURIComponent(id)}/label`, { method: 'PATCH', body: { labelUrl }, auth: true }),
+  // Retries fetching the TCS label PDF for a Falsafah-shipped order — /ship already attaches it
+  // automatically; this is only needed if that best-effort fetch failed. No body: the backend
+  // generates the label itself from the order's TCS consignment number.
+  retryTcsLabel: (id) => request(`/api/seller/orders/${encodeURIComponent(id)}/label`, { method: 'PATCH', auth: true }),
+  trackOrder: (id) => request(`/api/seller/orders/${encodeURIComponent(id)}/tcs/track`, { auth: true }),
   updateBankDetails: (payload) => request('/api/seller/bank-details', { method: 'PATCH', body: payload, auth: true }),
   getStoreProfile: () => request('/api/seller/store', { auth: true }),
   updateStoreProfile: (payload) => request('/api/seller/store', { method: 'PATCH', body: payload, auth: true }),
@@ -277,6 +281,7 @@ export const messages = {
 
 export const myOrders = {
   list: () => request('/api/orders', { auth: true }),
+  track: (id) => request(`/api/orders/${encodeURIComponent(id)}/tracking`, { auth: true }),
 };
 
 // ---------- Sellers directory (Store Profile + Verified Store badge) ----------
@@ -306,6 +311,8 @@ export const admin = {
   reports: () => request('/api/admin/reports', { auth: true }),
   getSettings: () => request('/api/admin/settings', { auth: true }),
   updateSettings: (payload) => request('/api/admin/settings', { method: 'PATCH', body: payload, auth: true }),
+  // Live list from TCS's Cost Center Inquiry API, for the TCS setup panel's cost-center picker.
+  tcsCostCenters: () => request('/api/admin/tcs/cost-centers', { auth: true }),
 };
 
 // ---------- Admin: orders ----------
@@ -320,6 +327,7 @@ export const adminOrders = {
   },
   create: (payload) => request('/api/admin/orders', { method: 'POST', body: payload, auth: true }),
   updateStatus: (id, status) => request(`/api/admin/orders/${encodeURIComponent(id)}`, { method: 'PATCH', body: { status }, auth: true }),
+  trackTcs: (id) => request(`/api/admin/orders/${encodeURIComponent(id)}/tcs/track`, { auth: true }),
 };
 
 // ---------- Admin: categories ----------

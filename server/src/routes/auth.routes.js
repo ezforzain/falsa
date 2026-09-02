@@ -298,10 +298,15 @@ router.patch(
   '/profile',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { companyName, phone, country, category, handle } = req.body;
+    const { companyName, phone, country, category, handle, address, city } = req.body;
     if (!companyName) return res.status(400).json({ message: 'Company name is required.' });
 
     const update = { companyName, phone, country, category };
+    // address/city are optional on this route (undefined = "leave it alone") — only sellers'
+    // settings form sends them today (their TCS pickup point, see SellerSettings.jsx), but
+    // there's no reason to restrict the field to sellers only.
+    if (address !== undefined) update.address = address;
+    if (city !== undefined) update.city = city;
 
     // handle is optional on this route (undefined = "leave it alone") so the existing
     // name/phone/country form can keep patching without ever having to know about it.
