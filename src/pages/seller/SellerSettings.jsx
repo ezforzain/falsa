@@ -12,6 +12,8 @@ export default function SellerSettings() {
     phone: user.phone || '',
     country: user.country || 'Pakistan',
     category: user.category || '',
+    address: user.address || '',
+    city: user.city || '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -108,6 +110,18 @@ export default function SellerSettings() {
             labelClass={labelClass}
             label="Main product category"
           />
+
+          <div>
+            <label className={labelClass}>Pickup address</label>
+            <input type="text" value={form.address} onChange={set('address')} placeholder="Shop / warehouse address" className={fieldClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Pickup city</label>
+            <input type="text" value={form.city} onChange={set('city')} placeholder="e.g. Karachi" className={fieldClass} />
+            <p className="text-[12px] text-text-muted mt-1.5">
+              Required before shipping with Falsafah — this is where TCS collects the parcel from.
+            </p>
+          </div>
         </div>
 
         <button

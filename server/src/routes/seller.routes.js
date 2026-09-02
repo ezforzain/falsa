@@ -1,14 +1,20 @@
 import { Router } from 'express';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { nanoid } from 'nanoid';
 import { SellerProduct } from '../models/SellerProduct.js';
+import { Product } from '../models/Product.js';
 import { SellerOrder, ORDER_STATUSES } from '../models/SellerOrder.js';
 import { Seller } from '../models/Seller.js';
 import { PromotionRequest } from '../models/PromotionRequest.js';
 import { Payout } from '../models/Payout.js';
 import { Conversation } from '../models/Conversation.js';
+import { MarketplaceSettings } from '../models/MarketplaceSettings.js';
+import * as tcsService from '../services/tcsService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { syncSellerProductToCatalog, removeSellerProductFromCatalog } from '../utils/publicCatalogSync.js';
+import { normalizeHashtagList } from '../utils/hashtags.js';
 
 const BANK_FIELDS = ['bankName', 'accountTitle', 'accountNumber', 'iban'];
 
@@ -23,9 +29,13 @@ function generateSku(category) {
   return `${prefix}-${suffix}`;
 }
 
-function serializeProduct(doc) {
+// `views` isn't a SellerProduct field — it only exists on the public catalog Product doc that
+// this listing syncs to (see publicCatalogSync.js, which shares the same _id), and only once the
+// listing is active and has actually synced. `views` defaults to 0 for anything not yet published
+// (drafts) so the seller portal never shows "undefined" views.
+function serializeProduct(doc, views = 0) {
   const p = doc.toObject();
-  return { ...p, id: p._id };
+  return { ...p, id: p._id, views };
 }
 
 function serializeOrder(doc) {
@@ -59,7 +69,11 @@ router.get(
   '/products',
   asyncHandler(async (req, res) => {
     const products = await SellerProduct.find({ sellerId: req.user._id }).sort({ createdAt: -1 });
-    res.json({ products: products.map(serializeProduct) });
+    // Product's `_id` is a plain string (see the model comment), not an ObjectId, so the ids must
+    // be stringified before querying it — an ObjectId $in wouldn't match.
+    const catalogViews = await Product.find({ _id: { $in: products.map((p) => p._id.toString()) } }, 'views').lean();
+    const viewsById = new Map(catalogViews.map((p) => [p._id, p.views || 0]));
+    res.json({ products: products.map((p) => serializeProduct(p, viewsById.get(p._id.toString()) || 0)) });
   })
 );
 
@@ -68,7 +82,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const product = await SellerProduct.findOne({ _id: req.params.id, sellerId: req.user._id });
     if (!product) return res.status(404).json({ message: 'Listing not found.' });
-    res.json({ product: serializeProduct(product) });
+    const catalogProduct = await Product.findById(product._id.toString(), 'views').lean();
+    res.json({ product: serializeProduct(product, catalogProduct?.views || 0) });
   })
 );
 
@@ -139,7 +154,9 @@ router.post(
       b2bEnabled: Boolean(b2bEnabled),
       freeShipping: freeShipping !== false,
       worldwideFreeShipping: Boolean(worldwideFreeShipping),
-      tags: Array.isArray(tags) ? tags : [],
+      // Normalized + de-duped server-side too (the chip input already does this
+      // client-side) so the backend never trusts unnormalized/duplicate hashtags.
+      tags: normalizeHashtagList(tags),
       specifications: Array.isArray(specifications) ? specifications : [],
       variantAxes: Array.isArray(variantAxes) ? variantAxes : [],
       variants: Array.isArray(variants) ? variants : [],
@@ -187,10 +204,12 @@ router.patch(
       patch.images = patch.images.length > 0 ? patch.images : product.images;
       patch.img = patch.images[0];
     }
+    if (patch.tags !== undefined) patch.tags = normalizeHashtagList(patch.tags);
     product.set(patch);
     await product.save();
     await syncSellerProductToCatalog(product, req.user);
-    res.json({ product: serializeProduct(product) });
+    const catalogProduct = await Product.findById(product._id.toString(), 'views').lean();
+    res.json({ product: serializeProduct(product, catalogProduct?.views || 0) });
   })
 );
 
@@ -227,11 +246,55 @@ router.patch(
   })
 );
 
-// Ship Now — "falsafah" auto-generates a tracking id under the platform's own in-house courier
-// (gated on the seller having bank details on file, since that's how they'd get paid out for a
-// platform-handled shipment); "self" takes whatever courier name/tracking id the seller enters.
-// Either way this can only ever be called once per order — see the 409 below — so the shipping
-// info (and the label built from it) is effectively immutable once set.
+// Maps a tcsService error (TcsConfigError | TcsValidationError | TcsApiError | anything else) to
+// an HTTP status + safe-to-display message, used by every route below that talks to TCS.
+function tcsErrorResponse(err) {
+  if (err.name === 'TcsConfigError') {
+    console.error('TCS config error:', err.message);
+    return { status: 500, message: 'TCS shipping is not configured correctly. Please contact support.' };
+  }
+  if (err.name === 'TcsValidationError') {
+    return { status: 400, message: err.message };
+  }
+  if (err.name === 'TcsApiError') {
+    const status = Number.isInteger(err.status) && err.status >= 400 && err.status < 600 ? err.status : 502;
+    return { status, message: err.message || 'TCS courier service returned an error.' };
+  }
+  console.error('Unexpected TCS error:', err);
+  return { status: 502, message: 'Could not reach TCS courier service. Please try again.' };
+}
+
+// Writes a TCS-generated label PDF under uploads/labels/ (served at /uploads/labels/... — see
+// express.static('/uploads') in app.js) and returns that URL, same shape every other upload in
+// this app produces (see upload.routes.js).
+async function saveTcsLabelPdf(consignmentNo, pdfBuffer) {
+  const dir = path.resolve('uploads', 'labels');
+  await fs.mkdir(dir, { recursive: true });
+  const filename = `tcs-${consignmentNo}.pdf`;
+  await fs.writeFile(path.join(dir, filename), pdfBuffer);
+  return `/uploads/labels/${filename}`;
+}
+
+// Best-effort: booking a shipment already succeeded by the time this runs, so a label fetch
+// failure here is logged and left for the seller to retry via PATCH /orders/:id/label rather than
+// undoing the (already real, already paid-for) TCS booking.
+async function tryAttachTcsLabel(order) {
+  try {
+    const pdf = await tcsService.printLabel(order.trackingId, { shipperdetail: true });
+    order.labelUrl = await saveTcsLabelPdf(order.trackingId, pdf);
+    await order.save();
+  } catch (err) {
+    console.error(`TCS label fetch failed for consignment ${order.trackingId}:`, err.message);
+  }
+}
+
+// Ship Now — "falsafah" books a REAL TCS Courier shipment automatically (branded "Falsafah
+// Express" to the buyer — see tcsService.createShipment): the seller's own on-file company
+// name/address/city/phone become the pickup point, the buyer's info already on the order becomes
+// the consignee, and the platform-wide cost center/service code from Admin Settings complete the
+// booking — no extra typing for the seller. "self" takes whatever courier name/tracking id the
+// seller enters by hand, unrelated to TCS. Either way this can only ever be called once per order
+// — see the 409 below — so the shipping info (and the label) is effectively immutable once set.
 router.patch(
   '/orders/:id/ship',
   asyncHandler(async (req, res) => {
@@ -247,8 +310,41 @@ router.patch(
       if (missingBankField) {
         return res.status(400).json({ message: 'Please add your bank details before shipping with Falsafah.' });
       }
+      if (!req.user.address || !req.user.city) {
+        return res
+          .status(400)
+          .json({ message: 'Please add your pickup address and city in Settings before shipping with Falsafah.' });
+      }
+
+      const settings = await MarketplaceSettings.findOne();
+      if (!settings?.tcsCostCenterCode || !settings?.tcsServiceCode) {
+        return res
+          .status(400)
+          .json({ message: "TCS shipping isn't set up yet — ask an admin to finish setup in Admin Settings." });
+      }
+
+      let booking;
+      try {
+        booking = await tcsService.createShipment({
+          order,
+          sellerCompanyName: req.user.companyName,
+          sellerAddress: req.user.address,
+          sellerCity: req.user.city,
+          sellerMobile: req.user.phone,
+          costcentercode: settings.tcsCostCenterCode,
+          servicecode: settings.tcsServiceCode,
+          weightinkg: settings.tcsDefaultWeightKg || 0.5,
+          pieces: 1,
+          codamount: order.qty * order.unitPrice,
+          contentdesc: order.productName,
+        });
+      } catch (err) {
+        const { status, message } = tcsErrorResponse(err);
+        return res.status(status).json({ message });
+      }
+
       order.courierName = 'Falsafah Express';
-      order.trackingId = `FE-${nanoid(10).toUpperCase()}`;
+      order.trackingId = booking.consignmentNo;
     } else if (method === 'self') {
       const courierName = String(req.body.courierName || '').trim();
       const trackingId = String(req.body.trackingId || '').trim();
@@ -265,13 +361,19 @@ router.patch(
     order.status = 'Shipped';
     order.shippedAt = new Date();
     await order.save();
+
+    // Fire the label fetch before responding so the "Download label" button in the ship modal is
+    // ready immediately in the common case, without making the seller wait on a second call.
+    if (method === 'falsafah') await tryAttachTcsLabel(order);
+
     res.json({ order: serializeOrder(order) });
   })
 );
 
-// Second step for the Falsafah label: the client renders + uploads the PNG (needs the tracking
-// id from the /ship response above first), then hands back the resulting URL here. Locked once
-// set, same as /ship, so a generated label can't be swapped out afterwards.
+// Fetches (or retries fetching) the TCS-generated label PDF for an already-booked Falsafah
+// shipment — the normal path attaches it automatically inside /ship above; this covers the case
+// where that best-effort fetch failed (e.g. TCS was briefly slow) and the seller clicks
+// "Get label" again. Locked once a label exists, same as /ship, so it can't be swapped out.
 router.patch(
   '/orders/:id/label',
   asyncHandler(async (req, res) => {
@@ -283,11 +385,42 @@ router.patch(
     if (order.labelUrl) {
       return res.status(409).json({ message: 'A label has already been generated for this order.' });
     }
-    const labelUrl = String(req.body.labelUrl || '').trim();
-    if (!labelUrl) return res.status(400).json({ message: 'Missing label URL.' });
-    order.labelUrl = labelUrl;
-    await order.save();
+    try {
+      const pdf = await tcsService.printLabel(order.trackingId, { shipperdetail: true });
+      order.labelUrl = await saveTcsLabelPdf(order.trackingId, pdf);
+      await order.save();
+    } catch (err) {
+      const { status, message } = tcsErrorResponse(err);
+      return res.status(status).json({ message });
+    }
     res.json({ order: serializeOrder(order) });
+  })
+);
+
+// Live delivery status for a shipped order — pulls TCS's Tracking API and caches the latest
+// status on the order (see SellerOrder.tcsDeliveryStatus) so the seller portal's order list can
+// show a status badge without a live call on every render.
+router.get(
+  '/orders/:id/tcs/track',
+  asyncHandler(async (req, res) => {
+    const order = await SellerOrder.findOne({ _id: req.params.id, sellerId: req.user._id });
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+    if (order.shippingMethod !== 'falsafah' || !order.trackingId) {
+      return res.status(400).json({ message: 'This order has no TCS shipment to track.' });
+    }
+    try {
+      const tracking = await tcsService.trackShipment(order.trackingId);
+      const latestStatus = tracking?.deliveryinfo?.[0]?.status || tracking?.shipmentsummary || null;
+      if (latestStatus) {
+        order.tcsDeliveryStatus = latestStatus;
+        order.tcsDeliveryStatusAt = new Date();
+        await order.save();
+      }
+      res.json({ tracking });
+    } catch (err) {
+      const { status, message } = tcsErrorResponse(err);
+      return res.status(status).json({ message });
+    }
   })
 );
 

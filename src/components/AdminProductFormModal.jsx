@@ -89,14 +89,14 @@ export default function AdminProductFormModal({ open, product, sellersList, cate
   const canSubmit = form.name.trim() && form.sellerId && form.category && form.price.trim();
 
   const fieldClass =
-    'w-full px-[14px] py-[11px] border border-border rounded-lg text-[14px] font-sans bg-white text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
+    'w-full px-[14px] py-[11px] border border-border rounded-lg text-[14px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
   const labelClass = 'block text-[12.5px] font-semibold text-ink-soft mb-1.5';
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8">
       <div className="absolute inset-0 bg-black/45" onClick={onClose} />
 
-      <div className="relative w-full max-w-[460px] max-h-full overflow-y-auto bg-white rounded-2xl shadow-2xl p-6 animate-fade-up">
+      <div className="relative w-full max-w-[460px] max-h-full overflow-y-auto bg-surface rounded-2xl shadow-2xl p-6 animate-fade-up">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-display text-lg font-bold text-ink">{isEdit ? 'Edit product' : 'Add new product'}</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="text-text-muted hover:text-ink cursor-pointer p-1">
@@ -211,7 +211,7 @@ export default function AdminProductFormModal({ open, product, sellersList, cate
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 cursor-pointer bg-white border-[1.5px] border-border text-ink-soft font-semibold text-sm py-3 rounded-full hover:bg-surface-muted transition-colors"
+            className="flex-1 cursor-pointer bg-surface border-[1.5px] border-border text-ink-soft font-semibold text-sm py-3 rounded-full hover:bg-surface-muted transition-colors"
           >
             Cancel
           </button>
