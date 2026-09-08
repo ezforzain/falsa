@@ -137,6 +137,66 @@ const PRODUCT_CATEGORIES = [
   'Other',
 ];
 
+// Converts a 2-letter ISO 3166-1 country code into its flag emoji (two regional-indicator
+// symbols) so the country list below only needs to carry the code, not a hand-picked emoji.
+function flagEmoji(code) {
+  return code
+    .toUpperCase()
+    .replace(/./g, (ch) => String.fromCodePoint(127397 + ch.charCodeAt(0)));
+}
+
+// [name, ISO code] for every UN-recognized country plus a handful of common territories, so the
+// sign-up country picker can offer a real, searchable world list instead of a hardcoded
+// "Pakistan" that couldn't be changed.
+const COUNTRIES = [
+  ['Afghanistan', 'AF'], ['Albania', 'AL'], ['Algeria', 'DZ'], ['Andorra', 'AD'], ['Angola', 'AO'],
+  ['Antigua and Barbuda', 'AG'], ['Argentina', 'AR'], ['Armenia', 'AM'], ['Australia', 'AU'], ['Austria', 'AT'],
+  ['Azerbaijan', 'AZ'], ['Bahamas', 'BS'], ['Bahrain', 'BH'], ['Bangladesh', 'BD'], ['Barbados', 'BB'],
+  ['Belarus', 'BY'], ['Belgium', 'BE'], ['Belize', 'BZ'], ['Benin', 'BJ'], ['Bhutan', 'BT'],
+  ['Bolivia', 'BO'], ['Bosnia and Herzegovina', 'BA'], ['Botswana', 'BW'], ['Brazil', 'BR'], ['Brunei', 'BN'],
+  ['Bulgaria', 'BG'], ['Burkina Faso', 'BF'], ['Burundi', 'BI'], ['Cabo Verde', 'CV'], ['Cambodia', 'KH'],
+  ['Cameroon', 'CM'], ['Canada', 'CA'], ['Central African Republic', 'CF'], ['Chad', 'TD'], ['Chile', 'CL'],
+  ['China', 'CN'], ['Colombia', 'CO'], ['Comoros', 'KM'], ['Congo (Congo-Brazzaville)', 'CG'], ['Costa Rica', 'CR'],
+  ['Croatia', 'HR'], ['Cuba', 'CU'], ['Cyprus', 'CY'], ['Czechia', 'CZ'], ['Democratic Republic of the Congo', 'CD'],
+  ['Denmark', 'DK'], ['Djibouti', 'DJ'], ['Dominica', 'DM'], ['Dominican Republic', 'DO'], ['Ecuador', 'EC'],
+  ['Egypt', 'EG'], ['El Salvador', 'SV'], ['Equatorial Guinea', 'GQ'], ['Eritrea', 'ER'], ['Estonia', 'EE'],
+  ['Eswatini', 'SZ'], ['Ethiopia', 'ET'], ['Fiji', 'FJ'], ['Finland', 'FI'], ['France', 'FR'],
+  ['Gabon', 'GA'], ['Gambia', 'GM'], ['Georgia', 'GE'], ['Germany', 'DE'], ['Ghana', 'GH'],
+  ['Greece', 'GR'], ['Grenada', 'GD'], ['Guatemala', 'GT'], ['Guinea', 'GN'], ['Guinea-Bissau', 'GW'],
+  ['Guyana', 'GY'], ['Haiti', 'HT'], ['Honduras', 'HN'], ['Hungary', 'HU'], ['Iceland', 'IS'],
+  ['India', 'IN'], ['Indonesia', 'ID'], ['Iran', 'IR'], ['Iraq', 'IQ'], ['Ireland', 'IE'],
+  ['Israel', 'IL'], ['Italy', 'IT'], ['Jamaica', 'JM'], ['Japan', 'JP'], ['Jordan', 'JO'],
+  ['Kazakhstan', 'KZ'], ['Kenya', 'KE'], ['Kiribati', 'KI'], ['Kosovo', 'XK'], ['Kuwait', 'KW'],
+  ['Kyrgyzstan', 'KG'], ['Laos', 'LA'], ['Latvia', 'LV'], ['Lebanon', 'LB'], ['Lesotho', 'LS'],
+  ['Liberia', 'LR'], ['Libya', 'LY'], ['Liechtenstein', 'LI'], ['Lithuania', 'LT'], ['Luxembourg', 'LU'],
+  ['Madagascar', 'MG'], ['Malawi', 'MW'], ['Malaysia', 'MY'], ['Maldives', 'MV'], ['Mali', 'ML'],
+  ['Malta', 'MT'], ['Marshall Islands', 'MH'], ['Mauritania', 'MR'], ['Mauritius', 'MU'], ['Mexico', 'MX'],
+  ['Micronesia', 'FM'], ['Moldova', 'MD'], ['Monaco', 'MC'], ['Mongolia', 'MN'], ['Montenegro', 'ME'],
+  ['Morocco', 'MA'], ['Mozambique', 'MZ'], ['Myanmar', 'MM'], ['Namibia', 'NA'], ['Nauru', 'NR'],
+  ['Nepal', 'NP'], ['Netherlands', 'NL'], ['New Zealand', 'NZ'], ['Nicaragua', 'NI'], ['Niger', 'NE'],
+  ['Nigeria', 'NG'], ['North Korea', 'KP'], ['North Macedonia', 'MK'], ['Norway', 'NO'], ['Oman', 'OM'],
+  ['Pakistan', 'PK'], ['Palau', 'PW'], ['Palestine', 'PS'], ['Panama', 'PA'], ['Papua New Guinea', 'PG'],
+  ['Paraguay', 'PY'], ['Peru', 'PE'], ['Philippines', 'PH'], ['Poland', 'PL'], ['Portugal', 'PT'],
+  ['Qatar', 'QA'], ['Romania', 'RO'], ['Russia', 'RU'], ['Rwanda', 'RW'], ['Saint Kitts and Nevis', 'KN'],
+  ['Saint Lucia', 'LC'], ['Saint Vincent and the Grenadines', 'VC'], ['Samoa', 'WS'], ['San Marino', 'SM'], ['Sao Tome and Principe', 'ST'],
+  ['Saudi Arabia', 'SA'], ['Senegal', 'SN'], ['Serbia', 'RS'], ['Seychelles', 'SC'], ['Sierra Leone', 'SL'],
+  ['Singapore', 'SG'], ['Slovakia', 'SK'], ['Slovenia', 'SI'], ['Solomon Islands', 'SB'], ['Somalia', 'SO'],
+  ['South Africa', 'ZA'], ['South Korea', 'KR'], ['South Sudan', 'SS'], ['Spain', 'ES'], ['Sri Lanka', 'LK'],
+  ['Sudan', 'SD'], ['Suriname', 'SR'], ['Sweden', 'SE'], ['Switzerland', 'CH'], ['Syria', 'SY'],
+  ['Taiwan', 'TW'], ['Tajikistan', 'TJ'], ['Tanzania', 'TZ'], ['Thailand', 'TH'], ['Timor-Leste', 'TL'],
+  ['Togo', 'TG'], ['Tonga', 'TO'], ['Trinidad and Tobago', 'TT'], ['Tunisia', 'TN'], ['Turkey', 'TR'],
+  ['Turkmenistan', 'TM'], ['Tuvalu', 'TV'], ['Uganda', 'UG'], ['Ukraine', 'UA'], ['United Arab Emirates', 'AE'],
+  ['United Kingdom', 'GB'], ['United States', 'US'], ['Uruguay', 'UY'], ['Uzbekistan', 'UZ'], ['Vanuatu', 'VU'],
+  ['Vatican City', 'VA'], ['Venezuela', 'VE'], ['Vietnam', 'VN'], ['Yemen', 'YE'], ['Zambia', 'ZM'],
+  ['Zimbabwe', 'ZW'],
+];
+
+const COUNTRY_OPTIONS = COUNTRIES.map(([name, code]) => ({
+  value: name,
+  label: `${flagEmoji(code)} ${name}`,
+  searchText: name.toLowerCase(),
+}));
+
 // The left brand panel's trust bullets (desktop only — see the lg:grid split below).
 const TRUST_POINTS = [
   { icon: IconShield, label: 'Verified sellers, reviewed before they list' },
@@ -162,6 +222,11 @@ export default function AuthPage() {
 
   const [signupForm, setSignupForm] = useState({
     companyName: '',
+    // Buyer-only — a company name doesn't make sense for someone signing up to shop, so buyers
+    // get plain first/last name fields instead and the two are joined into companyName on submit.
+    firstName: '',
+    lastName: '',
+    country: 'Pakistan',
     phone: '',
     email: '',
     password: '',
@@ -273,7 +338,10 @@ export default function AuthPage() {
   const handleSignup = async () => {
     if (loadingKey) return;
     setSignupError(null);
-    if (!signupForm.companyName || !signupForm.email || !signupForm.password) {
+    // Sellers submit a company name directly; buyers submit first/last name, which are joined
+    // into the same companyName field the backend (and the rest of the app) expects.
+    const companyName = isSeller ? signupForm.companyName : `${signupForm.firstName} ${signupForm.lastName}`.trim();
+    if (!companyName || !signupForm.email || !signupForm.password) {
       setSignupError('Please fill in all required fields.');
       return;
     }
@@ -299,8 +367,8 @@ export default function AuthPage() {
     try {
       const result = await signUp({
         role,
-        companyName: signupForm.companyName,
-        country: 'Pakistan',
+        companyName,
+        country: signupForm.country,
         phone: signupForm.phone,
         email: signupForm.email,
         password: signupForm.password,
@@ -643,9 +711,11 @@ function SignUpRole({ role, setRole, onContinue, goSignin }) {
   );
 }
 
-// Searchable category picker — a real dropdown (the old one was a dead <div>), with a search
-// box pinned to the top so a seller can type "surg" instead of scrolling the full A–Z list.
-function CategorySelect({ value, onChange }) {
+// Generic searchable picker — a real dropdown with a search box pinned to the top, so someone
+// can type "surg" or "pak" instead of scrolling a long list. Shared by the category and country
+// pickers below; `options` carries a `label` (what's shown/typed, can include a flag emoji) and
+// a lowercase `searchText` to match against, separate from the plain `value` that gets stored.
+function SearchableDropdown({ options, value, onChange, placeholder, searchPlaceholder, noMatchText }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const ref = useRef(null);
@@ -659,10 +729,9 @@ function CategorySelect({ value, onChange }) {
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [open]);
 
+  const selected = options.find((o) => o.value === value);
   const needle = query.trim().toLowerCase();
-  const filtered = needle
-    ? PRODUCT_CATEGORIES.filter((c) => c.toLowerCase().includes(needle))
-    : PRODUCT_CATEGORIES;
+  const filtered = needle ? options.filter((o) => o.searchText.includes(needle)) : options;
 
   return (
     <div className="relative" ref={ref}>
@@ -670,9 +739,7 @@ function CategorySelect({ value, onChange }) {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center justify-between px-[18px] py-[15px] border-[1.5px] border-border rounded-xl text-[15px] bg-surface cursor-pointer hover:border-green transition-colors"
       >
-        <span className={value ? 'text-ink' : 'text-text-muted'}>
-          {value || 'Select — Textiles, Surgical, Sports…'}
-        </span>
+        <span className={value ? 'text-ink' : 'text-text-muted'}>{selected ? selected.label : placeholder}</span>
         <svg
           width="13"
           height="13"
@@ -696,29 +763,29 @@ function CategorySelect({ value, onChange }) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search categories…"
+              placeholder={searchPlaceholder}
               className="w-full px-3.5 py-2.5 border-[1.5px] border-border rounded-lg text-[14px] bg-surface text-ink outline-none focus:border-green"
             />
           </div>
           <div className="max-h-[240px] overflow-y-auto py-1">
             {filtered.length === 0 ? (
-              <p className="px-4 py-3 text-[13.5px] text-text-muted">No categories match “{query.trim()}”.</p>
+              <p className="px-4 py-3 text-[13.5px] text-text-muted">{noMatchText(query.trim())}</p>
             ) : (
-              filtered.map((c) => (
+              filtered.map((o) => (
                 <button
-                  key={c}
+                  key={o.value}
                   type="button"
                   onClick={() => {
-                    onChange(c);
+                    onChange(o.value);
                     setOpen(false);
                     setQuery('');
                   }}
                   className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-[14px] hover:bg-green-tint/60 transition-colors ${
-                    value === c ? 'text-green font-semibold' : 'text-ink'
+                    value === o.value ? 'text-green font-semibold' : 'text-ink'
                   }`}
                 >
-                  <span>{c}</span>
-                  {value === c && <IconCheck width="15" height="15" className="shrink-0" />}
+                  <span>{o.label}</span>
+                  {value === o.value && <IconCheck width="15" height="15" className="shrink-0" />}
                 </button>
               ))
             )}
@@ -726,6 +793,34 @@ function CategorySelect({ value, onChange }) {
         </div>
       )}
     </div>
+  );
+}
+
+const CATEGORY_OPTIONS = PRODUCT_CATEGORIES.map((c) => ({ value: c, label: c, searchText: c.toLowerCase() }));
+
+function CategorySelect({ value, onChange }) {
+  return (
+    <SearchableDropdown
+      options={CATEGORY_OPTIONS}
+      value={value}
+      onChange={onChange}
+      placeholder="Select — Textiles, Surgical, Sports…"
+      searchPlaceholder="Search categories…"
+      noMatchText={(q) => `No categories match "${q}".`}
+    />
+  );
+}
+
+function CountrySelect({ value, onChange }) {
+  return (
+    <SearchableDropdown
+      options={COUNTRY_OPTIONS}
+      value={value}
+      onChange={onChange}
+      placeholder="Select your country"
+      searchPlaceholder="Search countries…"
+      noMatchText={(q) => `No countries match "${q}".`}
+    />
   );
 }
 
@@ -752,16 +847,43 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
 
       {!isCorporate && <ErrorText>{error}</ErrorText>}
 
-      <div className="mb-[18px]">
-        <FieldLabel>{isSeller ? 'Business / factory name' : 'Company name'}</FieldLabel>
-        <input
-          type="text"
-          value={form.companyName}
-          onChange={set('companyName')}
-          placeholder={isSeller ? 'e.g. Anwar Textile Mills' : 'e.g. Al-Karam Traders'}
-          className={inputClass}
-        />
-      </div>
+      {isSeller ? (
+        <div className="mb-[18px]">
+          <FieldLabel>Business / factory name</FieldLabel>
+          <input
+            type="text"
+            value={form.companyName}
+            onChange={set('companyName')}
+            placeholder="e.g. Anwar Textile Mills"
+            className={inputClass}
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4 mb-[18px]">
+          <div>
+            <FieldLabel>Your name</FieldLabel>
+            <input
+              type="text"
+              autoComplete="given-name"
+              value={form.firstName}
+              onChange={set('firstName')}
+              placeholder="e.g. Ahmed"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <FieldLabel>Last name</FieldLabel>
+            <input
+              type="text"
+              autoComplete="family-name"
+              value={form.lastName}
+              onChange={set('lastName')}
+              placeholder="e.g. Khan"
+              className={inputClass}
+            />
+          </div>
+        </div>
+      )}
 
       {isSeller && (
         <div className="mb-[18px]">
@@ -797,12 +919,7 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
       <div className="grid gap-4 mb-[18px]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
         <div>
           <FieldLabel>Country</FieldLabel>
-          <div className="flex items-center justify-between px-[18px] py-[15px] border-[1.5px] border-border rounded-xl text-[15px] bg-surface text-ink cursor-pointer hover:border-green transition-colors">
-            <span>🇵🇰 Pakistan</span>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </div>
+          <CountrySelect value={form.country} onChange={(c) => patchForm({ country: c })} />
         </div>
         <div>
           <FieldLabel>Phone number</FieldLabel>
@@ -831,7 +948,7 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
       )}
 
       <div className="mb-[18px]">
-        <FieldLabel>{isSeller ? 'Account email (for signing in)' : 'Business email'}</FieldLabel>
+        <FieldLabel>{isSeller ? 'Account email (for signing in)' : 'Your email'}</FieldLabel>
         <input
           type="text"
           inputMode="email"
@@ -841,7 +958,7 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
           autoComplete="email"
           value={form.email}
           onChange={set('email')}
-          placeholder="name@company.com"
+          placeholder={isSeller ? 'name@company.com' : 'you@example.com'}
           className={inputClass}
         />
       </div>
