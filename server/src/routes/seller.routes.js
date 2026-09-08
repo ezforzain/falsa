@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { nanoid } from 'nanoid';
@@ -641,7 +642,12 @@ router.patch(
     if (req.body?.productIds !== undefined) {
       if (!Array.isArray(req.body.productIds)) return res.status(400).json({ message: 'productIds must be a list.' });
       // Only ever reference this seller's own listings — never trust a client-submitted id blind.
-      const owned = await SellerProduct.find({ sellerId: req.user._id, _id: { $in: req.body.productIds } }, '_id').lean();
+      // Pre-filter to well-formed ObjectId strings first: SellerProduct._id is a real ObjectId
+      // (unlike Product._id, which is a slug string — see the SellerProduct model), so an
+      // unfiltered $in would throw a CastError and 500 the whole request over one bad id instead
+      // of just silently dropping it.
+      const candidateIds = req.body.productIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+      const owned = await SellerProduct.find({ sellerId: req.user._id, _id: { $in: candidateIds } }, '_id').lean();
       const ownedIds = new Set(owned.map((p) => p._id.toString()));
       section.productIds = req.body.productIds.filter((id) => ownedIds.has(id));
     }
