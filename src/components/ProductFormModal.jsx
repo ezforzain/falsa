@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import ProductImagesUploader from './ProductImagesUploader';
 import CategoryPicker from './CategoryPicker';
 import HashtagTextarea from './HashtagTextarea';
-import { getCategoryTemplate, suggestCategories } from '../data/productCategories';
+import HashtagChipInput from './HashtagChipInput';
+import HashtagAiSuggestions from './HashtagAiSuggestions';
+import VariantOptionPicker from './VariantOptionPicker';
+import { mergeHashtags } from '../lib/hashtags';
+import { getCategoryGroup, getCategoryTemplate, suggestCategories } from '../data/productCategories';
+import { getVariantOptionPreset } from '../data/variantOptions';
 import { IconBox, IconChevronDown, IconClose, IconPlus, IconSparkle, IconTrash } from './icons';
 
 const MAX_IMAGES = 6;
@@ -19,6 +24,7 @@ const emptyForm = {
   stock: '',
   status: 'active',
   images: [],
+  tags: [],
   b2bEnabled: false,
   freeShipping: true,
   worldwideFreeShipping: false,
@@ -96,18 +102,31 @@ function Section({ title, open, onToggle, children }) {
 export default function ProductFormModal({ open, product, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
   const [openSections, setOpenSections] = useState({ details: true, shipping: true, b2b: true });
+  const [manualVariantOpen, setManualVariantOpen] = useState(false);
+  const [manualVariant, setManualVariant] = useState({ name: '', price: '', stock: '' });
   const isEdit = Boolean(product);
   const template = form.category ? getCategoryTemplate(form.category) : null;
+  const categoryGroup = form.category ? getCategoryGroup(form.category) : null;
   const suggestions = useMemo(() => (form.category ? [] : suggestCategories(form.name, 3)), [form.name, form.category]);
-  const tags = useMemo(() => extractHashtags(form.description), [form.description]);
+  // #hashtags typed inline in the description (item 7: extra hashtags can live only in the
+  // description) — merged with the explicit chip list (form.tags) at submit time below.
+  const descriptionTags = useMemo(() => extractHashtags(form.description), [form.description]);
 
   useEffect(() => {
     if (!open) return;
+    setManualVariantOpen(false);
+    setManualVariant({ name: '', price: '', stock: '' });
     if (!product) {
       setForm(emptyForm);
       return;
     }
     const tpl = product.category ? getCategoryTemplate(product.category) : { attributes: [], variantAxes: [] };
+    const loadedAxes = axesArrayToMap(product.variantAxes, tpl);
+    // Names the current axis values would regenerate on their own — anything saved on the
+    // product that isn't one of these is a one-off row added via "Add a variant separately"
+    // (see cartesianVariants below), so it gets flagged custom to survive the regenerate effect
+    // and keep showing its "Custom" badge + remove button after reopening this form.
+    const generatedNames = new Set(cartesianVariants(loadedAxes, tpl, String(product.price)).map((r) => r.name));
     setForm({
       name: product.name,
       category: product.category,
@@ -119,12 +138,18 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       stock: String(product.stock),
       status: product.status,
       images: product.images && product.images.length > 0 ? product.images : product.img ? [product.img] : [],
+      tags: Array.isArray(product.tags) ? product.tags : [],
       b2bEnabled: Boolean(product.b2bEnabled),
       freeShipping: product.freeShipping !== false,
       worldwideFreeShipping: Boolean(product.worldwideFreeShipping),
       specifications: specsArrayToMap(product.specifications, tpl),
-      variantAxes: axesArrayToMap(product.variantAxes, tpl),
-      variants: (product.variants || []).map((v) => ({ name: v.name, price: v.price ?? '', stock: v.stock ?? '' })),
+      variantAxes: loadedAxes,
+      variants: (product.variants || []).map((v) => ({
+        name: v.name,
+        price: v.price ?? '',
+        stock: v.stock ?? '',
+        custom: !generatedNames.has(v.name),
+      })),
       shipping: {
         weightKg: product.shipping?.weightKg ?? '',
         lengthCm: product.shipping?.lengthCm ?? '',
@@ -155,8 +180,13 @@ export default function ProductFormModal({ open, product, loading, error, onClos
     if (!template || template.variantAxes.length === 0) return;
     setForm((f) => {
       const generated = cartesianVariants(f.variantAxes, template, f.price);
+      const generatedNames = new Set(generated.map((r) => r.name));
       const byName = Object.fromEntries(f.variants.map((v) => [v.name, v]));
-      const merged = generated.map((row) => byName[row.name] || row);
+      const generatedRows = generated.map((row) => byName[row.name] || row);
+      // Rows added via "Add a variant separately" (or, on edit, ones saved that don't match the
+      // axis grid) aren't part of the cartesian combo — keep them regardless of axis edits.
+      const extraRows = f.variants.filter((v) => !generatedNames.has(v.name));
+      const merged = [...generatedRows, ...extraRows];
       const sameLength = merged.length === f.variants.length;
       const unchanged = sameLength && merged.every((row, i) => row === f.variants[i]);
       return unchanged ? f : { ...f, variants: merged };
@@ -174,6 +204,17 @@ export default function ProductFormModal({ open, product, loading, error, onClos
   const setAxis = (key) => (e) => setForm((f) => ({ ...f, variantAxes: { ...f.variantAxes, [key]: e.target.value } }));
   const setVariantField = (index, key) => (e) =>
     setForm((f) => ({ ...f, variants: f.variants.map((v, i) => (i === index ? { ...v, [key]: e.target.value } : v)) }));
+  const removeVariant = (index) => setForm((f) => ({ ...f, variants: f.variants.filter((_, i) => i !== index) }));
+  const addManualVariant = () => {
+    const name = manualVariant.name.trim();
+    if (!name) return;
+    setForm((f) => ({
+      ...f,
+      variants: [...f.variants, { name, price: manualVariant.price, stock: manualVariant.stock || '0', custom: true }],
+    }));
+    setManualVariant({ name: '', price: '', stock: '' });
+    setManualVariantOpen(false);
+  };
   const setShippingField = (key) => (e) => setForm((f) => ({ ...f, shipping: { ...f.shipping, [key]: e.target.value } }));
   const toggleSection = (key) => setOpenSections((s) => ({ ...s, [key]: !s[key] }));
 
@@ -227,7 +268,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       b2bEnabled: form.b2bEnabled,
       freeShipping: form.freeShipping,
       worldwideFreeShipping: form.freeShipping && form.worldwideFreeShipping,
-      tags,
+      tags: mergeHashtags(form.tags, descriptionTags),
       specifications,
       variantAxes: template
         ? template.variantAxes
@@ -278,16 +319,37 @@ export default function ProductFormModal({ open, product, loading, error, onClos
               rows={3}
               className={`${fieldClass} resize-none`}
             />
-            {tags.length > 0 && (
+            {descriptionTags.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                <span className="text-[11.5px] font-semibold text-ink-soft">{tags.length} tag{tags.length !== 1 ? 's' : ''}:</span>
-                {tags.map((tag) => (
+                <span className="text-[11.5px] font-semibold text-ink-soft">
+                  {descriptionTags.length} tag{descriptionTags.length !== 1 ? 's' : ''} in description:
+                </span>
+                {descriptionTags.map((tag) => (
                   <span key={tag} className="text-[11.5px] font-semibold text-green bg-green/10 rounded-full px-2.5 py-0.5">
                     #{tag}
                   </span>
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Explicit hashtag editor — separate from the description's inline #hashtag typing
+              above. Up to 3 of whichever of these tags turn out most popular show under the
+              product on its page; the rest stay reachable from the description there. */}
+          <div>
+            <label className={labelClass}>Hashtags (optional)</label>
+            <HashtagChipInput value={form.tags} onChange={(tags) => setForm((f) => ({ ...f, tags }))} fieldClass={fieldClass} />
+            <HashtagAiSuggestions
+              title={form.name}
+              category={form.category}
+              description={form.description}
+              exclude={form.tags}
+              onAdd={(tag) =>
+                setForm((f) =>
+                  f.tags.some((t) => t.toLowerCase() === tag.toLowerCase()) ? f : { ...f, tags: [...f.tags, tag] }
+                )
+              }
+            />
           </div>
 
           {/* Listing type — decides whether this is a normal single-product B2C listing (kept
@@ -408,26 +470,44 @@ export default function ProductFormModal({ open, product, loading, error, onClos
               {template.variantAxes.length > 0 && (
                 <div className="flex flex-col gap-3">
                   <p className={sectionTitleClass}>Variants (optional)</p>
-                  {template.variantAxes.map((axis) => (
-                    <div key={axis.key}>
-                      <label className={labelClass}>{axis.label} options</label>
-                      <input
-                        type="text"
-                        value={form.variantAxes[axis.key] || ''}
-                        onChange={setAxis(axis.key)}
-                        placeholder={axis.placeholder}
-                        className={fieldClass}
-                      />
-                    </div>
-                  ))}
+                  {template.variantAxes.map((axis) => {
+                    const preset = getVariantOptionPreset(axis.key, categoryGroup);
+                    return (
+                      <div key={axis.key}>
+                        <label className={labelClass}>{axis.label} options</label>
+                        {preset ? (
+                          <VariantOptionPicker
+                            preset={preset}
+                            value={form.variantAxes[axis.key] || ''}
+                            onChange={(val) => setForm((f) => ({ ...f, variantAxes: { ...f.variantAxes, [axis.key]: val } }))}
+                            placeholder={axis.placeholder}
+                            fieldClass={fieldClass}
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            value={form.variantAxes[axis.key] || ''}
+                            onChange={setAxis(axis.key)}
+                            placeholder={axis.placeholder}
+                            className={fieldClass}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {form.variants.length > 0 && (
                     <div className="mt-1 flex flex-col gap-2">
                       <p className="text-[11.5px] font-semibold text-ink-soft">Fill in stock for each variant you're offering:</p>
                       {form.variants.map((v, i) => (
-                        <div key={v.name} className="grid grid-cols-[1fr_90px_80px] gap-2 items-center">
-                          <span className="text-[12.5px] text-ink truncate" title={v.name}>
-                            {v.name}
+                        <div key={`${v.name}-${i}`} className="grid grid-cols-[1fr_90px_80px_22px] gap-2 items-center">
+                          <span className="text-[12.5px] text-ink truncate flex items-center gap-1.5" title={v.name}>
+                            <span className="truncate">{v.name}</span>
+                            {v.custom && (
+                              <span className="shrink-0 text-[9.5px] font-bold text-orange-text bg-orange-tint rounded-full px-1.5 py-[1px]">
+                                Custom
+                              </span>
+                            )}
                           </span>
                           <input
                             type="text"
@@ -445,9 +525,83 @@ export default function ProductFormModal({ open, product, loading, error, onClos
                             placeholder="Stock"
                             className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
                           />
+                          {v.custom ? (
+                            <button
+                              type="button"
+                              onClick={() => removeVariant(i)}
+                              aria-label={`Remove ${v.name}`}
+                              className="cursor-pointer flex items-center justify-center text-text-muted hover:text-orange-text p-1"
+                            >
+                              <IconTrash width="13" height="13" />
+                            </button>
+                          ) : (
+                            <span />
+                          )}
                         </div>
                       ))}
                     </div>
+                  )}
+
+                  {manualVariantOpen ? (
+                    <div className="border border-dashed border-border-strong rounded-lg p-3 flex flex-col gap-2">
+                      <p className="text-[11.5px] font-semibold text-ink-soft">
+                        Add one specific variant with its own price &amp; color — separate from the combinations above
+                      </p>
+                      <input
+                        type="text"
+                        value={manualVariant.name}
+                        onChange={(e) => setManualVariant((m) => ({ ...m, name: e.target.value }))}
+                        placeholder="e.g. Color: Rose Gold"
+                        className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={manualVariant.price}
+                          onChange={(e) => setManualVariant((m) => ({ ...m, price: e.target.value }))}
+                          placeholder={form.price || 'Price'}
+                          className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                        />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={manualVariant.stock}
+                          onChange={(e) => setManualVariant((m) => ({ ...m, stock: e.target.value }))}
+                          placeholder="Stock"
+                          className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                        />
+                      </div>
+                      <div className="flex gap-2 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setManualVariantOpen(false);
+                            setManualVariant({ name: '', price: '', stock: '' });
+                          }}
+                          className="flex-1 text-[12px] font-semibold text-ink-soft border border-border rounded-lg py-1.5 cursor-pointer hover:bg-surface-muted transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={addManualVariant}
+                          disabled={!manualVariant.name.trim()}
+                          className="flex-1 text-[12px] font-semibold text-white bg-green hover:bg-green-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg py-1.5 cursor-pointer transition-colors"
+                        >
+                          Add variant
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setManualVariantOpen(true)}
+                      className="self-start flex items-center gap-1.5 text-[12.5px] font-semibold text-green hover:underline cursor-pointer"
+                    >
+                      <IconPlus width="13" height="13" />
+                      Add a variant separately (custom price/color)
+                    </button>
                   )}
                 </div>
               )}

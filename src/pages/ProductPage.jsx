@@ -29,6 +29,7 @@ import VariantBottomSheet from '../components/VariantBottomSheet';
 import VariantPicker from '../components/product/VariantPicker';
 import FirstVisitSignupPrompt from '../components/FirstVisitSignupPrompt';
 import SectionCard from '../components/product/SectionCard';
+import ExpandableText from '../components/product/ExpandableText';
 import QuickFacts from '../components/product/QuickFacts';
 import PriceBox from '../components/product/PriceBox';
 import FeatureBadges from '../components/product/FeatureBadges';
@@ -45,6 +46,7 @@ import ReviewsSection from '../components/product/ReviewsSection';
 import FaqSection from '../components/product/FaqSection';
 import ProductRail from '../components/product/ProductRail';
 import MobileProductHeader from '../components/product/MobileProductHeader';
+import HashtagText from '../components/HashtagText';
 import { IconChevronRight, IconShield, IconTrendingUp } from '../components/icons';
 
 export default function ProductPage() {
@@ -287,6 +289,11 @@ export default function ProductPage() {
   const reviews = productReviews(product);
   const soldCount = productSoldCount(product);
   const highlights = productHighlights(product);
+  // Up to 3 most-relevant/trending hashtags (server-ranked, see topTagsFor in
+  // server/src/utils/hashtags.js) shown right under the title; any of the product's other
+  // tags stay reachable from the description instead of cluttering the top of the page.
+  const topTags = product.topTags || [];
+  const extraTags = (product.tags || []).filter((t) => !topTags.some((top) => top.toLowerCase() === t.toLowerCase()));
 
   const sameCategory = catalogProducts.filter((p) => p.id !== product.id && p.category === product.category);
   const relatedProducts = sameCategory.slice(0, 4);
@@ -307,8 +314,32 @@ export default function ProductPage() {
       content: (
         <div className="flex flex-col gap-6 sm:gap-8">
           <SectionCard title="Product Description">
-            <p className="text-[14.5px] text-text leading-relaxed m-0">{productDescription(product)}</p>
+            {/* YouTube-style clamp — however long the description is, only a few lines show up
+                front with a "See more" toggle, so the related-products rail right below it is
+                reachable without scrolling past a wall of text. */}
+            <ExpandableText lines={4} className="text-[14.5px] text-text leading-relaxed m-0">
+              <HashtagText text={productDescription(product)} />
+            </ExpandableText>
+            {/* Any hashtags beyond the top 3 shown under the title stay reachable here,
+                instead of cluttering the top of the page — still clickable/discoverable. */}
+            {extraTags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-4 pt-4 border-t border-border">
+                <span className="text-[12px] font-semibold text-ink-soft">Tags:</span>
+                {extraTags.map((tag) => (
+                  <Link
+                    key={tag}
+                    to={`/hashtag/${encodeURIComponent(tag)}`}
+                    className="text-[12.5px] font-medium text-hashtag hover:text-hashtag-hover hover:underline no-underline"
+                  >
+                    #{tag}
+                  </Link>
+                ))}
+              </div>
+            )}
           </SectionCard>
+          {/* Similar products right under the description — previously buried inside the
+              "Recommended" tab, a click away from where a shopper is actually reading. */}
+          <ProductRail title="Related Products" products={relatedProducts} />
           <ProductFeatures features={productFeatures(product)} />
           <CertificationsSection items={certifications} />
         </div>
@@ -357,10 +388,11 @@ export default function ProductPage() {
       label: 'Recommended',
       content: (
         <div className="flex flex-col gap-8 sm:gap-10">
-          <ProductRail title="Related Products" products={relatedProducts} />
+          {/* Related Products now shows right under the description in Overview, where it's
+              actually seen — this tab keeps the other two rails. */}
           <ProductRail title="Frequently Bought Together" products={frequentlyBoughtWith} />
           <ProductRail title="Recently Viewed Products" products={recentlyViewedProducts} />
-          {relatedProducts.length === 0 && frequentlyBoughtWith.length === 0 && recentlyViewedProducts.length === 0 && (
+          {frequentlyBoughtWith.length === 0 && recentlyViewedProducts.length === 0 && (
             <p className="text-[14px] text-text-muted text-center py-8">Nothing to recommend yet — keep browsing the marketplace.</p>
           )}
         </div>
@@ -417,17 +449,12 @@ export default function ProductPage() {
             </div>
           )}
 
-          <h1 className="font-display text-[26px] sm:text-[32px] lg:text-[36px] font-bold m-0 mb-4 tracking-tight leading-[1.14] text-balance">
+          <h1 className="font-display text-[26px] sm:text-[32px] lg:text-[36px] font-bold m-0 mb-2 tracking-tight leading-[1.14] text-balance">
             {product.name}
           </h1>
 
-          {storeSeller ? (
-            <StoreCard rating={product.rating} seller={storeSeller} />
-          ) : (
-            <div className="animate-pulse h-[78px] bg-surface-muted rounded-2xl mb-[22px]" />
-          )}
-
-          {/* Price — sticky-styled buy box: current/original/savings + rating + sold count */}
+          {/* Price — shown immediately below the title, nothing in between — sticky-styled buy
+              box: current/original/savings + rating + sold count */}
           <div className="bg-surface-muted/60 border border-border rounded-2xl px-5 py-5 mb-5">
             <PriceBox
               product={product}
@@ -437,6 +464,28 @@ export default function ProductPage() {
               priceOverride={selectedVariant?.price}
             />
           </div>
+
+          {/* YouTube-style hashtag row — max 3, clickable, only the tags currently ranked
+              most relevant/trending for this product (see topTags above). */}
+          {topTags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4">
+              {topTags.map((tag) => (
+                <Link
+                  key={tag}
+                  to={`/hashtag/${encodeURIComponent(tag)}`}
+                  className="text-[13.5px] font-semibold text-hashtag hover:text-hashtag-hover hover:underline no-underline"
+                >
+                  #{tag}
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {storeSeller ? (
+            <StoreCard rating={product.rating} seller={storeSeller} />
+          ) : (
+            <div className="animate-pulse h-[78px] bg-surface-muted rounded-2xl mb-[22px]" />
+          )}
 
           {/* Daraz-style pack/variant picker — visible on the page itself, not only inside the
               Add to Cart sheet, so a buyer sees and can pick a variant before tapping anything. */}

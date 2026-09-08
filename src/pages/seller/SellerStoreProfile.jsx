@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { seller } from '../../lib/api';
 import Toast from '../../components/Toast';
-import ProductImagesUploader from '../../components/ProductImagesUploader';
+import StoreLogoUploader from '../../components/StoreLogoUploader';
+import StoreBannerUploader from '../../components/StoreBannerUploader';
 import { IconStore } from '../../components/icons';
 
 export default function SellerStoreProfile() {
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [form, setForm] = useState({ bannerUrl: null, description: '', hours: '' });
+  const [form, setForm] = useState({ logoUrl: null, bannerUrl: null, description: '', hours: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
@@ -18,14 +19,11 @@ export default function SellerStoreProfile() {
       .getStoreProfile()
       .then(({ store: s }) => {
         setStore(s);
-        setForm({ bannerUrl: s.bannerUrl || null, description: s.description || '', hours: s.hours || '' });
+        setForm({ logoUrl: s.logoUrl || null, bannerUrl: s.bannerUrl || null, description: s.description || '', hours: s.hours || '' });
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
-
-  const bannerImages = form.bannerUrl ? [form.bannerUrl] : [];
-  const setBannerImages = (images) => setForm((f) => ({ ...f, bannerUrl: images[0] || null }));
 
   const submit = async () => {
     setSaving(true);
@@ -64,11 +62,16 @@ export default function SellerStoreProfile() {
 
           <div className="flex flex-col gap-4">
             <div>
+              <label className={labelClass}>Store logo</label>
+              <StoreLogoUploader value={form.logoUrl} onChange={(logoUrl) => setForm((f) => ({ ...f, logoUrl }))} />
+            </div>
+
+            <div>
               <label className={labelClass}>
                 <IconStore width="14" height="14" className="inline mr-1.5 -mt-0.5" />
                 Store banner
               </label>
-              <ProductImagesUploader images={bannerImages} onChange={setBannerImages} max={1} type="store-banners" />
+              <StoreBannerUploader value={form.bannerUrl} onChange={(bannerUrl) => setForm((f) => ({ ...f, bannerUrl }))} />
             </div>
 
             <div>

@@ -5,7 +5,7 @@ import { formatPKR } from '../../data/mockData';
 import ProductFormModal from '../../components/ProductFormModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import Toast from '../../components/Toast';
-import { IconBox, IconEdit, IconPlus, IconTrash } from '../../components/icons';
+import { IconBox, IconEdit, IconEye, IconPlus, IconTrash } from '../../components/icons';
 
 export default function SellerProducts() {
   const [products, setProducts] = useState([]);
@@ -164,7 +164,7 @@ export default function SellerProducts() {
               </Link>
               <div className="p-4">
                 <div className="text-[14.5px] font-semibold text-ink leading-snug line-clamp-2 mb-1 min-h-[38px]">{p.name}</div>
-                <div className="flex items-baseline justify-between mb-3">
+                <div className="flex items-baseline justify-between mb-1.5">
                   <span className="font-display font-bold text-green text-[15px]">
                     {formatPKR(p.price)}
                     <span className="text-xs font-medium text-text-muted"> /{p.unit}</span>
@@ -172,6 +172,10 @@ export default function SellerProducts() {
                   <span className={`text-xs font-semibold ${p.stock === 0 ? 'text-orange-text' : 'text-text-muted'}`}>
                     {p.stock === 0 ? 'Out of stock' : `${p.stock} in stock`}
                   </span>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-text-muted mb-3">
+                  <IconEye width="13" height="13" />
+                  {(p.views || 0).toLocaleString('en-US')} view{p.views === 1 ? '' : 's'}
                 </div>
                 <div className="flex gap-2">
                   <button

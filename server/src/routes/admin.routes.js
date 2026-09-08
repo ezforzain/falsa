@@ -8,6 +8,7 @@ import { SellerOrder, ORDER_STATUSES } from '../models/SellerOrder.js';
 import { Category } from '../models/Category.js';
 import { FilterConfig, FILTER_TYPES, FILTER_SECTIONS } from '../models/FilterConfig.js';
 import { MarketplaceSettings } from '../models/MarketplaceSettings.js';
+import * as tcsService from '../services/tcsService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { serializeUser, serializeUsers } from '../utils/serializeUser.js';
@@ -511,7 +512,16 @@ router.get(
 router.patch(
   '/settings',
   asyncHandler(async (req, res) => {
-    const { siteName, supportEmail, commissionRatePercent, currency, maintenanceMode } = req.body;
+    const {
+      siteName,
+      supportEmail,
+      commissionRatePercent,
+      currency,
+      maintenanceMode,
+      tcsCostCenterCode,
+      tcsServiceCode,
+      tcsDefaultWeightKg,
+    } = req.body;
     if (siteName !== undefined && !String(siteName).trim()) {
       return res.status(400).json({ message: 'Marketplace name cannot be empty.' });
     }
@@ -521,6 +531,9 @@ router.patch(
     ) {
       return res.status(400).json({ message: 'Commission rate must be between 0 and 100.' });
     }
+    if (tcsDefaultWeightKg !== undefined && (!Number.isFinite(tcsDefaultWeightKg) || tcsDefaultWeightKg < 0.5)) {
+      return res.status(400).json({ message: 'Default TCS weight must be at least 0.5 kg.' });
+    }
     let settings = await MarketplaceSettings.findOne();
     if (!settings) settings = new MarketplaceSettings();
     settings.set({
@@ -529,9 +542,55 @@ router.patch(
       ...(commissionRatePercent !== undefined && { commissionRatePercent }),
       ...(currency !== undefined && { currency }),
       ...(maintenanceMode !== undefined && { maintenanceMode: Boolean(maintenanceMode) }),
+      ...(tcsCostCenterCode !== undefined && { tcsCostCenterCode: String(tcsCostCenterCode).trim() }),
+      ...(tcsServiceCode !== undefined && { tcsServiceCode: String(tcsServiceCode).trim() }),
+      ...(tcsDefaultWeightKg !== undefined && { tcsDefaultWeightKg }),
     });
     await settings.save();
     res.json({ settings });
+  })
+);
+
+// ---------- TCS Courier — admin setup + oversight ----------
+// The actual booking happens automatically when a seller clicks "Ship with Falsafah" (see
+// PATCH /api/seller/orders/:id/ship) — these routes are for the one-time cost-center setup above
+// and for admins to see/track shipments already booked, not for creating them.
+
+router.get(
+  '/tcs/cost-centers',
+  asyncHandler(async (_req, res) => {
+    try {
+      tcsService.assertConfigured();
+      const centers = await tcsService.costCenterInquiry(process.env.TCS_TCSACCOUNT);
+      res.json({ costCenters: centers });
+    } catch (err) {
+      const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 502;
+      res.status(status).json({ message: err.message || 'Could not load TCS cost centers.' });
+    }
+  })
+);
+
+router.get(
+  '/orders/:id/tcs/track',
+  asyncHandler(async (req, res) => {
+    const order = await SellerOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+    if (order.shippingMethod !== 'falsafah' || !order.trackingId) {
+      return res.status(400).json({ message: 'This order has no TCS shipment to track.' });
+    }
+    try {
+      const tracking = await tcsService.trackShipment(order.trackingId);
+      const latestStatus = tracking?.deliveryinfo?.[0]?.status || tracking?.shipmentsummary || null;
+      if (latestStatus) {
+        order.tcsDeliveryStatus = latestStatus;
+        order.tcsDeliveryStatusAt = new Date();
+        await order.save();
+      }
+      res.json({ tracking });
+    } catch (err) {
+      const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 502;
+      res.status(status).json({ message: err.message || 'Could not fetch tracking from TCS.' });
+    }
   })
 );
 

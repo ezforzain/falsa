@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema(
     passwordHash: { type: String, required: true },
     category: { type: String, default: null },
     address: { type: String, default: null },
+    // Seller's pickup city — free text, no code lookup needed (TCS Booking-Create only requires
+    // a city *name*, not a city code, for shipperinfo). Gated before "Ship with Falsafah" works,
+    // same pattern as the bank-details gate below, since TCS bookings need a real pickup city.
+    city: { type: String, default: null },
     // Set via PATCH /api/auth/avatar (server/src/routes/auth.routes.js) — always either null or a
     // path under /uploads/avatars/ returned by POST /api/uploads/avatars, never an arbitrary URL.
     avatarUrl: { type: String, default: null },

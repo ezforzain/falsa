@@ -11,6 +11,10 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Live TCS tracking per order, fetched on demand when "Track Shipment" is clicked (see
+  // GET /api/orders/:id/tracking) — keyed by order id so several can be open at once.
+  const [trackingById, setTrackingById] = useState({});
+  const [trackingLoadingId, setTrackingLoadingId] = useState(null);
   // Deep-linked from the profile page's order-status tiles (e.g. /orders?status=Shipped) — kept
   // in the URL (rather than plain useState) so that link actually lands filtered, and so
   // reloading/sharing the filtered view works too.
@@ -28,6 +32,18 @@ export default function OrdersPage() {
 
   const setActiveStatus = (status) => {
     setSearchParams(status === 'All' ? {} : { status });
+  };
+
+  const trackShipment = async (orderId) => {
+    setTrackingLoadingId(orderId);
+    try {
+      const { tracking } = await myOrders.track(orderId);
+      setTrackingById((current) => ({ ...current, [orderId]: { tracking, error: null } }));
+    } catch (err) {
+      setTrackingById((current) => ({ ...current, [orderId]: { tracking: null, error: err.message } }));
+    } finally {
+      setTrackingLoadingId(null);
+    }
   };
 
   const visibleOrders = useMemo(
@@ -131,18 +147,51 @@ export default function OrdersPage() {
 
                 <div className="mt-3 pt-3 border-t border-border/70">
                   {o.shippingMethod ? (
-                    <div className="flex items-center gap-2 flex-wrap text-[12.5px]">
-                      <IconTruck width="14" height="14" className="text-green shrink-0" />
-                      <span className="text-ink-soft">
-                        Shipped via <strong className="text-ink">{o.courierName}</strong> · Tracking:{' '}
-                        <strong className="text-ink">{o.trackingId}</strong>
-                      </span>
-                      {o.labelUrl && (
-                        <a href={o.labelUrl} download className="text-green font-semibold hover:underline">
-                          Download label
-                        </a>
+                    <>
+                      <div className="flex items-center gap-2 flex-wrap text-[12.5px]">
+                        <IconTruck width="14" height="14" className="text-green shrink-0" />
+                        <span className="text-ink-soft">
+                          Shipped via <strong className="text-ink">{o.courierName}</strong> · Tracking:{' '}
+                          <strong className="text-ink">{o.trackingId}</strong>
+                        </span>
+                        {o.labelUrl && (
+                          <a href={o.labelUrl} download className="text-green font-semibold hover:underline">
+                            Download label
+                          </a>
+                        )}
+                        {o.shippingMethod === 'falsafah' && (
+                          <button
+                            type="button"
+                            onClick={() => trackShipment(o.id)}
+                            disabled={trackingLoadingId === o.id}
+                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 text-green font-semibold hover:underline"
+                          >
+                            {trackingLoadingId === o.id ? 'Checking…' : 'Track Shipment'}
+                          </button>
+                        )}
+                      </div>
+                      {trackingById[o.id]?.error && <p className="text-[12px] text-orange-text mt-1.5">{trackingById[o.id].error}</p>}
+                      {trackingById[o.id]?.tracking && (
+                        <div className="mt-2 bg-surface-muted rounded-lg px-3 py-2.5 text-[12px] text-ink-soft">
+                          <p className="font-semibold text-ink">
+                            {trackingById[o.id].tracking.deliveryinfo?.[0]?.status || 'Status unavailable'}
+                          </p>
+                          {trackingById[o.id].tracking.deliveryinfo?.[0]?.datetime && (
+                            <p className="text-text-muted mt-0.5">{trackingById[o.id].tracking.deliveryinfo[0].datetime}</p>
+                          )}
+                          {trackingById[o.id].tracking.checkpoints?.length > 0 && (
+                            <ul className="mt-2 flex flex-col gap-1 border-t border-border/70 pt-2">
+                              {trackingById[o.id].tracking.checkpoints.slice(0, 4).map((cp, i) => (
+                                <li key={i} className="flex items-center justify-between gap-2">
+                                  <span>{cp.status}</span>
+                                  <span className="text-text-muted whitespace-nowrap">{cp.datetime}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
                       )}
-                    </div>
+                    </>
                   ) : (
                     <p className="text-[12.5px] text-text-muted">Not shipped yet — the seller is still processing this order.</p>
                   )}

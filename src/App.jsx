@@ -7,6 +7,7 @@ import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
 import SpotlightPage from './pages/SpotlightPage';
 import SearchPage from './pages/SearchPage';
+import HashtagPage from './pages/HashtagPage';
 import ProductPage from './pages/ProductPage';
 import StorePage from './pages/StorePage';
 import CartPage from './pages/CartPage';
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/spotlight" element={<SpotlightPage />} />
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/hashtag/:tag" element={<HashtagPage />} />
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/store/:id" element={<StorePage />} />
           <Route path="/cart" element={<CartPage />} />

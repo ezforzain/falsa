@@ -67,6 +67,10 @@ const productSchema = new mongoose.Schema(
     specifications: [specSchema],
     reviews: [reviewSchema],
     sold: { type: Number, default: 0 }, // units sold, drives the "Best Seller · TOP N" rank badge
+    // Bumped once per public product-page load (see GET /products/:id in catalog.routes.js) —
+    // mirrored back to the seller portal's listing views (see seller.routes.js) so a seller can
+    // see how many times each of their listings has been viewed.
+    views: { type: Number, default: 0 },
     freeShipping: { type: Boolean, default: true },
     // Qualifies freeShipping: false means the free shipping is local (seller's own country) only,
     // true means it's honored for buyers in any country. Meaningless when freeShipping is false.

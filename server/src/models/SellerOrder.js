@@ -33,11 +33,19 @@ const sellerOrderSchema = new mongoose.Schema(
     },
     // Set once via PATCH /api/seller/orders/:id/ship and never again — see the 409 guard there.
     // That immutability is what makes the generated label/tracking info tamper-proof.
+    // 'falsafah' is now a real TCS Courier booking under the hood (branded "Falsafah Express" to
+    // the buyer) — see tcsService.js and the /ship handler in seller.routes.js.
     shippingMethod: { type: String, enum: ['falsafah', 'self', null], default: null },
     courierName: { type: String, default: null },
     trackingId: { type: String, default: null },
     labelUrl: { type: String, default: null },
     shippedAt: { type: Date, default: null },
+    // Last-known TCS delivery status, cached from the Tracking API whenever an admin or the buyer
+    // refreshes it (see GET /api/admin/orders/:id/tcs/track and GET /api/orders/:id/tracking) —
+    // avoids hitting TCS on every page load just to render the badge. Only meaningful when
+    // shippingMethod is 'falsafah' (the only TCS-backed method).
+    tcsDeliveryStatus: { type: String, default: null },
+    tcsDeliveryStatusAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

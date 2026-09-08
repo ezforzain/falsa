@@ -1,28 +1,29 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import html2canvas from 'html2canvas';
 import { seller } from '../../lib/api';
-import { uploadFile } from '../../lib/upload';
-import ShippingLabel from './ShippingLabel';
-import { IconClose, IconTruck, IconBox, IconCheck, IconAlertCircle } from '../icons';
+import { IconClose, IconTruck, IconBox, IconCheck, IconAlertCircle, IconFile } from '../icons';
 
 const fieldClass =
   'w-full px-[14px] py-[11px] border border-border rounded-lg text-[14px] font-sans bg-white text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
 const labelClass = 'block text-[12.5px] font-semibold text-ink-soft mb-1.5';
 
-// Ship Now flow: pick Falsafah (auto-filled, gated on bank details, generates a downloadable
-// label) or Ship Myself (courier name + tracking id, visible to the buyer immediately). Once
-// seller.shipOrder() succeeds the order's shippingMethod is set server-side and can never be
-// called again (see the 409 guard in seller.routes.js) — that's what makes this all one-shot.
-export default function ShipOrderModal({ open, order, sellerName, bankComplete, onClose, onShipped }) {
+// Ship Now flow: pick Falsafah (books a real TCS Courier shipment server-side — see
+// PATCH /api/seller/orders/:id/ship — using this seller's on-file pickup info, gated on bank
+// details + a pickup address/city being on file) or Ship Myself (courier name + tracking id,
+// visible to the buyer immediately). Once seller.shipOrder() succeeds the order's shippingMethod
+// is set server-side and can never be called again (see the 409 guard in seller.routes.js) —
+// that's what makes this all one-shot.
+export default function ShipOrderModal({ open, order, bankComplete, onClose, onShipped }) {
   const [method, setMethod] = useState(null);
   const [courierName, setCourierName] = useState('');
   const [trackingId, setTrackingId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [shippedOrder, setShippedOrder] = useState(null);
-  const [labelStatus, setLabelStatus] = useState('idle'); // idle | generating | ready | failed
-  const labelRef = useRef(null);
+  const [labelLoading, setLabelLoading] = useState(false);
+  const [tracking, setTracking] = useState(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState(null);
 
   useEffect(() => {
     if (!open) return;
@@ -31,37 +32,11 @@ export default function ShipOrderModal({ open, order, sellerName, bankComplete, 
     setTrackingId('');
     setLoading(false);
     setError(null);
-    setLabelStatus('idle');
+    setTracking(null);
+    setTrackingError(null);
     // Defensive: if this order was somehow already shipped, show its result instead of the picker.
     setShippedOrder(order?.shippingMethod ? order : null);
   }, [open, order]);
-
-  useEffect(() => {
-    if (labelStatus !== 'generating' || !shippedOrder) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const canvas = await html2canvas(labelRef.current, { backgroundColor: '#ffffff', scale: 2 });
-        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-        const file = new File([blob], `label-${shippedOrder.trackingId}.png`, { type: 'image/png' });
-        const { url } = await uploadFile('labels', file);
-        const { order: withLabel } = await seller.setOrderLabel(shippedOrder.id, url);
-        if (cancelled) return;
-        setShippedOrder(withLabel);
-        setLabelStatus('ready');
-        onShipped?.(withLabel);
-      } catch (err) {
-        if (!cancelled) {
-          setLabelStatus('failed');
-          setError(err.message || 'The order shipped, but the label image could not be generated.');
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [labelStatus, shippedOrder]);
 
   if (!open || !order) return null;
 
@@ -71,7 +46,6 @@ export default function ShipOrderModal({ open, order, sellerName, bankComplete, 
     try {
       const { order: updated } = await seller.shipOrder(order.id, { method: 'falsafah' });
       setShippedOrder(updated);
-      setLabelStatus('generating');
       onShipped?.(updated);
     } catch (err) {
       setError(err.message);
@@ -99,6 +73,36 @@ export default function ShipOrderModal({ open, order, sellerName, bankComplete, 
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Booking a TCS shipment already succeeded by the time the modal reaches this state — the
+  // label PDF is a separate best-effort fetch (see tryAttachTcsLabel in seller.routes.js) that
+  // can occasionally still be missing here, so this retries just that step.
+  const retryLabel = async () => {
+    setLabelLoading(true);
+    setError(null);
+    try {
+      const { order: updated } = await seller.retryTcsLabel(order.id);
+      setShippedOrder(updated);
+      onShipped?.(updated);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLabelLoading(false);
+    }
+  };
+
+  const refreshTracking = async () => {
+    setTrackingLoading(true);
+    setTrackingError(null);
+    try {
+      const { tracking: data } = await seller.trackOrder(order.id);
+      setTracking(data);
+    } catch (err) {
+      setTrackingError(err.message);
+    } finally {
+      setTrackingLoading(false);
     }
   };
 
@@ -175,17 +179,23 @@ export default function ShipOrderModal({ open, order, sellerName, bankComplete, 
             )}
 
             {method === 'falsafah' && bankComplete && (
-              <button
-                type="button"
-                onClick={confirmFalsafah}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-sm py-3 rounded-full shadow-[0_6px_16px_rgba(14,90,70,0.25)] transition-colors"
-              >
-                {loading && (
-                  <span className="w-3.5 h-3.5 border-2 border-white/35 rounded-full inline-block" style={{ borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
-                )}
-                {loading ? 'Shipping…' : 'Ready'}
-              </button>
+              <>
+                <p className="text-[12px] text-text-muted mb-3 leading-relaxed">
+                  This books a real TCS Courier pickup using your saved pickup address, city, and phone from Settings, and generates a
+                  downloadable shipping label automatically.
+                </p>
+                <button
+                  type="button"
+                  onClick={confirmFalsafah}
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-sm py-3 rounded-full shadow-[0_6px_16px_rgba(14,90,70,0.25)] transition-colors"
+                >
+                  {loading && (
+                    <span className="w-3.5 h-3.5 border-2 border-white/35 rounded-full inline-block" style={{ borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
+                  )}
+                  {loading ? 'Booking with TCS…' : 'Ready'}
+                </button>
+              </>
             )}
 
             {method === 'self' && (
@@ -228,29 +238,66 @@ export default function ShipOrderModal({ open, order, sellerName, bankComplete, 
 
         {done && shippedOrder.shippingMethod === 'falsafah' && (
           <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <ShippingLabel ref={labelRef} order={shippedOrder} sellerName={sellerName} />
-              {labelStatus === 'generating' && (
-                <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-xl">
-                  <span className="w-6 h-6 border-2 border-border-strong border-t-green rounded-full inline-block animate-[spin_0.8s_linear_infinite]" />
+            <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center">
+              <IconCheck width="24" height="24" className="text-green" />
+            </span>
+            <div className="text-center">
+              <p className="text-[15px] font-bold text-ink mb-1">Booked with TCS</p>
+              <p className="text-[13px] text-text-muted">
+                Consignment No. <strong className="text-ink">{shippedOrder.trackingId}</strong>
+              </p>
+            </div>
+
+            {shippedOrder.labelUrl ? (
+              <a
+                href={shippedOrder.labelUrl}
+                download={`tcs-label-${shippedOrder.trackingId}.pdf`}
+                className="inline-flex items-center gap-1.5 bg-green hover:bg-green-hover text-white font-semibold text-[13px] px-6 py-2.5 rounded-full transition-colors"
+              >
+                <IconFile width="14" height="14" />
+                Download label (PDF)
+              </a>
+            ) : (
+              <div className="text-center">
+                <p className="text-[12.5px] text-orange-text mb-2">Label isn't ready yet — TCS may still be generating it.</p>
+                <button
+                  type="button"
+                  onClick={retryLabel}
+                  disabled={labelLoading}
+                  className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-surface border border-border text-ink-soft font-semibold text-xs px-4 py-2 rounded-full hover:bg-surface-muted transition-colors"
+                >
+                  {labelLoading ? 'Checking…' : 'Get label'}
+                </button>
+              </div>
+            )}
+
+            <div className="w-full border-t border-border pt-3.5">
+              {!tracking && (
+                <button
+                  type="button"
+                  onClick={refreshTracking}
+                  disabled={trackingLoading}
+                  className="w-full cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-surface border border-border text-ink-soft font-semibold text-xs px-4 py-2.5 rounded-full hover:bg-surface-muted transition-colors"
+                >
+                  {trackingLoading ? 'Checking status…' : 'Track shipment'}
+                </button>
+              )}
+              {trackingError && <p className="text-[11.5px] text-orange-text mt-2 text-center">{trackingError}</p>}
+              {tracking && (
+                <div className="text-[12.5px] text-ink-soft">
+                  <p className="font-semibold text-ink mb-1">{tracking.deliveryinfo?.[0]?.status || 'Status unavailable'}</p>
+                  {tracking.deliveryinfo?.[0]?.datetime && <p className="text-text-muted mb-2">{tracking.deliveryinfo[0].datetime}</p>}
+                  <button
+                    type="button"
+                    onClick={refreshTracking}
+                    disabled={trackingLoading}
+                    className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 text-green font-semibold hover:underline"
+                  >
+                    {trackingLoading ? 'Refreshing…' : 'Refresh'}
+                  </button>
                 </div>
               )}
             </div>
-            {labelStatus === 'ready' && shippedOrder.labelUrl && (
-              <a
-                href={shippedOrder.labelUrl}
-                download={`label-${shippedOrder.trackingId}.png`}
-                className="inline-block bg-green hover:bg-green-hover text-white font-semibold text-[13px] px-6 py-2.5 rounded-full transition-colors"
-              >
-                Download label
-              </a>
-            )}
-            {labelStatus === 'failed' && (
-              <p className="text-[12.5px] text-orange-text text-center">
-                The order is marked shipped with tracking id {shippedOrder.trackingId}, but the label image failed to generate — you can still share the tracking id with the
-                buyer.
-              </p>
-            )}
           </div>
         )}
       </div>
