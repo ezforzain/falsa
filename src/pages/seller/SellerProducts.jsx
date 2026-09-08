@@ -5,7 +5,7 @@ import { formatPKR } from '../../data/mockData';
 import ProductFormModal from '../../components/ProductFormModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import Toast from '../../components/Toast';
-import { IconBox, IconEdit, IconEye, IconPlus, IconTrash } from '../../components/icons';
+import { IconBox, IconChevronDown, IconEdit, IconEye, IconPlus, IconTrash } from '../../components/icons';
 
 export default function SellerProducts() {
   const [products, setProducts] = useState([]);
@@ -22,6 +22,7 @@ export default function SellerProducts() {
 
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
+  const [reordering, setReordering] = useState(false);
 
   const showToast = (message) => {
     setToastMessage(message);
@@ -76,6 +77,28 @@ export default function SellerProducts() {
       setFormError(err.message);
     } finally {
       setFormLoading(false);
+    }
+  };
+
+  // "Store display order" — controls the sequence buyers see these products in on the public
+  // store page (see GET /api/sellers/:id's sort). Swapping just the two moved items would leave
+  // everyone else's storeOrder null/stale, so every move re-numbers the *entire* current list
+  // 0..N-1 in one pass — the first move a seller ever makes establishes a full order, not just a
+  // partial one.
+  const move = async (index, dir) => {
+    const target = index + dir;
+    if (target < 0 || target >= products.length || reordering) return;
+    const reordered = [...products];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    setProducts(reordered);
+    setReordering(true);
+    try {
+      await Promise.all(reordered.map((p, i) => seller.updateProduct(p.id, { storeOrder: i })));
+    } catch (err) {
+      setError(err.message);
+      load();
+    } finally {
+      setReordering(false);
     }
   };
 
@@ -141,7 +164,7 @@ export default function SellerProducts() {
 
       {!loading && !error && products.length > 0 && (
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
-          {products.map((p) => (
+          {products.map((p, i) => (
             <div key={p.id} className="bg-white border border-border rounded-2xl overflow-hidden">
               <Link to={`/seller/products/${p.id}`} className="block h-[130px] relative overflow-hidden cursor-pointer group">
                 <img
@@ -194,6 +217,30 @@ export default function SellerProducts() {
                     <IconTrash width="13" height="13" />
                     Delete
                   </button>
+                  {products.length > 1 && (
+                    <div className="flex gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => move(i, -1)}
+                        disabled={i === 0 || reordering}
+                        aria-label="Move up in store display order"
+                        title="Move up in store display order"
+                        className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 bg-white border border-border text-ink-soft p-2 rounded-lg hover:bg-surface-muted transition-colors"
+                      >
+                        <IconChevronDown width="13" height="13" className="rotate-180" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => move(i, 1)}
+                        disabled={i === products.length - 1 || reordering}
+                        aria-label="Move down in store display order"
+                        title="Move down in store display order"
+                        className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 bg-white border border-border text-ink-soft p-2 rounded-lg hover:bg-surface-muted transition-colors"
+                      >
+                        <IconChevronDown width="13" height="13" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
