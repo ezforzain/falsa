@@ -29,6 +29,21 @@ async function findOrCreateSellerByName(name) {
   return Seller.create({ name, verified: false, followerCount: 0, responseRate: 90 });
 }
 
+const HANDLE_RE = /^[a-z0-9_]{3,20}$/;
+
+// Best-effort "@handle" for a brand-new account, derived from their display name. Collisions are
+// rare (random 4-digit suffix) but not impossible, so this retries a handful of times with a
+// fresh suffix rather than letting a unique-index race fail the whole signup.
+async function generateUniqueHandle(companyName) {
+  const base = slugify(companyName).slice(0, 14) || 'user';
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const suffix = String(Math.floor(1000 + Math.random() * 9000));
+    const candidate = `${base}${suffix}`.slice(0, 20);
+    if (!(await User.findOne({ handle: candidate }))) return candidate;
+  }
+  return null; // Leave it unset rather than block signup — editable later from the profile page.
+}
+
 async function findUserByIdentifier(identifier) {
   const id = String(identifier ?? '').trim().toLowerCase();
   return User.findOne({ $or: [{ email: id }, { phone: String(identifier ?? '').trim() }] });
@@ -157,6 +172,7 @@ router.post(
     const isSeller = role === 'seller';
     const passwordHash = await bcrypt.hash(password, 10);
     const sellerDoc = isSeller ? await findOrCreateSellerByName(companyName) : null;
+    const handle = await generateUniqueHandle(companyName);
 
     const user = await User.create({
       role,
@@ -164,6 +180,7 @@ router.post(
       phone,
       passwordHash,
       companyName,
+      handle,
       country,
       category: category || null,
       address: address || null,
@@ -281,9 +298,24 @@ router.patch(
   '/profile',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { companyName, phone, country, category } = req.body;
+    const { companyName, phone, country, category, handle } = req.body;
     if (!companyName) return res.status(400).json({ message: 'Company name is required.' });
-    req.user.set({ companyName, phone, country, category });
+
+    const update = { companyName, phone, country, category };
+
+    // handle is optional on this route (undefined = "leave it alone") so the existing
+    // name/phone/country form can keep patching without ever having to know about it.
+    if (handle !== undefined) {
+      const normalized = String(handle || '').trim().toLowerCase();
+      if (!HANDLE_RE.test(normalized)) {
+        return res.status(400).json({ message: 'Handle must be 3-20 characters: lowercase letters, numbers, underscores.' });
+      }
+      const taken = await User.findOne({ handle: normalized, _id: { $ne: req.user._id } });
+      if (taken) return res.status(409).json({ message: 'That handle is already taken.' });
+      update.handle = normalized;
+    }
+
+    req.user.set(update);
     await req.user.save();
     res.json({ user: await serializeUser(req.user) });
   })
@@ -359,6 +391,37 @@ router.patch(
     await req.user.save();
     if (previousAvatarUrl && previousAvatarUrl !== avatarUrl) {
       await deleteAvatarFile(previousAvatarUrl);
+    }
+    res.json({ user: await serializeUser(req.user) });
+  })
+);
+
+// Same shape as AVATAR_URL_RE, pointed at /uploads/store-banners/ instead — what POST
+// /api/uploads/store-banners hands back.
+const BANNER_URL_RE = /^\/uploads\/store-banners\/[A-Za-z0-9_-]{1,64}\.[a-z0-9]{1,8}$/i;
+
+async function deleteBannerFile(bannerUrl) {
+  if (!bannerUrl || !BANNER_URL_RE.test(bannerUrl)) return;
+  const filePath = path.join(UPLOAD_ROOT, 'store-banners', path.basename(bannerUrl));
+  await fs.unlink(filePath).catch(() => {});
+}
+
+// ---------- PATCH /api/auth/banner ----------
+// Mirrors PATCH /api/auth/avatar exactly, one folder over — the cover photo behind the avatar on
+// the profile page.
+router.patch(
+  '/banner',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { bannerUrl } = req.body;
+    if (bannerUrl !== null && !(typeof bannerUrl === 'string' && BANNER_URL_RE.test(bannerUrl))) {
+      return res.status(400).json({ message: 'Invalid banner image.' });
+    }
+    const previousBannerUrl = req.user.bannerUrl;
+    req.user.set({ bannerUrl });
+    await req.user.save();
+    if (previousBannerUrl && previousBannerUrl !== bannerUrl) {
+      await deleteBannerFile(previousBannerUrl);
     }
     res.json({ user: await serializeUser(req.user) });
   })

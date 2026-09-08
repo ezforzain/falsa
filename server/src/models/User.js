@@ -24,6 +24,14 @@ const userSchema = new mongoose.Schema(
     // Set via PATCH /api/auth/avatar (server/src/routes/auth.routes.js) — always either null or a
     // path under /uploads/avatars/ returned by POST /api/uploads/avatars, never an arbitrary URL.
     avatarUrl: { type: String, default: null },
+    // Set via PATCH /api/auth/banner — same deal as avatarUrl but under /uploads/store-banners/,
+    // shown behind the avatar on the profile page (see AccountPage).
+    bannerUrl: { type: String, default: null },
+    // TikTok-style "@handle" shown under the display name on the profile page. Auto-assigned at
+    // signup (slug of companyName + a short random suffix so collisions are effectively
+    // impossible without a retry loop) and editable afterwards via PATCH /api/auth/profile.
+    // Sparse so legacy/seed accounts created before this field existed don't all collide on null.
+    handle: { type: String, default: null, unique: true, sparse: true },
 
     // Email verification — the account is only ever flipped to true by a successful
     // /api/auth/verify-email call; nothing else sets it.

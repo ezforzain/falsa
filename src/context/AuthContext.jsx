@@ -67,6 +67,14 @@ export function AuthProvider({ children }) {
     return updated;
   };
 
+  // Mirrors updateAvatar — bannerUrl is either a "/uploads/store-banners/..." path just returned
+  // by the upload endpoint, or null to remove the cover photo. See PATCH /api/auth/banner.
+  const updateBanner = async (bannerUrl) => {
+    const { user: updated } = await auth.updateBanner(bannerUrl);
+    setUser(updated);
+    return updated;
+  };
+
   const resendVerificationEmail = () => auth.resendVerificationEmail();
 
   const changePassword = (payload) => auth.changePassword(payload);
@@ -100,6 +108,7 @@ export function AuthProvider({ children }) {
     signUp,
     updateProfile,
     updateAvatar,
+    updateBanner,
     resendVerificationEmail,
     markEmailVerified,
     applyUserUpdate,
