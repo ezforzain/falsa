@@ -68,7 +68,11 @@ router.get(
 router.get(
   '/products',
   asyncHandler(async (req, res) => {
-    const products = await SellerProduct.find({ sellerId: req.user._id }).sort({ createdAt: -1 });
+    // { storeOrder: 1, createdAt: -1 }: unchanged newest-first default until this seller has ever
+    // used "Store display order" (see PATCH /products/:id's storeOrder) — from then on this list
+    // reflects the exact order buyers see on the public store page (same field, same sort shape
+    // as GET /api/sellers/:id, just tiebreaking newest-first here instead of oldest-first there).
+    const products = await SellerProduct.find({ sellerId: req.user._id }).sort({ storeOrder: 1, createdAt: -1 });
     // Product's `_id` is a plain string (see the model comment), not an ObjectId, so the ids must
     // be stringified before querying it — an ObjectId $in wouldn't match.
     const catalogViews = await Product.find({ _id: { $in: products.map((p) => p._id.toString()) } }, 'views').lean();
@@ -519,15 +523,34 @@ router.patch(
 
 function serializeStore(doc) {
   const s = doc.toObject();
-  return { ...s, id: s._id };
+  return {
+    ...s,
+    id: s._id,
+    promoBanners: (s.promoBanners || []).map((b) => ({ id: b._id, url: b.url })),
+    sections: (s.sections || []).map((sec) => ({ id: sec._id, name: sec.name, productIds: sec.productIds || [] })),
+  };
+}
+
+// Shared by every /store/* route below — 404s consistently if this account has no linked
+// storefront, or that storefront somehow doesn't exist, instead of each route re-deriving it.
+async function loadOwnStore(req, res) {
+  if (!req.user.sellerId) {
+    res.status(404).json({ message: 'No storefront found for this account.' });
+    return null;
+  }
+  const store = await Seller.findById(req.user.sellerId);
+  if (!store) {
+    res.status(404).json({ message: 'No storefront found for this account.' });
+    return null;
+  }
+  return store;
 }
 
 router.get(
   '/store',
   asyncHandler(async (req, res) => {
-    if (!req.user.sellerId) return res.status(404).json({ message: 'No storefront found for this account.' });
-    const store = await Seller.findById(req.user.sellerId);
-    if (!store) return res.status(404).json({ message: 'No storefront found for this account.' });
+    const store = await loadOwnStore(req, res);
+    if (!store) return;
     res.json({ store: serializeStore(store) });
   })
 );
@@ -543,6 +566,113 @@ router.patch(
       { new: true }
     );
     if (!store) return res.status(404).json({ message: 'No storefront found for this account.' });
+    res.json({ store: serializeStore(store) });
+  })
+);
+
+// ---------- Store promo banners (multiple, own carousel — distinct from the single bannerUrl) ----------
+
+router.post(
+  '/store/banners',
+  asyncHandler(async (req, res) => {
+    const store = await loadOwnStore(req, res);
+    if (!store) return;
+    const url = (req.body?.url || '').trim();
+    if (!url) return res.status(400).json({ message: 'Banner image URL is required.' });
+    store.promoBanners.push({ url });
+    await store.save();
+    res.status(201).json({ store: serializeStore(store) });
+  })
+);
+
+router.delete(
+  '/store/banners/:bannerId',
+  asyncHandler(async (req, res) => {
+    const store = await loadOwnStore(req, res);
+    if (!store) return;
+    store.promoBanners.pull({ _id: req.params.bannerId });
+    await store.save();
+    res.json({ store: serializeStore(store) });
+  })
+);
+
+router.patch(
+  '/store/banners/order',
+  asyncHandler(async (req, res) => {
+    const store = await loadOwnStore(req, res);
+    if (!store) return;
+    const order = req.body?.order;
+    if (!Array.isArray(order)) return res.status(400).json({ message: 'order must be a list of banner ids.' });
+    const byId = new Map(store.promoBanners.map((b) => [b._id.toString(), b]));
+    store.promoBanners = order.filter((id) => byId.has(id)).map((id) => ({ _id: byId.get(id)._id, url: byId.get(id).url }));
+    await store.save();
+    res.json({ store: serializeStore(store) });
+  })
+);
+
+// ---------- Store custom sections (seller-defined product groupings, e.g. "Eid Collection") ----------
+
+router.post(
+  '/store/sections',
+  asyncHandler(async (req, res) => {
+    const store = await loadOwnStore(req, res);
+    if (!store) return;
+    const name = (req.body?.name || '').trim();
+    if (!name) return res.status(400).json({ message: 'Section name is required.' });
+    store.sections.push({ name, productIds: [] });
+    await store.save();
+    res.status(201).json({ store: serializeStore(store) });
+  })
+);
+
+router.patch(
+  '/store/sections/:sectionId',
+  asyncHandler(async (req, res) => {
+    const store = await loadOwnStore(req, res);
+    if (!store) return;
+    const section = store.sections.id(req.params.sectionId);
+    if (!section) return res.status(404).json({ message: 'Section not found.' });
+
+    if (req.body?.name !== undefined) {
+      const name = String(req.body.name).trim();
+      if (!name) return res.status(400).json({ message: 'Section name is required.' });
+      section.name = name;
+    }
+    if (req.body?.productIds !== undefined) {
+      if (!Array.isArray(req.body.productIds)) return res.status(400).json({ message: 'productIds must be a list.' });
+      // Only ever reference this seller's own listings — never trust a client-submitted id blind.
+      const owned = await SellerProduct.find({ sellerId: req.user._id, _id: { $in: req.body.productIds } }, '_id').lean();
+      const ownedIds = new Set(owned.map((p) => p._id.toString()));
+      section.productIds = req.body.productIds.filter((id) => ownedIds.has(id));
+    }
+    await store.save();
+    res.json({ store: serializeStore(store) });
+  })
+);
+
+router.delete(
+  '/store/sections/:sectionId',
+  asyncHandler(async (req, res) => {
+    const store = await loadOwnStore(req, res);
+    if (!store) return;
+    store.sections.pull({ _id: req.params.sectionId });
+    await store.save();
+    res.json({ store: serializeStore(store) });
+  })
+);
+
+router.patch(
+  '/store/sections/order',
+  asyncHandler(async (req, res) => {
+    const store = await loadOwnStore(req, res);
+    if (!store) return;
+    const order = req.body?.order;
+    if (!Array.isArray(order)) return res.status(400).json({ message: 'order must be a list of section ids.' });
+    const byId = new Map(store.sections.map((s) => [s._id.toString(), s]));
+    store.sections = order
+      .filter((id) => byId.has(id))
+      .map((id) => ({ _id: byId.get(id)._id, name: byId.get(id).name, productIds: byId.get(id).productIds }));
+    await store.save();
     res.json({ store: serializeStore(store) });
   })
 );

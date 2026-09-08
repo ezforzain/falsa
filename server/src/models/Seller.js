@@ -24,6 +24,17 @@ const sellerSchema = new mongoose.Schema(
     // and a square/circular logo are cropped and displayed completely differently.
     logoUrl: { type: String, default: null },
     hours: { type: String, default: null },
+    // Extra promotional banners/GIFs a seller can add on top of the single cover `bannerUrl` —
+    // shown as a carousel at the top of their public store page, seller-ordered (array order).
+    promoBanners: { type: [{ url: { type: String, required: true } }], default: [] },
+    // Seller-defined product groupings ("New Arrivals", "Eid Collection", …) shown as their own
+    // sections on the seller's public store page — scoped to this store only, distinct from the
+    // platform-wide Product.category taxonomy. productIds reference Product._id (a slug string,
+    // not an ObjectId — see the Product model), seller-ordered within each section.
+    sections: {
+      type: [{ name: { type: String, required: true }, productIds: { type: [String], default: [] } }],
+      default: [],
+    },
   },
   { timestamps: true, toJSON: { virtuals: true } }
 );
