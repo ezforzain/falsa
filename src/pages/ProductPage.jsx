@@ -296,11 +296,16 @@ export default function ProductPage() {
   const extraTags = (product.tags || []).filter((t) => !topTags.some((top) => top.toLowerCase() === t.toLowerCase()));
 
   const sameCategory = catalogProducts.filter((p) => p.id !== product.id && p.category === product.category);
-  const relatedProducts = sameCategory.slice(0, 4);
+  const otherCategory = catalogProducts.filter((p) => p.id !== product.id && p.category !== product.category);
+  // Same-category matches first, topped up with other-category products whenever a category is
+  // too thin (or empty) to fill the rail on its own — so "Related Products" never sits empty just
+  // because this product's own category has nothing else in it.
+  const relatedProducts = [...sameCategory, ...otherCategory].slice(0, 4);
   // Distinct slice from relatedProducts (offset by 2) so the two rails don't show identical
   // items — a real "bought together" signal would come from order co-occurrence data, which
-  // doesn't exist yet, so this is same-category products as a reasonable stand-in.
-  const frequentlyBoughtWith = sameCategory.slice(2, 4);
+  // doesn't exist yet, so this is same-category products (also topped up from other categories) as
+  // a reasonable stand-in.
+  const frequentlyBoughtWith = [...sameCategory, ...otherCategory].slice(2, 4);
   const recentlyViewedProducts = getRecentlyViewedIds()
     .filter((pid) => pid !== product.id)
     .map((pid) => catalogProducts.find((p) => p.id === pid))
