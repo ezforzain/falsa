@@ -25,6 +25,13 @@ const sellerProductSchema = new mongoose.Schema(
     worldwideFreeShipping: { type: Boolean, default: false },
     // #hashtags parsed live from the description in the seller form.
     tags: { type: [String], default: [] },
+    // Seller-controlled position on their own public store page. Left null until the seller
+    // actually reorders their storefront (see PATCH /api/seller/products/:id) — GET
+    // /api/sellers/:id sorts by { storeOrder: 1, createdAt: 1 }, so an all-null seller (nobody's
+    // ever touched ordering) still falls back to plain chronological order via the createdAt
+    // tiebreak. Once a seller reorders, every one of their products gets a concrete 0..N-1 value
+    // in one pass, so there's no half-ordered state to worry about mid-way.
+    storeOrder: { type: Number, default: null },
     // Category-driven attribute fields (Brand, Material, Warranty, …), same shape as Product.specifications.
     specifications: { type: [{ label: String, value: String }], default: [] },
     // Raw variant axis definitions the seller entered, e.g. { name: 'Color', values: ['Red', 'Blue'] }.
