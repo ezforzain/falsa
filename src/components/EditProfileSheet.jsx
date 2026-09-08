@@ -2,18 +2,20 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import BannerUploader from './BannerUploader';
 import AvatarUploader from './AvatarUploader';
-import { IconClose } from './icons';
+import { IconClose, IconMail } from './icons';
 
 const fieldClass =
   'w-full px-3.5 py-2.5 border border-border rounded-xl text-[14px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
 const fieldLabelClass = 'block text-[11.5px] font-semibold text-text-muted uppercase tracking-wide mb-1.5';
 const HANDLE_RE = /^[a-z0-9_]{3,20}$/;
 
-// The one place every editable piece of the TikTok-style profile hero lives together — banner,
-// avatar, display name, and @handle — instead of the old inline name/phone/country form. Opened
-// from the "Edit Profile" button on AccountPage; banner/avatar changes save themselves instantly
-// (see BannerUploader/AvatarUploader), while name/handle/phone/country batch into one
-// PATCH /api/auth/profile on Save, same as before.
+// The one place every piece of the TikTok-style profile hero and its contact details lives
+// together — banner, avatar, display name, @handle, email, phone, and country — instead of
+// scattering an Email/Phone/Country card across the main profile view. Opened from the "Edit
+// Profile" button on AccountPage; banner/avatar changes save themselves instantly (see
+// BannerUploader/AvatarUploader), while name/handle/phone/country batch into one
+// PATCH /api/auth/profile on Save, same as before. Email is shown read-only — there's no
+// change-email flow yet, so it isn't one of the editable fields.
 export default function EditProfileSheet({ open, onClose, onSaved }) {
   const { user, updateProfile } = useAuth();
   const [form, setForm] = useState({ companyName: '', handle: '', phone: '', country: '' });
@@ -108,6 +110,16 @@ export default function EditProfileSheet({ open, onClose, onSaved }) {
             </div>
             <p className="text-[11px] text-text-muted mt-1">3-20 characters: lowercase letters, numbers, underscores.</p>
           </div>
+
+          {user?.email && (
+            <div>
+              <label className={fieldLabelClass}>Email</label>
+              <div className="flex items-center gap-2.5 w-full px-3.5 py-2.5 border border-border rounded-xl text-[14px] bg-surface-muted text-text-muted">
+                <IconMail width="14" height="14" className="shrink-0" />
+                <span className="truncate">{user.email}</span>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
