@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { seller } from '../../lib/api';
 import { formatPKR } from '../../data/mockData';
 import { useAuth } from '../../context/AuthContext';
-import { IconReceipt } from '../../components/icons';
+import { IconBox, IconReceipt } from '../../components/icons';
 import ShipOrderModal from '../../components/seller/ShipOrderModal';
 import { ORDER_STATUSES, statusBadgeClass } from './statusStyles';
 
@@ -118,7 +119,30 @@ export default function SellerOrders() {
                         <div className="text-xs text-text-muted">{o.buyerCountry}</div>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-text-muted max-w-[180px]">{o.productName}</td>
+                    <td className="px-5 py-4 max-w-[220px]">
+                      <div className="flex items-center gap-3">
+                        <span className="w-11 h-11 rounded-lg overflow-hidden bg-surface-muted border border-border flex items-center justify-center shrink-0">
+                          {o.productImg ? (
+                            <img src={o.productImg} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <IconBox width="18" height="18" className="text-text-muted" />
+                          )}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-text-muted truncate">{o.productName}</div>
+                          {o.productId ? (
+                            <Link
+                              to={`/seller/products/${o.productId}`}
+                              className="text-[12px] font-semibold text-green no-underline hover:underline"
+                            >
+                              Details
+                            </Link>
+                          ) : (
+                            <span className="text-[12px] text-text-muted">No details available</span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-5 py-4 text-ink-soft whitespace-nowrap">{o.qty.toLocaleString('en-US')}</td>
                     <td className="px-5 py-4 font-semibold text-ink whitespace-nowrap">{formatPKR(o.total)}</td>
                     <td className="px-5 py-4 text-text-muted whitespace-nowrap">

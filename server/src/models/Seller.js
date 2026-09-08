@@ -19,6 +19,10 @@ const sellerSchema = new mongoose.Schema(
     responseTime: { type: String, default: 'Within a day' },
     description: { type: String, default: '' },
     bannerUrl: { type: String, default: null },
+    // Store logo/avatar — shown wherever a buyer sees this seller's identity (StoreCard,
+    // SellerInfoSection, the store profile page). Independent of bannerUrl: a wide cover photo
+    // and a square/circular logo are cropped and displayed completely differently.
+    logoUrl: { type: String, default: null },
     hours: { type: String, default: null },
   },
   { timestamps: true, toJSON: { virtuals: true } }

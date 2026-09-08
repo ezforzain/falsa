@@ -13,9 +13,13 @@ export default function SellerInfoSection({ seller, rating }) {
       <div className="flex flex-wrap items-center gap-5">
         <Link
           to={`/store/${seller.id}`}
-          className="w-16 h-16 rounded-2xl bg-green-tint flex items-center justify-center shrink-0 no-underline"
+          className="w-16 h-16 rounded-2xl bg-green-tint flex items-center justify-center shrink-0 no-underline overflow-hidden"
         >
-          <span className="font-display font-bold text-2xl text-green">{initial}</span>
+          {seller.logoUrl ? (
+            <img src={seller.logoUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="font-display font-bold text-2xl text-green">{initial}</span>
+          )}
         </Link>
 
         <div className="flex-1 min-w-[220px]">

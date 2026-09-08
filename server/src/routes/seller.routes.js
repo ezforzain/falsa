@@ -536,10 +536,10 @@ router.patch(
   '/store',
   asyncHandler(async (req, res) => {
     if (!req.user.sellerId) return res.status(404).json({ message: 'No storefront found for this account.' });
-    const { description, bannerUrl, hours } = req.body;
+    const { description, bannerUrl, logoUrl, hours } = req.body;
     const store = await Seller.findByIdAndUpdate(
       req.user.sellerId,
-      { description: description ?? '', bannerUrl: bannerUrl || null, hours: hours || null },
+      { description: description ?? '', bannerUrl: bannerUrl || null, logoUrl: logoUrl || null, hours: hours || null },
       { new: true }
     );
     if (!store) return res.status(404).json({ message: 'No storefront found for this account.' });

@@ -85,8 +85,12 @@ export default function StorePage() {
           </div>
         )}
         <div className="p-6 sm:p-8 flex items-center gap-5 flex-wrap">
-          <span className="w-16 h-16 rounded-2xl bg-green-tint flex items-center justify-center shrink-0">
-            <IconBox width="28" height="28" className="text-green" />
+          <span className="w-16 h-16 rounded-2xl bg-green-tint flex items-center justify-center shrink-0 overflow-hidden">
+            {store.logoUrl ? (
+              <img src={store.logoUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <IconBox width="28" height="28" className="text-green" />
+            )}
           </span>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">

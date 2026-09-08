@@ -20,9 +20,13 @@ export default function StoreCard({ rating, seller }) {
     <div className="flex items-center gap-4 bg-white border border-border rounded-2xl px-5 py-4 mb-[22px] flex-wrap">
       <Link
         to={`/store/${seller.id}`}
-        className="w-12 h-12 rounded-full bg-green-tint flex items-center justify-center shrink-0 no-underline"
+        className="w-12 h-12 rounded-full bg-green-tint flex items-center justify-center shrink-0 no-underline overflow-hidden"
       >
-        <span className="font-display font-bold text-lg text-green">{initial}</span>
+        {seller.logoUrl ? (
+          <img src={seller.logoUrl} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <span className="font-display font-bold text-lg text-green">{initial}</span>
+        )}
       </Link>
 
       <div className="flex-1 min-w-[180px]">
