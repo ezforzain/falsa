@@ -71,8 +71,16 @@ export default function CartPage() {
     }
     setCheckoutError(null);
     setEditingAddress(!user?.savedAddress);
+    // No saved checkout address yet — pre-fill the city from whatever location the buyer gave
+    // (or skipped) at sign-up, so "ask again when they buy" means one less field to fill in
+    // rather than starting over from scratch.
     setAddressForm(
-      user?.savedAddress || { ...EMPTY_ADDRESS, fullName: user?.companyName || '', phone: user?.phone || '' }
+      user?.savedAddress || {
+        ...EMPTY_ADDRESS,
+        fullName: user?.companyName || '',
+        phone: user?.phone || '',
+        city: user?.locationCity || '',
+      }
     );
     setCheckoutStep('address');
   };

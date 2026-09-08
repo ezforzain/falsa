@@ -62,6 +62,14 @@ const userSchema = new mongoose.Schema(
     accountNumber: { type: String, default: null },
     iban: { type: String, default: null },
 
+    // Buyer's general location (Province → City, plus a free-text village/area — see
+    // src/data/pkLocations.js for why villages aren't a fixed list), captured on signup step 3.
+    // Optional and skippable there; if left null the buyer is asked again at checkout instead
+    // (see AddressForm), then this is backfilled from that.
+    locationProvince: { type: String, default: null },
+    locationCity: { type: String, default: null },
+    locationVillage: { type: String, default: null },
+
     // Delivery address for checkout (see POST /api/checkout) — auto-saved from whatever the
     // buyer submits at checkout (new or edited) so it's pre-filled next time, one address per
     // account rather than a full address book.

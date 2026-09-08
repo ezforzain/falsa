@@ -611,6 +611,20 @@ router.get(
   })
 );
 
+// The raw corporate KYC document (a data URL) is deliberately never included in the normal user
+// payload above — it's only fetched here, on demand, when admin opens the details view for a
+// specific corporate seller and clicks to view it.
+router.get(
+  '/users/:id/business-document',
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.id).select('businessDocument');
+    if (!user || !user.businessDocument) {
+      return res.status(404).json({ message: 'No business document on file for this user.' });
+    }
+    res.json({ businessDocument: user.businessDocument });
+  })
+);
+
 router.patch(
   '/users/:id',
   asyncHandler(async (req, res) => {

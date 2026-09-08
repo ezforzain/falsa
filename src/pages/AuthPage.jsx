@@ -2,10 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
-import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser, IconMail, IconShield, IconGlobe, IconTruck, IconStore } from '../components/icons';
+import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser, IconMail, IconShield, IconGlobe, IconTruck, IconStore, IconPin, IconSearch } from '../components/icons';
 import OfficialBadge from '../components/OfficialBadge';
 import CorporateVerificationForm from '../components/CorporateVerificationForm';
+import SearchableSelect from '../components/SearchableSelect';
 import { fileToDataUrl } from '../lib/file';
+import { COUNTRIES } from '../data/countries';
+import { PK_PROVINCES, PK_CITIES_BY_PROVINCE } from '../data/pkLocations';
 
 const ROLE_BUYER = 'buyer';
 const ROLE_SELLER = 'seller';
@@ -162,6 +165,7 @@ export default function AuthPage() {
 
   const [signupForm, setSignupForm] = useState({
     companyName: '',
+    country: 'Pakistan',
     phone: '',
     email: '',
     password: '',
@@ -169,6 +173,10 @@ export default function AuthPage() {
     category: '',
     // Individual path
     address: '',
+    // Buyer's optional Province/City/Village — step 3, skippable (see SignUpLocation below).
+    locationProvince: '',
+    locationCity: '',
+    locationVillage: '',
     // Corporate path
     location: '',
     businessAddress: '',
@@ -270,13 +278,27 @@ export default function AuthPage() {
 
   const isCorporate = isSeller && signupForm.sellerType === 'corporate';
 
-  const handleSignup = async () => {
-    if (loadingKey) return;
-    setSignupError(null);
+  // Shared by both the "Continue" button on step 2 and the corporate wizard — the location step
+  // (buyers only) only makes sense once these core fields are already known-good.
+  const validateBasicFields = () => {
     if (!signupForm.companyName || !signupForm.email || !signupForm.password) {
       setSignupError('Please fill in all required fields.');
-      return;
+      return false;
     }
+    setSignupError(null);
+    return true;
+  };
+
+  // Buyer-only: step 2 "Continue" hands off to the location step (step 3) instead of submitting
+  // right away — sellers keep submitting directly from step 2 (or the corporate wizard).
+  const goToLocationStep = () => {
+    if (!validateBasicFields()) return;
+    setSignupStep(3);
+  };
+
+  const handleSignup = async ({ skipLocation = false } = {}) => {
+    if (loadingKey) return;
+    if (!validateBasicFields()) return;
 
     let businessDocument = null;
 
@@ -300,13 +322,18 @@ export default function AuthPage() {
       const result = await signUp({
         role,
         companyName: signupForm.companyName,
-        country: 'Pakistan',
+        country: signupForm.country || 'Pakistan',
         phone: signupForm.phone,
         email: signupForm.email,
         password: signupForm.password,
         sellerType: isSeller ? signupForm.sellerType : undefined,
         category: isSeller ? signupForm.category || undefined : undefined,
         address: isSeller && !isCorporate ? signupForm.address || undefined : undefined,
+        // Buyer's optional location — omitted entirely when they hit "Skip for now", even if
+        // they'd half-filled it before changing their mind.
+        locationProvince: !isSeller && !skipLocation ? signupForm.locationProvince || undefined : undefined,
+        locationCity: !isSeller && !skipLocation ? signupForm.locationCity || undefined : undefined,
+        locationVillage: !isSeller && !skipLocation ? signupForm.locationVillage || undefined : undefined,
         location: isCorporate ? signupForm.location : undefined,
         businessAddress: isCorporate ? signupForm.businessAddress : undefined,
         businessDocument,
@@ -409,7 +436,20 @@ export default function AuthPage() {
               error={signupError}
               onBack={() => setSignupStep(1)}
               onSubmit={handleSignup}
+              onContinue={goToLocationStep}
               goSignin={goSignin}
+            />
+          )}
+
+          {screen === 'signup' && signupStep === 3 && (
+            <SignUpLocation
+              form={signupForm}
+              setForm={setSignupForm}
+              loading={loadingKey === 'signup'}
+              error={signupError}
+              onBack={() => setSignupStep(2)}
+              onSkip={() => handleSignup({ skipLocation: true })}
+              onSave={() => handleSignup()}
             />
           )}
 
@@ -729,7 +769,7 @@ function CategorySelect({ value, onChange }) {
   );
 }
 
-function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, error, onBack, onSubmit, goSignin }) {
+function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, error, onBack, onSubmit, onContinue, goSignin }) {
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const isCorporate = isSeller && form.sellerType === 'corporate';
   const patchForm = (patch) => setForm((f) => ({ ...f, ...patch }));
@@ -737,7 +777,7 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
   return (
     <div className="animate-fade-up">
       <h1 className="font-display text-[26px] font-bold m-0 mb-2.5 tracking-tight">Create your account</h1>
-      <p className="text-[15px] text-text mb-6">Step 2 of 2 — your business details</p>
+      <p className="text-[15px] text-text mb-6">Step 2 of {isSeller ? '2' : '3'} — your {isSeller ? 'business' : 'account'} details</p>
 
       <div
         className={`inline-flex items-center gap-2 text-[12.5px] font-bold px-4 py-1.5 rounded-full mb-5 ${
@@ -753,12 +793,12 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
       {!isCorporate && <ErrorText>{error}</ErrorText>}
 
       <div className="mb-[18px]">
-        <FieldLabel>{isSeller ? 'Business / factory name' : 'Company name'}</FieldLabel>
+        <FieldLabel>{isSeller ? 'Business / factory name' : 'Your Name'}</FieldLabel>
         <input
           type="text"
           value={form.companyName}
           onChange={set('companyName')}
-          placeholder={isSeller ? 'e.g. Anwar Textile Mills' : 'e.g. Al-Karam Traders'}
+          placeholder={isSeller ? 'e.g. Anwar Textile Mills' : 'e.g. Ahmed Khan'}
           className={inputClass}
         />
       </div>
@@ -797,12 +837,13 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
       <div className="grid gap-4 mb-[18px]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
         <div>
           <FieldLabel>Country</FieldLabel>
-          <div className="flex items-center justify-between px-[18px] py-[15px] border-[1.5px] border-border rounded-xl text-[15px] bg-surface text-ink cursor-pointer hover:border-green transition-colors">
-            <span>🇵🇰 Pakistan</span>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </div>
+          <SearchableSelect
+            value={form.country}
+            onChange={(c) => patchForm({ country: c })}
+            options={COUNTRIES.map((c) => ({ value: c.name, label: c.name, icon: c.flag }))}
+            placeholder="Select your country"
+            searchPlaceholder="Search countries…"
+          />
         </div>
         <div>
           <FieldLabel>Phone number</FieldLabel>
@@ -831,7 +872,7 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
       )}
 
       <div className="mb-[18px]">
-        <FieldLabel>{isSeller ? 'Account email (for signing in)' : 'Business email'}</FieldLabel>
+        <FieldLabel>{isSeller ? 'Account email (for signing in)' : 'Email'}</FieldLabel>
         <input
           type="text"
           inputMode="email"
@@ -882,8 +923,8 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
         />
       ) : (
         <>
-          <SubmitButton onClick={onSubmit} loading={loading}>
-            {loading ? 'Creating account…' : 'Create account'}
+          <SubmitButton onClick={isSeller ? onSubmit : onContinue} loading={loading}>
+            {loading ? 'Creating account…' : isSeller ? 'Create account' : 'Continue'}
           </SubmitButton>
           <p className="text-xs text-text-muted text-center mt-[18px] leading-relaxed">
             By continuing you agree to our Terms of Service and Privacy Policy.
@@ -895,6 +936,97 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
         Already have an account?{' '}
         <a onClick={goSignin} className="cursor-pointer font-bold text-green hover:underline">
           Sign in
+        </a>
+      </p>
+    </div>
+  );
+}
+
+// Step 3 of the buyer sign-up wizard — Province → City (cascading, both searchable) plus a
+// free-text Village/Area field (there's no ready-made exhaustive village list for Pakistan — see
+// src/data/pkLocations.js). Entirely skippable: "Skip for now" creates the account with no
+// location at all, and the buyer is asked again at checkout (see AddressForm) instead.
+function SignUpLocation({ form, setForm, loading, error, onBack, onSkip, onSave }) {
+  const [touched, setTouched] = useState(false);
+  const patchForm = (patch) => setForm((f) => ({ ...f, ...patch }));
+
+  const cityOptions = form.locationProvince ? PK_CITIES_BY_PROVINCE[form.locationProvince] || [] : [];
+  const missingCity = Boolean(form.locationProvince) && !form.locationCity;
+  const missingProvince = !form.locationProvince;
+
+  const handleSave = () => {
+    setTouched(true);
+    if (missingProvince || missingCity) return;
+    onSave();
+  };
+
+  return (
+    <div className="animate-fade-up">
+      <span className="w-11 h-11 rounded-[13px] bg-green-tint inline-flex items-center justify-center mb-4">
+        <IconPin width="20" height="20" className="text-green" />
+      </span>
+      <h1 className="font-display text-[26px] font-bold m-0 mb-2.5 tracking-tight">Where are you ordering from?</h1>
+      <p className="text-[15px] text-text mb-6">Step 3 of 3 — your location (optional)</p>
+
+      <ErrorText>{error}</ErrorText>
+
+      <div className="mb-[18px]">
+        <FieldLabel>Province</FieldLabel>
+        <SearchableSelect
+          value={form.locationProvince}
+          onChange={(v) => patchForm({ locationProvince: v, locationCity: '' })}
+          options={PK_PROVINCES}
+          placeholder="Select your province"
+          searchPlaceholder="Search provinces…"
+        />
+        {touched && missingProvince && (
+          <p className="text-xs text-orange-text mt-1.5">Select a province, or tap “Skip for now” below.</p>
+        )}
+      </div>
+
+      <div className="mb-[18px]">
+        <FieldLabel>City</FieldLabel>
+        <SearchableSelect
+          value={form.locationCity}
+          onChange={(v) => patchForm({ locationCity: v })}
+          options={cityOptions}
+          placeholder={form.locationProvince ? 'Select your city' : 'Select a province first'}
+          searchPlaceholder="Search cities…"
+          disabled={!form.locationProvince}
+        />
+        {touched && missingCity && <p className="text-xs text-orange-text mt-1.5">Select a city, or tap “Skip for now” below.</p>}
+      </div>
+
+      <div className="mb-6">
+        <FieldLabel>Village / Area (optional)</FieldLabel>
+        <div className="relative">
+          <IconSearch width="14" height="14" className="absolute left-[18px] top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+          <input
+            type="text"
+            value={form.locationVillage}
+            onChange={(e) => patchForm({ locationVillage: e.target.value })}
+            placeholder="Type your village, town or neighbourhood"
+            className={`${inputClass} pl-11`}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <SubmitButton onClick={handleSave} loading={loading}>
+          {loading ? 'Creating account…' : 'Save & Create account'}
+        </SubmitButton>
+        <a onClick={loading ? undefined : onSkip} className={`${outlineBtnClass} ${loading ? 'opacity-60 pointer-events-none' : ''}`}>
+          Skip for now
+        </a>
+      </div>
+
+      <p className="text-xs text-text-muted text-center mt-[18px] leading-relaxed">
+        You can always add this later — we'll ask again when you buy something if it's still missing.
+      </p>
+
+      <p className="text-center text-sm mt-5">
+        <a onClick={loading ? undefined : onBack} className="cursor-pointer text-[13.5px] text-text-muted hover:text-green">
+          ← Back
         </a>
       </p>
     </div>

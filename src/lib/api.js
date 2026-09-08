@@ -368,6 +368,9 @@ export const adminUsers = {
   remove: (id) => request(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
   payouts: (id) => request(`/api/admin/users/${encodeURIComponent(id)}/payouts`, { auth: true }),
   addPayout: (id, payload) => request(`/api/admin/users/${encodeURIComponent(id)}/payouts`, { method: 'POST', body: payload, auth: true }),
+  // Fetched on demand from the user Details modal — the normal list/get responses never carry
+  // this (see serializeUser's hasBusinessDocument flag for the "is one on file" bit).
+  businessDocument: (id) => request(`/api/admin/users/${encodeURIComponent(id)}/business-document`, { auth: true }),
 };
 
 // ---------- Dev helpers ----------

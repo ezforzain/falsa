@@ -10,6 +10,10 @@ import { Seller } from '../models/Seller.js';
 // this does its own lookup.
 export async function serializeUser(user, sellerVerifiedById) {
   const obj = user.toPublicJSON();
+  // toPublicJSON() strips the raw corporate business document (never sent to the client at
+  // large), but admin's user-details view still needs to know whether one was uploaded at all —
+  // just a flag, not the file itself (see GET /api/admin/users/:id/business-document for that).
+  obj.hasBusinessDocument = Boolean(user.businessDocument);
   // The account-level "blue tick" (User.verified) can be set on any role. For sellers it is also
   // mirrored by the linked Seller directory record's badge — treat either one being true as
   // verified so the two can never visibly disagree.

@@ -10,6 +10,7 @@ import OfficialBadge from '../../components/OfficialBadge';
 import Avatar from '../../components/Avatar';
 import AdminProductFormModal from '../../components/AdminProductFormModal';
 import AdminUserFormModal from '../../components/AdminUserFormModal';
+import AdminUserDetailsModal from '../../components/AdminUserDetailsModal';
 import AdminCategoryFormModal from '../../components/AdminCategoryFormModal';
 import AdminFilterFormModal from '../../components/AdminFilterFormModal';
 import AdminOrderFormModal from '../../components/AdminOrderFormModal';
@@ -169,6 +170,7 @@ export default function AdminPage() {
   const [userSearch, setUserSearch] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState('');
   const [editingUser, setEditingUser] = useState(null);
+  const [detailsUser, setDetailsUser] = useState(null);
   const [userFormOpen, setUserFormOpen] = useState(false);
   const [userFormLoading, setUserFormLoading] = useState(false);
   const [userFormError, setUserFormError] = useState(null);
@@ -1417,6 +1419,13 @@ export default function AdminPage() {
                         )}
                         <button
                           type="button"
+                          onClick={() => setDetailsUser(u)}
+                          className="cursor-pointer bg-surface border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
+                        >
+                          Details
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => openEditUser(u)}
                           className="cursor-pointer bg-surface border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
                         >
@@ -2311,6 +2320,8 @@ export default function AdminPage() {
         onClose={() => setUserFormOpen(false)}
         onSubmit={handleSubmitUserForm}
       />
+
+      <AdminUserDetailsModal user={detailsUser} onClose={() => setDetailsUser(null)} />
 
       <ConfirmDialog
         open={Boolean(deleteUserTarget)}
