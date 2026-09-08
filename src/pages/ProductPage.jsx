@@ -45,6 +45,7 @@ import ReviewsSection from '../components/product/ReviewsSection';
 import FaqSection from '../components/product/FaqSection';
 import ProductRail from '../components/product/ProductRail';
 import MobileProductHeader from '../components/product/MobileProductHeader';
+import HashtagText from '../components/HashtagText';
 import { IconChevronRight, IconShield, IconTrendingUp } from '../components/icons';
 
 export default function ProductPage() {
@@ -312,17 +313,19 @@ export default function ProductPage() {
       content: (
         <div className="flex flex-col gap-6 sm:gap-8">
           <SectionCard title="Product Description">
-            <p className="text-[14.5px] text-text leading-relaxed m-0">{productDescription(product)}</p>
+            <p className="text-[14.5px] text-text leading-relaxed m-0">
+              <HashtagText text={productDescription(product)} />
+            </p>
             {/* Any hashtags beyond the top 3 shown under the title stay reachable here,
                 instead of cluttering the top of the page — still clickable/discoverable. */}
             {extraTags.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 mt-4 pt-4 border-t border-border">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-4 pt-4 border-t border-border">
                 <span className="text-[12px] font-semibold text-ink-soft">Tags:</span>
                 {extraTags.map((tag) => (
                   <Link
                     key={tag}
                     to={`/hashtag/${encodeURIComponent(tag)}`}
-                    className="text-[12px] font-semibold text-green bg-green/10 hover:bg-green/15 rounded-full px-2.5 py-0.5 no-underline transition-colors"
+                    className="text-[12.5px] font-medium text-hashtag hover:text-hashtag-hover hover:underline no-underline"
                   >
                     #{tag}
                   </Link>
@@ -445,12 +448,12 @@ export default function ProductPage() {
           {/* YouTube-style hashtag row — max 3, clickable, only the tags currently ranked
               most relevant/trending for this product (see topTags above). */}
           {topTags.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4">
               {topTags.map((tag) => (
                 <Link
                   key={tag}
                   to={`/hashtag/${encodeURIComponent(tag)}`}
-                  className="text-[12.5px] font-semibold text-green bg-green-tint hover:bg-green/15 rounded-full px-3 py-1 no-underline transition-colors"
+                  className="text-[13.5px] font-semibold text-hashtag hover:text-hashtag-hover hover:underline no-underline"
                 >
                   #{tag}
                 </Link>

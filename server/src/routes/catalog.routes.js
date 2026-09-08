@@ -3,7 +3,13 @@ import { Product } from '../models/Product.js';
 import { Category, MobileTab } from '../models/Category.js';
 import { SpotlightEntry } from '../models/SpotlightEntry.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { normalizeHashtag, computeTagPopularity, topTagsFor, bumpHashtagStats } from '../utils/hashtags.js';
+import {
+  normalizeHashtag,
+  computeTagPopularity,
+  topTagsFor,
+  bumpHashtagStats,
+  computeHashtagUsageStats,
+} from '../utils/hashtags.js';
 import { suggestHashtags } from '../utils/hashtagSuggest.js';
 import { rankOnly } from '../utils/marketplaceRanking.js';
 
@@ -176,7 +182,10 @@ router.get(
     const ranked = rankOnly(products);
     // "Searches/clicks" trending signal — a hashtag results page load counts as one.
     bumpHashtagStats([tag], 'searches');
-    res.json({ tag, products: ranked.map(serializeProduct) });
+    // Usage count stays hidden ("Under 500") until the tag has real traction — see
+    // computeHashtagUsageStats for the thresholds.
+    const usage = await computeHashtagUsageStats(tag);
+    res.json({ tag, products: ranked.map(serializeProduct), usage });
   })
 );
 

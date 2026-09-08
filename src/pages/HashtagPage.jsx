@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { catalog } from '../lib/api';
+import { formatCompactCount } from '../lib/hashtags';
 import ProductCard from '../components/ProductCard';
 import { IconSearch } from '../components/icons';
 
@@ -14,6 +15,7 @@ export default function HashtagPage() {
   const [error, setError] = useState(null);
   const [results, setResults] = useState([]);
   const [resolvedTag, setResolvedTag] = useState(tag);
+  const [usage, setUsage] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -22,10 +24,11 @@ export default function HashtagPage() {
 
     catalog
       .hashtagProducts(tag)
-      .then(({ tag: resolved, products }) => {
+      .then(({ tag: resolved, products, usage: fetchedUsage }) => {
         if (cancelled) return;
         setResolvedTag(resolved || tag);
         setResults(products);
+        setUsage(fetchedUsage || null);
       })
       .catch((err) => {
         if (!cancelled) {
@@ -44,7 +47,15 @@ export default function HashtagPage() {
 
   return (
     <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20 animate-fade-up">
-      <h1 className="font-display text-[28px] font-bold m-0 mb-1.5 tracking-tight">#{resolvedTag}</h1>
+      <h1 className="font-display text-[28px] font-bold m-0 mb-1.5 tracking-tight text-hashtag">#{resolvedTag}</h1>
+      {/* Usage count stays hidden behind a generic "Under 500" until the tag has real traction
+          (50+ sellers and 500+ uses) — see computeHashtagUsageStats server-side. Never shows a
+          bare small number like "3 uses" for a brand-new tag. */}
+      {usage && (
+        <p className="text-[13px] font-semibold text-hashtag mb-1">
+          {usage.revealed ? `${formatCompactCount(usage.uses)} uses` : `Under ${usage.minUses} uses`}
+        </p>
+      )}
       <p className="text-sm text-text-muted mb-7">
         {loading ? 'Loading…' : `${results.length} product${results.length === 1 ? '' : 's'} found`}
       </p>

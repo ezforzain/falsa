@@ -12,6 +12,15 @@ export function normalizeHashtag(raw) {
   return words.map((w) => w[0].toUpperCase() + w.slice(1)).join('');
 }
 
+// YouTube-style compact count ("612", "1.2K", "3.4M") — only ever called once a hashtag has
+// cleared the reveal thresholds server-side (see computeHashtagUsageStats), so this never has to
+// handle "make a tiny number look bigger", just formatting an already-real one.
+export function formatCompactCount(n) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+  return String(n);
+}
+
 // Case-insensitive de-duping union of any number of hashtag lists, keeping the first
 // spelling seen for each. Used to merge the explicit chip list with whatever #hashtags
 // the seller also typed inline in the description (see ProductFormModal.jsx).

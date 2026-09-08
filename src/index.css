@@ -35,6 +35,11 @@
   --color-surface-muted: #F2EFE8;
 
   --color-footer: #0F1F19;
+
+  /* YouTube-style hashtag blue — deliberately outside the brand green/orange palette, used only
+     for clickable #hashtags (inline in descriptions and the tag row under a product title). */
+  --color-hashtag: #065FD4;
+  --color-hashtag-hover: #0B4BB8;
 }
 
 /* Dark theme — see AppSettingsContext, which sets data-theme on <html> from the Settings page's
@@ -76,6 +81,9 @@
   --color-surface-muted: #232a27;
 
   --color-footer: #05100c;
+
+  --color-hashtag: #3EA6FF;
+  --color-hashtag-hover: #6CBDFF;
 }
 
 /* Reduce motion (Settings > App Settings) — near-zero rather than `none` so animationend/

@@ -94,6 +94,29 @@ export function topTagsFor(tags, popularityMap, n = 3) {
     .map((t) => t.tag);
 }
 
+// A hashtag's real usage count stays hidden (shown only as "Under 500") until it's actually
+// gained real traction — otherwise every brand-new tag would launch showing an embarrassing "1"
+// or "2". Thresholds are deliberately real signals, not vanity: `users` is how many distinct
+// sellers have actually tagged a product with it, `uses` is total engagement (views + searches
+// + how many products carry it) — both have to clear the bar before the number is shown at all.
+const REVEAL_MIN_USERS = 50;
+const REVEAL_MIN_USES = 500;
+
+export async function computeHashtagUsageStats(tag) {
+  const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const [agg] = await Product.aggregate([
+    { $match: { tags: { $regex: `^${escaped}$`, $options: 'i' } } },
+    { $group: { _id: null, productCount: { $sum: 1 }, sellers: { $addToSet: '$sellerId' } } },
+  ]);
+  const stat = await HashtagStat.findOne({ tag: tag.toLowerCase() }).lean();
+
+  const users = agg?.sellers?.length || 0;
+  const uses = (agg?.productCount || 0) + (stat?.views || 0) + (stat?.searches || 0) + (stat?.clicks || 0);
+  const revealed = users >= REVEAL_MIN_USERS && uses >= REVEAL_MIN_USES;
+
+  return { users, uses, revealed, minUses: REVEAL_MIN_USES };
+}
+
 // Fire-and-forget counter bump — never awaited by callers, never allowed to fail a
 // request. `field` is one of 'clicks' | 'views' | 'searches'.
 export function bumpHashtagStats(tags, field) {
