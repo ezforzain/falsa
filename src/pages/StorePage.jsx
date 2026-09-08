@@ -3,12 +3,15 @@ import { Link, useParams } from 'react-router-dom';
 import { sellers } from '../lib/api';
 import ProductCard from '../components/ProductCard';
 import VerifiedBadge from '../components/VerifiedBadge';
+import PromoBannerCarousel from '../components/PromoBannerCarousel';
 import { IconBox, IconShield, IconStar, IconPin, IconClock } from '../components/icons';
 
 export default function StorePage() {
   const { id } = useParams();
   const [store, setStore] = useState(null);
   const [storeProducts, setStoreProducts] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [promoBanners, setPromoBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState(null);
@@ -21,10 +24,12 @@ export default function StorePage() {
 
     sellers
       .get(id)
-      .then(({ seller, products }) => {
+      .then(({ seller, products, sections: storeSections, promoBanners: banners }) => {
         if (cancelled) return;
         setStore(seller);
         setStoreProducts(products);
+        setSections(storeSections || []);
+        setPromoBanners(banners || []);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -134,6 +139,19 @@ export default function StorePage() {
           </div>
         </div>
       </div>
+
+      {promoBanners.length > 0 && <PromoBannerCarousel banners={promoBanners} className="mb-8" />}
+
+      {sections.map((section) => (
+        <div key={section.id} className="mb-9">
+          <h2 className="font-display text-xl font-bold m-0 mb-5 tracking-tight text-ink">{section.name}</h2>
+          <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+            {section.products.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </div>
+      ))}
 
       <h2 className="font-display text-xl font-bold m-0 mb-5 tracking-tight text-ink">
         {storeProducts.length} listing{storeProducts.length === 1 ? '' : 's'}

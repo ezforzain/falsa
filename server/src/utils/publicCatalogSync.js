@@ -70,6 +70,7 @@ export async function syncSellerProductToCatalog(sellerProduct, ownerUser) {
       sellerVerified: sellerDoc?.verified || false,
       sellerOfficialStore: sellerDoc?.officialStore || false,
       tags: Array.isArray(sellerProduct.tags) ? sellerProduct.tags : [],
+      storeOrder: sellerProduct.storeOrder ?? null,
       specifications: Array.isArray(sellerProduct.specifications) ? sellerProduct.specifications : [],
       variants: (sellerProduct.variants || []).map((v) => ({
         id: slugify(v.name) || undefined,

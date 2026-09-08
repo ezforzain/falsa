@@ -3,10 +3,13 @@ import { seller } from '../../lib/api';
 import Toast from '../../components/Toast';
 import StoreLogoUploader from '../../components/StoreLogoUploader';
 import StoreBannerUploader from '../../components/StoreBannerUploader';
+import PromoBannerManager from '../../components/PromoBannerManager';
+import StoreSectionsManager from '../../components/StoreSectionsManager';
 import { IconStore } from '../../components/icons';
 
 export default function SellerStoreProfile() {
   const [store, setStore] = useState(null);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [form, setForm] = useState({ logoUrl: null, bannerUrl: null, description: '', hours: '' });
@@ -23,6 +26,12 @@ export default function SellerStoreProfile() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
+    // Only active listings — a draft can't usefully go in a customer-facing store section, and
+    // this is purely what StoreSectionsManager's "add product" picker offers.
+    seller
+      .products()
+      .then((res) => setProducts(res.products.filter((p) => p.status === 'active')))
+      .catch(() => {});
   }, []);
 
   const submit = async () => {
@@ -109,6 +118,25 @@ export default function SellerStoreProfile() {
             {saving ? 'Saving…' : 'Save changes'}
           </button>
         </div>
+      )}
+
+      {!loading && !error && store && (
+        <>
+          <div className="bg-white border border-border rounded-2xl p-6 mt-4">
+            <h2 className="font-display text-lg font-bold text-ink mb-1">Promo banners</h2>
+            <p className="text-sm text-text mb-5">Extra sale/announcement banners, shown as a carousel above your products. GIFs supported.</p>
+            <PromoBannerManager banners={store.promoBanners} onChange={(promoBanners) => setStore((s) => ({ ...s, promoBanners }))} />
+          </div>
+
+          <div className="bg-white border border-border rounded-2xl p-6 mt-4">
+            <h2 className="font-display text-lg font-bold text-ink mb-1">Custom sections</h2>
+            <p className="text-sm text-text mb-5">
+              Group your own products into named sections — e.g. "New Arrivals" — shown on your public store page. Only affects your
+              store, not the platform-wide catalog.
+            </p>
+            <StoreSectionsManager sections={store.sections} products={products} onChange={(sections) => setStore((s) => ({ ...s, sections }))} />
+          </div>
+        </>
       )}
 
       <Toast message="Store profile updated" show={toastVisible} onHide={() => setToastVisible(false)} />

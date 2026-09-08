@@ -98,6 +98,11 @@ const productSchema = new mongoose.Schema(
     moqValue: { type: Number, default: null },
     // #hashtags from the seller's description, surfaced for search/discovery.
     tags: { type: [String], default: [] },
+    // Seller-controlled display position on their own public store page (see PATCH
+    // /api/seller/products/:id and GET /api/sellers/:id's sort). Null until a seller has ever
+    // reordered their storefront — see the comment on storeOrder in SellerProduct.js for how a
+    // mixed null/set state still sorts correctly.
+    storeOrder: { type: Number, default: null },
     shipping: { type: shippingSchema, default: () => ({}) },
     priceTiers: { type: [priceTierSchema], default: [] },
   },
