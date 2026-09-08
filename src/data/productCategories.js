@@ -211,6 +211,12 @@ export function getCategoryTemplate(categoryName) {
   return categoryTemplates[entry.group] || defaultTemplate;
 }
 
+// Used alongside getVariantOptionPreset (variantOptions.js) — some axis presets (e.g. "Size")
+// differ by category group, so callers need the group name, not just the template it resolves to.
+export function getCategoryGroup(categoryName) {
+  return productCategories.find((c) => c.name === categoryName)?.group;
+}
+
 function tokenize(text) {
   return String(text || '')
     .toLowerCase()
