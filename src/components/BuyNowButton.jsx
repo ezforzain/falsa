@@ -7,7 +7,7 @@ export default function BuyNowButton({ onClick, disabled = false, loading = fals
       onClick={onClick}
       disabled={disabled || loading}
       aria-busy={loading}
-      className={`w-full flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-orange hover:bg-orange-hover active:bg-orange-hover text-white font-bold text-[15.5px] py-[15px] rounded-full shadow-[0_8px_20px_rgba(201,123,45,0.35)] transition-all active:scale-[0.98] ${className}`}
+      className={`w-full flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-orange hover:bg-orange-hover active:bg-orange-hover text-white font-bold text-[15.5px] py-3.5 rounded-full shadow-[0_8px_20px_rgba(201,123,45,0.35)] transition-all active:scale-[0.98] ${className}`}
     >
       {loading && (
         <span

@@ -6,6 +6,7 @@ import { IconCheck, IconEye, IconEyeOff, IconPhone, IconBox, IconUser, IconMail,
 import OfficialBadge from '../components/OfficialBadge';
 import CorporateVerificationForm from '../components/CorporateVerificationForm';
 import { fileToDataUrl } from '../lib/file';
+import { COUNTRIES, flagEmoji } from '../data/countries';
 
 const ROLE_BUYER = 'buyer';
 const ROLE_SELLER = 'seller';
@@ -162,6 +163,7 @@ export default function AuthPage() {
 
   const [signupForm, setSignupForm] = useState({
     companyName: '',
+    country: 'Pakistan',
     phone: '',
     email: '',
     password: '',
@@ -300,7 +302,9 @@ export default function AuthPage() {
       const result = await signUp({
         role,
         companyName: signupForm.companyName,
-        country: 'Pakistan',
+        // Sellers keep the existing fixed home market; only buyers pick from the full list
+        // (see CountrySelect below) — seller registration is intentionally left untouched.
+        country: isSeller ? 'Pakistan' : signupForm.country,
         phone: signupForm.phone,
         email: signupForm.email,
         password: signupForm.password,
@@ -729,6 +733,103 @@ function CategorySelect({ value, onChange }) {
   );
 }
 
+// Buyer-only country picker — searchable dropdown over the full country list (see
+// src/data/countries.js), same shell/interaction pattern as CategorySelect above so it
+// matches the rest of the form, but seller registration never renders this and keeps its
+// original static "Pakistan" field untouched.
+function CountrySelect({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDocClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
+
+  const needle = query.trim().toLowerCase();
+  const filtered = needle ? COUNTRIES.filter((c) => c.name.toLowerCase().includes(needle)) : COUNTRIES;
+  const selected = COUNTRIES.find((c) => c.name === value);
+
+  return (
+    <div className="relative" ref={ref}>
+      <div
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center justify-between px-[18px] py-[15px] border-[1.5px] border-border rounded-xl text-[15px] bg-surface text-ink cursor-pointer hover:border-green transition-colors"
+      >
+        <span className="flex items-center gap-2 truncate">
+          {selected ? (
+            <>
+              <span>{flagEmoji(selected.code)}</span>
+              <span>{selected.name}</span>
+            </>
+          ) : (
+            <span className="text-text-muted">Select country</span>
+          )}
+        </span>
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`text-text-muted shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </div>
+
+      {open && (
+        <div className="absolute z-20 mt-1.5 w-full bg-surface border-[1.5px] border-border rounded-xl shadow-[0_20px_44px_-16px_rgba(0,0,0,0.24)] overflow-hidden">
+          <div className="p-2 border-b border-border/60">
+            <input
+              autoFocus
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search country…"
+              className="w-full px-3.5 py-2.5 border-[1.5px] border-border rounded-lg text-[14px] bg-surface text-ink outline-none focus:border-green"
+            />
+          </div>
+          <div className="max-h-[240px] overflow-y-auto py-1">
+            {filtered.length === 0 ? (
+              <p className="px-4 py-3 text-[13.5px] text-text-muted">No countries match “{query.trim()}”.</p>
+            ) : (
+              filtered.map((c) => (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => {
+                    onChange(c.name);
+                    setOpen(false);
+                    setQuery('');
+                  }}
+                  className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-[14px] hover:bg-green-tint/60 transition-colors ${
+                    value === c.name ? 'text-green font-semibold' : 'text-ink'
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <span>{flagEmoji(c.code)}</span>
+                    <span>{c.name}</span>
+                  </span>
+                  {value === c.name && <IconCheck width="15" height="15" className="shrink-0" />}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, error, onBack, onSubmit, goSignin }) {
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const isCorporate = isSeller && form.sellerType === 'corporate';
@@ -753,12 +854,12 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
       {!isCorporate && <ErrorText>{error}</ErrorText>}
 
       <div className="mb-[18px]">
-        <FieldLabel>{isSeller ? 'Business / factory name' : 'Company name'}</FieldLabel>
+        <FieldLabel>{isSeller ? 'Business / factory name' : 'Your name'}</FieldLabel>
         <input
           type="text"
           value={form.companyName}
           onChange={set('companyName')}
-          placeholder={isSeller ? 'e.g. Anwar Textile Mills' : 'e.g. Al-Karam Traders'}
+          placeholder={isSeller ? 'e.g. Anwar Textile Mills' : 'e.g. Ali'}
           className={inputClass}
         />
       </div>
@@ -797,12 +898,16 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
       <div className="grid gap-4 mb-[18px]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
         <div>
           <FieldLabel>Country</FieldLabel>
-          <div className="flex items-center justify-between px-[18px] py-[15px] border-[1.5px] border-border rounded-xl text-[15px] bg-surface text-ink cursor-pointer hover:border-green transition-colors">
-            <span>🇵🇰 Pakistan</span>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </div>
+          {isSeller ? (
+            <div className="flex items-center justify-between px-[18px] py-[15px] border-[1.5px] border-border rounded-xl text-[15px] bg-surface text-ink cursor-pointer hover:border-green transition-colors">
+              <span>🇵🇰 Pakistan</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </div>
+          ) : (
+            <CountrySelect value={form.country} onChange={(c) => patchForm({ country: c })} />
+          )}
         </div>
         <div>
           <FieldLabel>Phone number</FieldLabel>
@@ -831,7 +936,7 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
       )}
 
       <div className="mb-[18px]">
-        <FieldLabel>{isSeller ? 'Account email (for signing in)' : 'Business email'}</FieldLabel>
+        <FieldLabel>{isSeller ? 'Account email (for signing in)' : 'Your email'}</FieldLabel>
         <input
           type="text"
           inputMode="email"
@@ -841,7 +946,7 @@ function SignUpDetails({ form, setForm, isSeller, showPw, setShowPw, loading, er
           autoComplete="email"
           value={form.email}
           onChange={set('email')}
-          placeholder="name@company.com"
+          placeholder={isSeller ? 'name@company.com' : 'name@example.com'}
           className={inputClass}
         />
       </div>

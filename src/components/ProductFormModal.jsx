@@ -263,8 +263,8 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       description: form.description.trim(),
       sku: form.sku.trim(),
       price: Number(form.price),
-      unit: form.unit.trim(),
-      moq: form.moq.trim(),
+      unit: form.b2bEnabled ? form.unit.trim() : '',
+      moq: form.b2bEnabled ? form.moq.trim() : '',
       stock: Number(form.stock),
       status: form.status,
       images: form.images,
@@ -419,22 +419,26 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={form.b2bEnabled ? 'grid grid-cols-2 gap-3' : ''}>
             <div>
               <label className={labelClass}>Price (Rs)</label>
               <input type="text" inputMode="numeric" value={form.price} onChange={set('price')} placeholder="670" className={fieldClass} />
             </div>
-            <div>
-              <label className={labelClass}>Unit</label>
-              <input type="text" value={form.unit} onChange={set('unit')} placeholder="metre" className={fieldClass} />
-            </div>
+            {form.b2bEnabled && (
+              <div>
+                <label className={labelClass}>Unit</label>
+                <input type="text" value={form.unit} onChange={set('unit')} placeholder="metre" className={fieldClass} />
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>MOQ</label>
-              <input type="text" value={form.moq} onChange={set('moq')} placeholder="500m" className={fieldClass} />
-            </div>
+          <div className={form.b2bEnabled ? 'grid grid-cols-2 gap-3' : ''}>
+            {form.b2bEnabled && (
+              <div>
+                <label className={labelClass}>MOQ</label>
+                <input type="text" value={form.moq} onChange={set('moq')} placeholder="500m" className={fieldClass} />
+              </div>
+            )}
             <div>
               <label className={labelClass}>Stock</label>
               <input type="text" inputMode="numeric" value={form.stock} onChange={set('stock')} placeholder="2400" className={fieldClass} />
