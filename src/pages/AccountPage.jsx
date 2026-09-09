@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useProfileDrawer } from '../context/ProfileDrawerContext';
 import { myOrders } from '../lib/api';
 import { computeLoyaltyTier } from '../lib/loyalty';
+import { resolveMediaUrl } from '../lib/media';
 import {
   IconUser,
   IconMenu,
@@ -173,7 +174,7 @@ export default function AccountPage() {
               behind the avatar. */}
           <div className="relative h-28 sm:h-36 bg-gradient-to-br from-green-deep via-green to-green-hover overflow-hidden">
             {user.bannerUrl ? (
-              <img src={user.bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <img src={resolveMediaUrl(user.bannerUrl)} alt="" className="absolute inset-0 w-full h-full object-cover" />
             ) : (
               <>
                 <div className="absolute inset-0 bg-white/30" />

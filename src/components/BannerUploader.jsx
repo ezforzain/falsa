@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { toDisplayableImage } from '../lib/heic';
 import { validateBannerImageFile } from '../lib/file';
 import { uploadFile } from '../lib/upload';
+import { resolveMediaUrl } from '../lib/media';
 import { IconCamera, IconTrash } from './icons';
 
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif';
@@ -59,7 +60,7 @@ export default function BannerUploader() {
     }
   };
 
-  const displaySrc = previewUrl || user?.bannerUrl || null;
+  const displaySrc = previewUrl || resolveMediaUrl(user?.bannerUrl) || null;
 
   return (
     <div className="flex flex-col gap-2.5">

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toDisplayableImage } from '../lib/heic';
 import { validateBannerImageFile } from '../lib/file';
 import { uploadFile } from '../lib/upload';
+import { resolveMediaUrl } from '../lib/media';
 import { IconCamera, IconTrash, IconUpload } from './icons';
 
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif';
@@ -64,7 +65,7 @@ export default function StoreBannerUploader({ value, onChange }) {
     if (file) handleFile(file);
   };
 
-  const displaySrc = previewUrl || value || null;
+  const displaySrc = previewUrl || resolveMediaUrl(value) || null;
 
   return (
     <div className="flex flex-col gap-2.5">

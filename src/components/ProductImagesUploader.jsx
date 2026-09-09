@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { toDisplayableImage } from '../lib/heic';
 import { validateProductImageFile } from '../lib/file';
 import { uploadFile } from '../lib/upload';
+import { resolveMediaUrl } from '../lib/media';
 import { IconCamera, IconClose, IconEdit, IconUpload } from './icons';
 
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif';
@@ -71,7 +72,7 @@ export default function ProductImagesUploader({ images, onChange, max = 6, type 
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
         {images.map((url, i) => (
           <div key={`${url}-${i}`} className="relative aspect-square rounded-xl overflow-hidden border border-border bg-surface-muted group">
-            <img src={url} alt={`Product photo ${i + 1}`} className="w-full h-full object-cover" />
+            <img src={resolveMediaUrl(url)} alt={`Product photo ${i + 1}`} className="w-full h-full object-cover" />
             {i === 0 && (
               <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9.5px] font-semibold px-1.5 py-0.5 rounded">
                 Cover

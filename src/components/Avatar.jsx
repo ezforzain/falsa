@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { IconUser } from './icons';
+import { resolveMediaUrl } from '../lib/media';
 
 // Single shared avatar renderer — every screen that shows a user's identity (account menu,
 // profile page, seller portal header, admin user list, ...) goes through this so a profile
@@ -13,7 +14,8 @@ export default function Avatar({ src, size = 40, iconSize, bgClassName = 'bg-gre
   const [broken, setBroken] = useState(false);
   useEffect(() => setBroken(false), [src]);
 
-  const showImage = src && !broken;
+  const resolvedSrc = resolveMediaUrl(src);
+  const showImage = resolvedSrc && !broken;
 
   return (
     <span
@@ -21,7 +23,7 @@ export default function Avatar({ src, size = 40, iconSize, bgClassName = 'bg-gre
       style={{ width: size, height: size }}
     >
       {showImage ? (
-        <img src={src} alt="" className="w-full h-full object-cover" onError={() => setBroken(true)} />
+        <img src={resolvedSrc} alt="" className="w-full h-full object-cover" onError={() => setBroken(true)} />
       ) : (
         <IconUser width={resolvedIconSize} height={resolvedIconSize} className={iconClassName} />
       )}

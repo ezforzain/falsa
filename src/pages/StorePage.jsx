@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { sellers } from '../lib/api';
+import { resolveMediaUrl } from '../lib/media';
 import ProductCard from '../components/ProductCard';
 import VerifiedBadge from '../components/VerifiedBadge';
 import PromoBannerCarousel from '../components/PromoBannerCarousel';
@@ -86,13 +87,13 @@ export default function StorePage() {
       <div className="bg-white border border-border rounded-2xl overflow-hidden mb-8">
         {store.bannerUrl && (
           <div className="h-[140px] sm:h-[180px] w-full overflow-hidden">
-            <img src={store.bannerUrl} alt="" className="w-full h-full object-cover" />
+            <img src={resolveMediaUrl(store.bannerUrl)} alt="" className="w-full h-full object-cover" />
           </div>
         )}
         <div className="p-6 sm:p-8 flex items-center gap-5 flex-wrap">
           <span className="w-16 h-16 rounded-2xl bg-green-tint flex items-center justify-center shrink-0 overflow-hidden">
             {store.logoUrl ? (
-              <img src={store.logoUrl} alt="" className="w-full h-full object-cover" />
+              <img src={resolveMediaUrl(store.logoUrl)} alt="" className="w-full h-full object-cover" />
             ) : (
               <IconBox width="28" height="28" className="text-green" />
             )}
