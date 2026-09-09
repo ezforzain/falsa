@@ -34,12 +34,20 @@ const clothingSizePresets = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'Free Siz
 const footwearSizePresets = ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'];
 const genericSizePresets = ['Small', 'Medium', 'Large', 'Extra Large'];
 
+// Electronics/mobile accessories only need the handful of colors those products actually ship
+// in — the full palette below (mainly useful for clothing/fashion) would just add noise there.
+const compactColorNames = ['Black', 'White', 'Grey', 'Silver', 'Gold', 'Rose Gold', 'Blue', 'Red', 'Green', 'Multicolor'];
+const compactColorPresets = colorPresets.filter((c) => compactColorNames.includes(c.name));
+
 // { type: 'color' } options carry {name, hex} so the picker can render a swatch dot.
 // { type: 'text' } options are plain strings. Returning null means "no curated list" — the
 // caller falls back to the original free-text input (e.g. Model Variant, which is really open
 // device-model text, not something a fixed list helps with).
 export function getVariantOptionPreset(axisKey, categoryGroup) {
-  if (axisKey === 'color') return { type: 'color', options: colorPresets };
+  if (axisKey === 'color') {
+    const compact = categoryGroup === 'Electronics' || categoryGroup === 'Mobiles & Accessories';
+    return { type: 'color', options: compact ? compactColorPresets : colorPresets };
+  }
   if (axisKey === 'shade') return { type: 'text', options: shadePresets };
   if (axisKey === 'size') {
     if (categoryGroup === 'Fashion - Clothing') return { type: 'text', options: clothingSizePresets };

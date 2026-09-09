@@ -1,22 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import { IconCheck, IconClose, IconPlus, IconSearch } from './icons';
 
-// Searchable, multi-select combobox for one variant axis (Color, Size, Shade…) — same combobox
-// shell as CategoryPicker, but multi-select with chips instead of single-select. `preset` supplies
-// the full option list (with search); anything the seller types that isn't in that list can be
-// added as a one-off custom option via the "Add …" row, so an unlisted color/size is never a
-// dead end. Selection is kept as the same comma-separated string the rest of the form already
-// reads (form.variantAxes[key]) so cartesianVariants/submit don't need to change.
-export default function VariantOptionPicker({ preset, value, onChange, placeholder, fieldClass }) {
-  const [query, setQuery] = useState('');
+// Searchable combobox for one category-detail field — same shell used two ways:
+//  - multiple=true (default): a variant axis (Color, Size, Shade…), value is a comma-separated
+//    string, selections render as removable chips underneath (used for the variant matrix).
+//  - multiple=false: a single-value attribute (Brand, Warranty, Material…), value is a plain
+//    string, selecting an option fills the field directly like a normal select.
+// Either way, `preset` supplies the option list (with search); anything the seller types that
+// isn't in that list can be added as a custom option, so an unlisted value is never a dead end.
+export default function VariantOptionPicker({ preset, value, onChange, placeholder, fieldClass, multiple = true }) {
+  const [query, setQuery] = useState(multiple ? '' : value || '');
   const [open, setOpen] = useState(false);
   const [customOptions, setCustomOptions] = useState([]);
   const rootRef = useRef(null);
 
-  const selected = String(value || '')
-    .split(',')
-    .map((v) => v.trim())
-    .filter(Boolean);
+  const selected = multiple
+    ? String(value || '')
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
+    : value
+      ? [value]
+      : [];
+
+  useEffect(() => {
+    if (!multiple) setQuery(value || '');
+  }, [value, multiple]);
 
   useEffect(() => {
     const onClickOutside = (e) => {
@@ -34,11 +43,20 @@ export default function VariantOptionPicker({ preset, value, onChange, placehold
   const matches = q ? allOptions.filter((o) => o.name.toLowerCase().includes(q)) : allOptions;
   const exactMatch = allOptions.some((o) => o.name.toLowerCase() === q);
 
-  const commit = (names) => onChange(names.join(', '));
+  const commitMultiple = (names) => onChange(names.join(', '));
+  const selectSingle = (name) => {
+    onChange(name);
+    setQuery(name);
+    setOpen(false);
+  };
 
   const toggle = (name) => {
+    if (!multiple) {
+      selectSingle(name);
+      return;
+    }
     const isSelected = selected.some((s) => s.toLowerCase() === name.toLowerCase());
-    commit(isSelected ? selected.filter((s) => s.toLowerCase() !== name.toLowerCase()) : [...selected, name]);
+    commitMultiple(isSelected ? selected.filter((s) => s.toLowerCase() !== name.toLowerCase()) : [...selected, name]);
   };
 
   const addCustom = () => {
@@ -47,11 +65,33 @@ export default function VariantOptionPicker({ preset, value, onChange, placehold
     if (!allOptions.some((o) => o.name.toLowerCase() === name.toLowerCase())) {
       setCustomOptions((c) => [...c, name]);
     }
-    if (!selected.some((s) => s.toLowerCase() === name.toLowerCase())) commit([...selected, name]);
-    setQuery('');
+    if (multiple) {
+      if (!selected.some((s) => s.toLowerCase() === name.toLowerCase())) commitMultiple([...selected, name]);
+      setQuery('');
+    } else {
+      onChange(name);
+      setQuery(name);
+      setOpen(false);
+    }
   };
 
-  const remove = (name) => commit(selected.filter((s) => s !== name));
+  const remove = (name) => commitMultiple(selected.filter((s) => s !== name));
+
+  // Single mode: typing without picking an option and clicking away still saves whatever was
+  // typed (as a custom value if it isn't an exact match) — so a seller doesn't have to hunt for
+  // an explicit "add" affordance just to leave a typed brand/warranty in the field.
+  const handleBlur = () => {
+    if (multiple) return;
+    const typed = query.trim();
+    if (!typed) {
+      setQuery(value || '');
+      return;
+    }
+    if (typed.toLowerCase() === String(value || '').toLowerCase()) return;
+    const hit = allOptions.find((o) => o.name.toLowerCase() === typed.toLowerCase());
+    if (hit) selectSingle(hit.name);
+    else addCustom();
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -72,13 +112,14 @@ export default function VariantOptionPicker({ preset, value, onChange, placehold
         <input
           type="text"
           value={query}
-          placeholder={selected.length > 0 ? 'Search or add more…' : placeholder || 'Search options…'}
+          placeholder={multiple ? (selected.length > 0 ? 'Search or add more…' : placeholder || 'Search options…') : placeholder || 'Search…'}
           onFocus={() => setOpen(true)}
           onChange={(e) => {
             setQuery(e.target.value);
             setOpen(true);
           }}
           onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
           className={`${fieldClass} !pl-8`}
         />
       </div>
@@ -132,7 +173,7 @@ export default function VariantOptionPicker({ preset, value, onChange, placehold
         </div>
       )}
 
-      {selected.length > 0 && (
+      {multiple && selected.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
           {selected.map((name) => {
             const opt = allOptions.find((o) => o.name.toLowerCase() === name.toLowerCase());

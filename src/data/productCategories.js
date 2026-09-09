@@ -76,10 +76,18 @@ export const productCategories = [
 
 export const categoryGroups = [...new Set(productCategories.map((c) => c.group))];
 
+// Attribute `type` drives which control ProductFormModal renders:
+//  - 'text'   — plain free-text input (unchanged from before)
+//  - 'select' — small fixed list, native <select> (no search/custom needed for a handful of options)
+//  - 'picker' — searchable, single-select combobox with a "custom" option (see AttributeOptionPicker
+//               and getAttributePreset in attributeOptions.js), for lists worth searching/extending
+const CONDITION_OPTIONS = ['New', 'Used - Like New', 'Used - Good', 'Refurbished'];
+const GENDER_OPTIONS = ['Men', 'Women', 'Unisex', 'Boys', 'Girls'];
+
 const defaultTemplate = {
   attributes: [
-    { key: 'brand', label: 'Brand', placeholder: 'e.g. Generic, Sony, Local' },
-    { key: 'material', label: 'Material', placeholder: 'e.g. Plastic, Cotton, Steel' },
+    { key: 'brand', label: 'Brand', type: 'picker', placeholder: 'e.g. Generic, Sony, Local' },
+    { key: 'material', label: 'Material', type: 'picker', placeholder: 'e.g. Plastic, Cotton, Steel' },
   ],
   variantAxes: [{ key: 'color', label: 'Color', placeholder: 'e.g. Red, Blue, Black' }],
 };
@@ -87,10 +95,11 @@ const defaultTemplate = {
 export const categoryTemplates = {
   'Mobiles & Accessories': {
     attributes: [
-      { key: 'brand', label: 'Brand', placeholder: 'e.g. Samsung, Apple, Generic' },
-      { key: 'compatibleModel', label: 'Compatible Model', placeholder: 'e.g. iPhone 14, Galaxy S23' },
-      { key: 'material', label: 'Material', placeholder: 'e.g. Silicone, Leather, Polycarbonate' },
-      { key: 'warranty', label: 'Warranty', placeholder: 'e.g. 6 months' },
+      { key: 'brand', label: 'Brand', type: 'picker', placeholder: 'e.g. Samsung, Apple, Generic' },
+      { key: 'compatibleModel', label: 'Compatible Model', type: 'text', placeholder: 'e.g. iPhone 14, Galaxy S23' },
+      { key: 'material', label: 'Material', type: 'picker', placeholder: 'e.g. Silicone, Leather, Polycarbonate' },
+      { key: 'condition', label: 'Condition', type: 'select', options: CONDITION_OPTIONS },
+      { key: 'warranty', label: 'Warranty', type: 'picker', placeholder: 'e.g. 6 Months' },
     ],
     variantAxes: [
       { key: 'color', label: 'Color', placeholder: 'e.g. Red, Blue, Black' },
@@ -99,18 +108,20 @@ export const categoryTemplates = {
   },
   Electronics: {
     attributes: [
-      { key: 'brand', label: 'Brand', placeholder: 'e.g. Samsung, LG, Generic' },
-      { key: 'model', label: 'Model Number', placeholder: 'e.g. WM-2200' },
-      { key: 'power', label: 'Power / Voltage', placeholder: 'e.g. 220V, 100W' },
-      { key: 'warranty', label: 'Warranty', placeholder: 'e.g. 1 year' },
+      { key: 'brand', label: 'Brand', type: 'picker', placeholder: 'e.g. Samsung, LG, Generic' },
+      { key: 'model', label: 'Model Number', type: 'text', placeholder: 'e.g. WM-2200' },
+      { key: 'power', label: 'Power / Voltage', type: 'text', placeholder: 'e.g. 220V, 100W' },
+      { key: 'condition', label: 'Condition', type: 'select', options: CONDITION_OPTIONS },
+      { key: 'warranty', label: 'Warranty', type: 'picker', placeholder: 'e.g. 1 Year' },
     ],
     variantAxes: [{ key: 'color', label: 'Color', placeholder: 'e.g. Black, White, Silver' }],
   },
   'Fashion - Clothing': {
     attributes: [
-      { key: 'brand', label: 'Brand', placeholder: 'e.g. Generic, Local' },
-      { key: 'fabric', label: 'Fabric / Material', placeholder: 'e.g. Lawn, Cotton, Linen' },
-      { key: 'care', label: 'Care Instructions', placeholder: 'e.g. Machine wash cold' },
+      { key: 'brand', label: 'Brand', type: 'picker', placeholder: 'e.g. Generic, Local' },
+      { key: 'fabric', label: 'Fabric / Material', type: 'picker', placeholder: 'e.g. Lawn, Cotton, Linen' },
+      { key: 'gender', label: 'Gender', type: 'select', options: GENDER_OPTIONS },
+      { key: 'care', label: 'Care Instructions', type: 'text', placeholder: 'e.g. Machine wash cold' },
     ],
     variantAxes: [
       { key: 'color', label: 'Color', placeholder: 'e.g. Red, Blue, Black' },
@@ -119,8 +130,9 @@ export const categoryTemplates = {
   },
   'Fashion - Footwear': {
     attributes: [
-      { key: 'brand', label: 'Brand', placeholder: 'e.g. Generic, Local' },
-      { key: 'material', label: 'Material', placeholder: 'e.g. Leather, Canvas, Rubber' },
+      { key: 'brand', label: 'Brand', type: 'picker', placeholder: 'e.g. Generic, Local' },
+      { key: 'material', label: 'Material', type: 'picker', placeholder: 'e.g. Leather, Canvas, Rubber' },
+      { key: 'gender', label: 'Gender', type: 'select', options: GENDER_OPTIONS },
     ],
     variantAxes: [
       { key: 'color', label: 'Color', placeholder: 'e.g. Black, White' },
@@ -129,86 +141,116 @@ export const categoryTemplates = {
   },
   'Fashion - Accessories': {
     attributes: [
-      { key: 'brand', label: 'Brand', placeholder: 'e.g. Generic, Local' },
-      { key: 'material', label: 'Material', placeholder: 'e.g. Leather, Metal, Gold-plated' },
+      { key: 'brand', label: 'Brand', type: 'picker', placeholder: 'e.g. Generic, Local' },
+      { key: 'material', label: 'Material', type: 'picker', placeholder: 'e.g. Leather, Metal, Gold-plated' },
     ],
     variantAxes: [{ key: 'color', label: 'Color', placeholder: 'e.g. Gold, Silver, Black' }],
   },
   'Health & Beauty': {
     attributes: [
-      { key: 'brand', label: 'Brand', placeholder: 'e.g. Generic, Local' },
-      { key: 'skinType', label: 'Skin / Use Type', placeholder: 'e.g. Oily, Dry, All skin types' },
-      { key: 'volume', label: 'Volume / Weight', placeholder: 'e.g. 100ml, 50g' },
-      { key: 'expiry', label: 'Expiry / Shelf Life', placeholder: 'e.g. 24 months from mfg' },
+      { key: 'brand', label: 'Brand', type: 'picker', placeholder: 'e.g. Generic, Local' },
+      { key: 'skinType', label: 'Skin / Use Type', type: 'text', placeholder: 'e.g. Oily, Dry, All skin types' },
+      { key: 'volume', label: 'Volume / Weight', type: 'text', placeholder: 'e.g. 100ml, 50g' },
+      { key: 'expiry', label: 'Expiry / Shelf Life', type: 'text', placeholder: 'e.g. 24 months from mfg' },
     ],
     variantAxes: [{ key: 'shade', label: 'Shade / Variant', placeholder: 'e.g. Fair, Medium, Deep' }],
   },
   'Home & Living': {
     attributes: [
-      { key: 'material', label: 'Material', placeholder: 'e.g. Wood, Steel, Fabric' },
-      { key: 'dimensions', label: 'Dimensions', placeholder: 'e.g. 120 x 60 x 75 cm' },
+      { key: 'brand', label: 'Brand', type: 'picker', placeholder: 'e.g. Interwood, Habitt, Generic' },
+      { key: 'material', label: 'Material', type: 'picker', placeholder: 'e.g. Wood, Steel, Fabric' },
+      { key: 'dimensions', label: 'Dimensions', type: 'text', placeholder: 'e.g. 120 x 60 x 75 cm' },
+      { key: 'warranty', label: 'Warranty', type: 'picker', placeholder: 'e.g. 1 Year' },
     ],
     variantAxes: [{ key: 'color', label: 'Color', placeholder: 'e.g. Brown, White, Grey' }],
   },
   'Groceries & Food': {
     attributes: [
-      { key: 'weight', label: 'Weight / Volume', placeholder: 'e.g. 1kg, 500g, 1L' },
-      { key: 'expiry', label: 'Expiry / Shelf Life', placeholder: 'e.g. 12 months' },
-      { key: 'origin', label: 'Origin', placeholder: 'e.g. Punjab, Imported' },
+      { key: 'weight', label: 'Weight / Volume', type: 'text', placeholder: 'e.g. 1kg, 500g, 1L' },
+      { key: 'expiry', label: 'Expiry / Shelf Life', type: 'text', placeholder: 'e.g. 12 months' },
+      { key: 'origin', label: 'Origin', type: 'text', placeholder: 'e.g. Punjab, Imported' },
     ],
     variantAxes: [],
   },
   'Baby & Toys': {
     attributes: [
-      { key: 'brand', label: 'Brand', placeholder: 'e.g. Generic, Local' },
-      { key: 'ageGroup', label: 'Age Group', placeholder: 'e.g. 0-6 months, 3+ years' },
-      { key: 'material', label: 'Material', placeholder: 'e.g. Plastic, Cotton' },
+      { key: 'brand', label: 'Brand', type: 'picker', placeholder: 'e.g. Generic, Local' },
+      { key: 'ageGroup', label: 'Age Group', type: 'text', placeholder: 'e.g. 0-6 months, 3+ years' },
+      { key: 'material', label: 'Material', type: 'picker', placeholder: 'e.g. Plastic, Cotton' },
     ],
     variantAxes: [{ key: 'color', label: 'Color', placeholder: 'e.g. Red, Blue' }],
   },
   'Sports & Outdoors': {
     attributes: [
-      { key: 'brand', label: 'Brand', placeholder: 'e.g. Generic, Local' },
-      { key: 'material', label: 'Material', placeholder: 'e.g. Rubber, Steel' },
+      { key: 'brand', label: 'Brand', type: 'picker', placeholder: 'e.g. Generic, Local' },
+      { key: 'material', label: 'Material', type: 'picker', placeholder: 'e.g. Rubber, Steel' },
     ],
     variantAxes: [{ key: 'size', label: 'Size', placeholder: 'e.g. S, M, L' }],
   },
   Automotive: {
     attributes: [
-      { key: 'brand', label: 'Brand', placeholder: 'e.g. Generic, OEM' },
-      { key: 'compatibleModel', label: 'Compatible Model', placeholder: 'e.g. Honda Civic 2018-2022' },
+      { key: 'brand', label: 'Brand', type: 'picker', placeholder: 'e.g. Generic, OEM' },
+      { key: 'compatibleModel', label: 'Compatible Model', type: 'text', placeholder: 'e.g. Honda Civic 2018-2022' },
+      { key: 'condition', label: 'Condition', type: 'select', options: CONDITION_OPTIONS },
     ],
     variantAxes: [{ key: 'color', label: 'Color', placeholder: 'e.g. Black, Red' }],
   },
   'Books & Stationery': {
     attributes: [
-      { key: 'brand', label: 'Brand / Publisher', placeholder: 'e.g. Generic, Local' },
-      { key: 'material', label: 'Material', placeholder: 'e.g. Paper, Plastic' },
+      { key: 'brand', label: 'Brand / Publisher', type: 'text', placeholder: 'e.g. Generic, Local' },
+      { key: 'material', label: 'Material', type: 'text', placeholder: 'e.g. Paper, Plastic' },
     ],
     variantAxes: [],
   },
   'Pet Supplies': {
     attributes: [
-      { key: 'brand', label: 'Brand', placeholder: 'e.g. Generic, Local' },
-      { key: 'petType', label: 'Pet Type', placeholder: 'e.g. Dog, Cat' },
+      { key: 'brand', label: 'Brand', type: 'picker', placeholder: 'e.g. Generic, Local' },
+      { key: 'petType', label: 'Pet Type', type: 'select', options: ['Dog', 'Cat', 'Bird', 'Fish', 'Other'] },
     ],
     variantAxes: [{ key: 'size', label: 'Size', placeholder: 'e.g. Small, Medium, Large' }],
   },
   'Industrial & Wholesale': {
     attributes: [
-      { key: 'materialGrade', label: 'Material / Grade', placeholder: 'e.g. 280 GSM, Grade A' },
-      { key: 'origin', label: 'Origin', placeholder: 'e.g. Faisalabad, Pakistan' },
-      { key: 'certification', label: 'Certification', placeholder: 'e.g. ISO 9001' },
+      { key: 'materialGrade', label: 'Material / Grade', type: 'text', placeholder: 'e.g. 280 GSM, Grade A' },
+      { key: 'origin', label: 'Origin', type: 'text', placeholder: 'e.g. Faisalabad, Pakistan' },
+      { key: 'certification', label: 'Certification', type: 'text', placeholder: 'e.g. ISO 9001' },
     ],
     variantAxes: [],
   },
   Other: defaultTemplate,
 };
 
+// Extra attributes that only make sense for one specific leaf category, not its whole group
+// (e.g. Storage/RAM matter for phones/tablets/laptops, but not for TVs or blenders even though
+// they share the "Electronics" group) — merged onto the group template in getCategoryTemplate.
+const categoryExtraAttributes = {
+  'mobile-phones': [
+    { key: 'storage', label: 'Storage', type: 'select', options: ['16GB', '32GB', '64GB', '128GB', '256GB', '512GB', '1TB'] },
+    { key: 'ram', label: 'RAM', type: 'select', options: ['1GB', '2GB', '3GB', '4GB', '6GB', '8GB', '12GB', '16GB'] },
+    { key: 'screenSize', label: 'Screen Size', type: 'text', placeholder: 'e.g. 6.1 inch' },
+  ],
+  tablets: [
+    { key: 'storage', label: 'Storage', type: 'select', options: ['16GB', '32GB', '64GB', '128GB', '256GB', '512GB', '1TB'] },
+    { key: 'ram', label: 'RAM', type: 'select', options: ['2GB', '3GB', '4GB', '6GB', '8GB', '12GB'] },
+    { key: 'screenSize', label: 'Screen Size', type: 'text', placeholder: 'e.g. 10.9 inch' },
+  ],
+  laptops: [
+    { key: 'storage', label: 'Storage', type: 'select', options: ['128GB SSD', '256GB SSD', '512GB SSD', '1TB SSD', '1TB HDD', '2TB HDD'] },
+    { key: 'ram', label: 'RAM', type: 'select', options: ['4GB', '8GB', '12GB', '16GB', '32GB', '64GB'] },
+    { key: 'screenSize', label: 'Screen Size', type: 'text', placeholder: 'e.g. 15.6 inch' },
+  ],
+  televisions: [
+    { key: 'screenSize', label: 'Screen Size', type: 'select', options: ['32 inch', '40 inch', '43 inch', '50 inch', '55 inch', '65 inch', '75 inch'] },
+  ],
+};
+
 export function getCategoryTemplate(categoryName) {
   const entry = productCategories.find((c) => c.name === categoryName);
   if (!entry) return defaultTemplate;
-  return categoryTemplates[entry.group] || defaultTemplate;
+  const template = categoryTemplates[entry.group] || defaultTemplate;
+  const extra = categoryExtraAttributes[entry.key];
+  if (!extra) return template;
+  return { ...template, attributes: [...template.attributes, ...extra] };
 }
 
 // Used alongside getVariantOptionPreset (variantOptions.js) — some axis presets (e.g. "Size")

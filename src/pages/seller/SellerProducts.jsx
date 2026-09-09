@@ -190,7 +190,7 @@ export default function SellerProducts() {
                 <div className="flex items-baseline justify-between mb-1.5">
                   <span className="font-display font-bold text-green text-[15px]">
                     {formatPKR(p.price)}
-                    <span className="text-xs font-medium text-text-muted"> /{p.unit}</span>
+                    {p.unit && <span className="text-xs font-medium text-text-muted"> /{p.unit}</span>}
                   </span>
                   <span className={`text-xs font-semibold ${p.stock === 0 ? 'text-orange-text' : 'text-text-muted'}`}>
                     {p.stock === 0 ? 'Out of stock' : `${p.stock} in stock`}

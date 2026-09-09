@@ -8,6 +8,7 @@ import VariantOptionPicker from './VariantOptionPicker';
 import { mergeHashtags } from '../lib/hashtags';
 import { getCategoryGroup, getCategoryTemplate, suggestCategories } from '../data/productCategories';
 import { getVariantOptionPreset } from '../data/variantOptions';
+import { getAttributePreset } from '../data/attributeOptions';
 import { IconBox, IconChevronDown, IconClose, IconPlus, IconSparkle, IconTrash } from './icons';
 
 const MAX_IMAGES = 6;
@@ -167,13 +168,6 @@ export default function ProductFormModal({ open, product, loading, error, onClos
     });
   }, [open, product]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (e) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
-
   // Regenerate the variant matrix whenever the axis values or applicable template change —
   // existing rows are preserved by name so manual price/stock edits survive a re-derive.
   useEffect(() => {
@@ -260,8 +254,10 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       description: form.description.trim(),
       sku: form.sku.trim(),
       price: Number(form.price),
-      unit: form.unit.trim(),
-      moq: form.moq.trim(),
+      // Unit/MOQ are B2B-only concepts (a wholesale unit of sale + minimum order) — a Spotlight
+      // (B2C) listing sells as a single item, so neither applies and both are sent blank.
+      unit: form.b2bEnabled ? form.unit.trim() : '',
+      moq: form.b2bEnabled ? form.moq.trim() : '',
       stock: Number(form.stock),
       status: form.status,
       images: form.images,
@@ -288,12 +284,20 @@ export default function ProductFormModal({ open, product, loading, error, onClos
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8">
-      <div className="absolute inset-0 bg-black/45" onClick={onClose} />
+      {/* Backdrop is deliberately non-interactive — clicking the dark area (including near the
+          screen edges) must not close this form. The X button and the explicit Cancel button
+          below are the only ways out, so an in-progress listing is never lost to a stray click. */}
+      <div className="absolute inset-0 bg-black/45" />
 
       <div className="relative w-full max-w-[460px] max-h-full overflow-y-auto bg-white rounded-2xl shadow-2xl p-6 animate-fade-up">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-display text-lg font-bold text-ink">{isEdit ? 'Edit listing' : 'Add new listing'}</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-text-muted hover:text-ink cursor-pointer p-1">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="shrink-0 text-text-muted hover:text-ink cursor-pointer p-1.5 -m-1.5 rounded-full hover:bg-surface-muted transition-colors"
+          >
             <IconClose width="18" height="18" />
           </button>
         </div>
@@ -416,22 +420,29 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Unit/MOQ only apply to B2B listings — a Spotlight (B2C) listing sells as a single
+              item with no minimum order, so both fields (and their grid slots) are dropped
+              entirely rather than left as empty space. */}
+          <div className={form.b2bEnabled ? 'grid grid-cols-2 gap-3' : ''}>
             <div>
               <label className={labelClass}>Price (Rs)</label>
               <input type="text" inputMode="numeric" value={form.price} onChange={set('price')} placeholder="670" className={fieldClass} />
             </div>
-            <div>
-              <label className={labelClass}>Unit</label>
-              <input type="text" value={form.unit} onChange={set('unit')} placeholder="metre" className={fieldClass} />
-            </div>
+            {form.b2bEnabled && (
+              <div>
+                <label className={labelClass}>Unit</label>
+                <input type="text" value={form.unit} onChange={set('unit')} placeholder="metre" className={fieldClass} />
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>MOQ</label>
-              <input type="text" value={form.moq} onChange={set('moq')} placeholder="500m" className={fieldClass} />
-            </div>
+          <div className={form.b2bEnabled ? 'grid grid-cols-2 gap-3' : ''}>
+            {form.b2bEnabled && (
+              <div>
+                <label className={labelClass}>MOQ</label>
+                <input type="text" value={form.moq} onChange={set('moq')} placeholder="500m" className={fieldClass} />
+              </div>
+            )}
             <div>
               <label className={labelClass}>Stock</label>
               <input type="text" inputMode="numeric" value={form.stock} onChange={set('stock')} placeholder="2400" className={fieldClass} />
@@ -452,18 +463,41 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             <Section title="Product details & Variants" open={openSections.details} onToggle={() => toggleSection('details')}>
               {template.attributes.length > 0 && (
                 <div className="flex flex-col gap-3">
-                  {template.attributes.map((attr) => (
-                    <div key={attr.key}>
-                      <label className={labelClass}>{attr.label} (optional)</label>
-                      <input
-                        type="text"
-                        value={form.specifications[attr.key] || ''}
-                        onChange={setSpec(attr.key)}
-                        placeholder={attr.placeholder}
-                        className={fieldClass}
-                      />
-                    </div>
-                  ))}
+                  {template.attributes.map((attr) => {
+                    const attrPreset = attr.type === 'picker' ? getAttributePreset(attr.key, form.category, categoryGroup) : null;
+                    return (
+                      <div key={attr.key}>
+                        <label className={labelClass}>{attr.label} (optional)</label>
+                        {attr.type === 'select' ? (
+                          <select value={form.specifications[attr.key] || ''} onChange={setSpec(attr.key)} className={fieldClass}>
+                            <option value="">Select…</option>
+                            {attr.options.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                        ) : attrPreset ? (
+                          <VariantOptionPicker
+                            preset={attrPreset}
+                            value={form.specifications[attr.key] || ''}
+                            onChange={(val) => setForm((f) => ({ ...f, specifications: { ...f.specifications, [attr.key]: val } }))}
+                            placeholder={attr.placeholder}
+                            fieldClass={fieldClass}
+                            multiple={false}
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            value={form.specifications[attr.key] || ''}
+                            onChange={setSpec(attr.key)}
+                            placeholder={attr.placeholder}
+                            className={fieldClass}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
