@@ -254,14 +254,20 @@ export default function ProductFormModal({ open, product, loading, error, onClos
           .map((t) => ({ minQty: Number(t.minQty), maxQty: t.maxQty === '' ? null : Number(t.maxQty), price: Number(t.price) }))
       : [];
 
+    // Unit/MOQ are hidden for Spotlight (B2C) listings — the backend still requires both fields,
+    // so a single-unit retail listing gets sensible defaults instead of forcing the seller to
+    // fill in boxes that don't apply to them.
+    const unit = form.b2bEnabled ? form.unit.trim() : form.unit.trim() || 'piece';
+    const moq = form.b2bEnabled ? form.moq.trim() : form.moq.trim() || '1';
+
     onSubmit({
       name: form.name.trim(),
       category: form.category,
       description: form.description.trim(),
       sku: form.sku.trim(),
       price: Number(form.price),
-      unit: form.unit.trim(),
-      moq: form.moq.trim(),
+      unit,
+      moq,
       stock: Number(form.stock),
       status: form.status,
       images: form.images,
@@ -288,19 +294,24 @@ export default function ProductFormModal({ open, product, loading, error, onClos
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8">
-      <div className="absolute inset-0 bg-black/45" onClick={onClose} />
+      {/* Dimmed backdrop — deliberately not clickable-to-close. This form is long enough that a
+          stray tap near the edges while scrolling used to close it and lose everything typed;
+          the header's close button (pinned below, so it stays reachable while scrolling) or
+          Cancel are now the only ways out. */}
+      <div className="absolute inset-0 bg-black/45" />
 
-      <div className="relative w-full max-w-[460px] max-h-full overflow-y-auto bg-white rounded-2xl shadow-2xl p-6 animate-fade-up">
-        <div className="flex items-center justify-between mb-5">
+      <div className="relative w-full max-w-[460px] max-h-full flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden animate-fade-up">
+        <div className="flex items-center justify-between px-6 pt-6 pb-5 shrink-0 border-b border-border/60">
           <h2 className="font-display text-lg font-bold text-ink">{isEdit ? 'Edit listing' : 'Add new listing'}</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="text-text-muted hover:text-ink cursor-pointer p-1">
             <IconClose width="18" height="18" />
           </button>
         </div>
 
-        {error && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-4">{error}</p>}
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-5 pb-6">
+          {error && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-4">{error}</p>}
 
-        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4">
           <div>
             <p className={labelClass}>Basic Info</p>
           </div>
@@ -416,27 +427,39 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             </select>
           </div>
 
+          {/* Unit and MOQ are bulk/wholesale concepts — meaningless for a single-unit Spotlight
+              (B2C) listing (see QuickFacts.jsx, which already skips MOQ for non-B2B products),
+              so they only show up once B2B is selected above. Stock stays visible either way. */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Price (Rs)</label>
               <input type="text" inputMode="numeric" value={form.price} onChange={set('price')} placeholder="670" className={fieldClass} />
             </div>
-            <div>
-              <label className={labelClass}>Unit</label>
-              <input type="text" value={form.unit} onChange={set('unit')} placeholder="metre" className={fieldClass} />
-            </div>
+            {form.b2bEnabled ? (
+              <div>
+                <label className={labelClass}>Unit</label>
+                <input type="text" value={form.unit} onChange={set('unit')} placeholder="metre" className={fieldClass} />
+              </div>
+            ) : (
+              <div>
+                <label className={labelClass}>Stock</label>
+                <input type="text" inputMode="numeric" value={form.stock} onChange={set('stock')} placeholder="2400" className={fieldClass} />
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>MOQ</label>
-              <input type="text" value={form.moq} onChange={set('moq')} placeholder="500m" className={fieldClass} />
+          {form.b2bEnabled && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelClass}>MOQ</label>
+                <input type="text" value={form.moq} onChange={set('moq')} placeholder="500m" className={fieldClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Stock</label>
+                <input type="text" inputMode="numeric" value={form.stock} onChange={set('stock')} placeholder="2400" className={fieldClass} />
+              </div>
             </div>
-            <div>
-              <label className={labelClass}>Stock</label>
-              <input type="text" inputMode="numeric" value={form.stock} onChange={set('stock')} placeholder="2400" className={fieldClass} />
-            </div>
-          </div>
+          )}
 
           <div>
             <label className={labelClass}>SKU (optional)</label>
@@ -748,9 +771,10 @@ export default function ProductFormModal({ open, product, loading, error, onClos
               </button>
             </Section>
           )}
+          </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
+        <div className="flex gap-3 px-6 pt-4 pb-6 shrink-0 border-t border-border/60">
           <button
             type="button"
             onClick={onClose}
