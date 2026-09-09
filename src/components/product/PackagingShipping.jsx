@@ -15,7 +15,7 @@ export default function PackagingShipping({ info }) {
       <div className="grid sm:grid-cols-2 gap-4">
         {rows.map(({ icon: Icon, label, value }) => (
           <div key={label} className="flex items-start gap-3 bg-surface-muted rounded-xl px-4 py-3.5">
-            <span className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center shrink-0 text-green mt-0.5">
+            <span className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center shrink-0 text-green mt-0.5">
               <Icon width="15" height="15" />
             </span>
             <div className="min-w-0">

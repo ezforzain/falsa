@@ -84,7 +84,7 @@ export default function VariantOptionPicker({ preset, value, onChange, placehold
       </div>
 
       {open && (
-        <div className="absolute z-20 left-0 right-0 mt-1.5 max-h-56 overflow-y-auto bg-white border border-border rounded-xl shadow-lg py-1.5">
+        <div className="absolute z-20 left-0 right-0 mt-1.5 max-h-56 overflow-y-auto bg-surface border border-border rounded-xl shadow-lg py-1.5">
           {matches.length === 0 && !q && <div className="px-3.5 py-3 text-[12.5px] text-text-muted">No options yet — type to add one.</div>}
           <ul>
             {matches.map((opt) => {

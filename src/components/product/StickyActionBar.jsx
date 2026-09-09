@@ -15,7 +15,7 @@ export default function StickyActionBar({ product, ordering, outOfStock, onOrder
 
   return (
     <div
-      className="md:hidden fixed inset-x-0 z-40 bg-white border-t border-border shadow-[0_-6px_24px_rgba(0,0,0,0.1)] animate-slide-up"
+      className="md:hidden fixed inset-x-0 z-40 bg-surface border-t border-border shadow-[0_-6px_24px_rgba(0,0,0,0.1)] animate-slide-up"
       style={{ bottom: ABOVE_BOTTOM_NAV }}
     >
       <div className="flex items-center gap-3 px-4 py-3">
@@ -28,7 +28,7 @@ export default function StickyActionBar({ product, ordering, outOfStock, onOrder
             type="button"
             onClick={onAddToCart}
             disabled={outOfStock}
-            className="flex-1 text-center cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 font-semibold text-[14px] h-[46px] rounded-full transition-all active:scale-[0.97] bg-white border-[1.5px] border-green text-green"
+            className="flex-1 text-center cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 font-semibold text-[14px] h-[46px] rounded-full transition-all active:scale-[0.97] bg-surface border-[1.5px] border-green text-green"
           >
             {outOfStock ? 'Out of stock' : 'Add to Cart'}
           </button>

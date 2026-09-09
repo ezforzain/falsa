@@ -90,7 +90,7 @@ export default function CategoryPicker({ value, onChange, fieldClass, labelClass
       </div>
 
       {open && flatMatches.length > 0 && (
-        <ul id={listboxId} role="listbox" className="absolute z-20 left-0 right-0 mt-1.5 max-h-64 overflow-y-auto bg-white border border-border rounded-xl shadow-lg py-1.5">
+        <ul id={listboxId} role="listbox" className="absolute z-20 left-0 right-0 mt-1.5 max-h-64 overflow-y-auto bg-surface border border-border rounded-xl shadow-lg py-1.5">
           {Object.entries(grouped).map(([group, cats]) => (
             <li key={group}>
               <div className="px-3.5 pt-2 pb-1 text-[11px] font-bold uppercase tracking-wide text-text-muted">{group}</div>
@@ -122,7 +122,7 @@ export default function CategoryPicker({ value, onChange, fieldClass, labelClass
       )}
 
       {open && flatMatches.length === 0 && (
-        <div className="absolute z-20 left-0 right-0 mt-1.5 bg-white border border-border rounded-xl shadow-lg px-3.5 py-3 text-sm text-text-muted">
+        <div className="absolute z-20 left-0 right-0 mt-1.5 bg-surface border border-border rounded-xl shadow-lg px-3.5 py-3 text-sm text-text-muted">
           No matching categories.
         </div>
       )}

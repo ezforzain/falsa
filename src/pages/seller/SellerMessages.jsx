@@ -80,20 +80,20 @@ export default function SellerMessages() {
       </div>
 
       {loading ? (
-        <div className="bg-white border border-border rounded-2xl h-[560px] max-h-[70vh] animate-pulse" />
+        <div className="bg-surface border border-border rounded-2xl h-[560px] max-h-[70vh] animate-pulse" />
       ) : error && conversations.length === 0 ? (
-        <div className="bg-white border border-dashed border-border-strong rounded-2xl p-10 text-center">
+        <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
           <p className="text-sm text-orange-text">{error}</p>
         </div>
       ) : conversations.length === 0 ? (
-        <div className="bg-white border border-dashed border-border-strong rounded-2xl p-10 text-center">
+        <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
           <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center mb-4">
             <IconMessageCircle width="24" height="24" className="text-green" />
           </span>
           <p className="text-sm text-text">No conversations yet.</p>
         </div>
       ) : (
-        <div className="bg-white border border-border rounded-2xl overflow-hidden flex h-[560px] max-h-[70vh]">
+        <div className="bg-surface border border-border rounded-2xl overflow-hidden flex h-[560px] max-h-[70vh]">
           <div className={`w-full sm:w-[280px] shrink-0 border-r border-border overflow-y-auto ${active ? 'hidden sm:block' : 'block'}`}>
             {conversations.map((c) => {
               const last = c.messages[c.messages.length - 1];
@@ -173,7 +173,7 @@ export default function SellerMessages() {
                     onChange={(e) => setDraft(e.target.value)}
                     placeholder="Type a message…"
                     disabled={sending}
-                    className="flex-1 px-3.5 py-2.5 border border-border rounded-full text-sm outline-none focus:border-green bg-white disabled:opacity-60"
+                    className="flex-1 px-3.5 py-2.5 border border-border rounded-full text-sm outline-none focus:border-green bg-surface disabled:opacity-60"
                   />
                   <button
                     type="submit"

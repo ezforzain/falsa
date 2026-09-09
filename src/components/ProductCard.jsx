@@ -6,7 +6,7 @@ export default function ProductCard({ product }) {
   return (
     <Link
       to={`/product/${product.id}`}
-      className="group block bg-white border border-border rounded-2xl overflow-hidden no-underline text-inherit transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(20,40,32,0.12)] hover:border-border-strong"
+      className="group block bg-surface border border-border rounded-2xl overflow-hidden no-underline text-inherit transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(20,40,32,0.12)] hover:border-border-strong"
     >
       <div className="h-[180px] relative overflow-hidden">
         <img src={product.img} alt={product.name} className="w-full h-full object-cover" loading="lazy" />

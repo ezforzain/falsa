@@ -59,7 +59,7 @@ export default function VerifyEmailPage() {
         Falsafah
       </Link>
 
-      <div className="w-full max-w-[400px] bg-white rounded-2xl shadow-xl shadow-black/[0.08] border border-border/60 p-6 sm:p-8 text-center animate-fade-up">
+      <div className="w-full max-w-[400px] bg-surface rounded-2xl shadow-xl shadow-black/[0.08] border border-border/60 p-6 sm:p-8 text-center animate-fade-up">
         {state === 'verifying' && (
           <>
             <span className="w-16 h-16 rounded-full bg-green-tint inline-flex items-center justify-center mb-5">

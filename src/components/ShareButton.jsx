@@ -77,7 +77,7 @@ export default function ShareButton({ title, className = '', iconOnly = false })
         className={
           iconOnly
             ? 'flex items-center justify-center cursor-pointer text-ink-soft hover:text-ink transition-colors'
-            : 'flex items-center justify-center gap-1.5 cursor-pointer text-text hover:text-ink bg-white border border-border hover:border-border-strong rounded-full w-[52px] sm:w-auto h-[52px] sm:px-4 sm:py-[13px] text-sm font-semibold transition-colors'
+            : 'flex items-center justify-center gap-1.5 cursor-pointer text-text hover:text-ink bg-surface border border-border hover:border-border-strong rounded-full w-[52px] sm:w-auto h-[52px] sm:px-4 sm:py-[13px] text-sm font-semibold transition-colors'
         }
       >
         <IconShare width={iconOnly ? '19' : '16'} height={iconOnly ? '19' : '16'} className={linkMightNotWork ? 'text-orange-text' : undefined} />

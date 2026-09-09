@@ -57,7 +57,7 @@ export default function VariantBottomSheet({ product, open, initialVariant = nul
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
       <div className="absolute inset-0 bg-black/50 animate-fade-up" onClick={onClose} />
 
-      <div className="relative w-full sm:max-w-[420px] max-h-[85vh] sm:max-h-[90vh] bg-white rounded-t-[24px] sm:rounded-[24px] shadow-2xl flex flex-col animate-slide-up">
+      <div className="relative w-full sm:max-w-[420px] max-h-[85vh] sm:max-h-[90vh] bg-surface rounded-t-[24px] sm:rounded-[24px] shadow-2xl flex flex-col animate-slide-up">
         {/* Header */}
         <div className="relative flex items-start gap-3 px-5 pt-4 pb-3.5 border-b border-border shrink-0">
           <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-border bg-surface-muted">
@@ -155,7 +155,7 @@ export default function VariantBottomSheet({ product, open, initialVariant = nul
               onClick={() => confirm('cart')}
               disabled={outOfStock || moqUnreachable || loading}
               aria-busy={loading && pendingIntent === 'cart'}
-              className="flex-1 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-white border-[1.5px] border-green text-green font-bold text-[14.5px] py-3.5 rounded-full transition-all active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-surface border-[1.5px] border-green text-green font-bold text-[14.5px] py-3.5 rounded-full transition-all active:scale-[0.98]"
             >
               {loading && pendingIntent === 'cart' ? 'Adding…' : 'Add to Cart'}
             </button>

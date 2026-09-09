@@ -3,7 +3,7 @@ import { seller } from '../lib/api';
 import { IconChevronDown, IconPlus, IconTrash } from './icons';
 
 const fieldClass =
-  'w-full px-[14px] py-[10px] border border-border rounded-lg text-[13.5px] font-sans bg-white text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
+  'w-full px-[14px] py-[10px] border border-border rounded-lg text-[13.5px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
 
 // One custom section: its name (inline-editable), its assigned products in seller-chosen order,
 // and an "Add product" picker limited to this seller's own listings not already in it. Every
@@ -59,7 +59,7 @@ function SectionRow({ section, products, isFirst, isLast, onRename, onSetProduct
           onBlur={commitName}
           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
           disabled={savingName}
-          className="flex-1 min-w-0 px-3 py-2 border border-border rounded-lg text-[14px] font-semibold text-ink outline-none focus:border-green bg-white"
+          className="flex-1 min-w-0 px-3 py-2 border border-border rounded-lg text-[14px] font-semibold text-ink outline-none focus:border-green bg-surface"
         />
         <button
           type="button"
@@ -93,14 +93,14 @@ function SectionRow({ section, products, isFirst, isLast, onRename, onSetProduct
         <div className="flex flex-col gap-1.5 mb-2.5">
           {assigned.map((p, i) => (
             <div key={p.id} className="flex items-center gap-2 bg-surface-muted rounded-lg p-1.5">
-              <img src={p.img} alt="" className="w-9 h-9 object-cover rounded-md shrink-0 bg-white" />
+              <img src={p.img} alt="" className="w-9 h-9 object-cover rounded-md shrink-0 bg-surface-muted" />
               <span className="flex-1 min-w-0 text-[12.5px] text-ink-soft truncate">{p.name}</span>
               <button
                 type="button"
                 onClick={() => moveProduct(i, -1)}
                 disabled={i === 0 || busy}
                 aria-label="Move product up"
-                className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 text-text-muted hover:text-ink p-1 rounded hover:bg-white transition-colors"
+                className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 text-text-muted hover:text-ink p-1 rounded hover:bg-surface transition-colors"
               >
                 <IconChevronDown width="12" height="12" className="rotate-180" />
               </button>
@@ -109,7 +109,7 @@ function SectionRow({ section, products, isFirst, isLast, onRename, onSetProduct
                 onClick={() => moveProduct(i, 1)}
                 disabled={i === assigned.length - 1 || busy}
                 aria-label="Move product down"
-                className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 text-text-muted hover:text-ink p-1 rounded hover:bg-white transition-colors"
+                className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 text-text-muted hover:text-ink p-1 rounded hover:bg-surface transition-colors"
               >
                 <IconChevronDown width="12" height="12" />
               </button>
@@ -118,7 +118,7 @@ function SectionRow({ section, products, isFirst, isLast, onRename, onSetProduct
                 onClick={() => removeProduct(p.id)}
                 disabled={busy}
                 aria-label="Remove from section"
-                className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-orange-text hover:text-orange p-1 rounded hover:bg-white transition-colors"
+                className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-orange-text hover:text-orange p-1 rounded hover:bg-surface transition-colors"
               >
                 <IconTrash width="12" height="12" />
               </button>

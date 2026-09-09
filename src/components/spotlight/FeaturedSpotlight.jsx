@@ -5,7 +5,7 @@ import SpotlightCard from './SpotlightCard';
 
 function SkeletonCard() {
   return (
-    <div className="bg-white border border-border rounded-2xl overflow-hidden">
+    <div className="bg-surface border border-border rounded-2xl overflow-hidden">
       <div className="h-[150px] sm:h-[168px] bg-surface-muted animate-pulse" />
       <div className="p-3 flex flex-col gap-2">
         <div className="h-3 bg-surface-muted rounded animate-pulse w-full" />
@@ -90,7 +90,7 @@ export default function FeaturedSpotlight() {
       )}
 
       {!loading && !error && items.length === 0 && (
-        <div className="mx-[18px] text-center py-10 px-5 bg-white rounded-[14px] border border-dashed border-border-strong">
+        <div className="mx-[18px] text-center py-10 px-5 bg-surface rounded-[14px] border border-dashed border-border-strong">
           <span className="w-11 h-11 rounded-full bg-surface-muted inline-flex items-center justify-center mb-3">
             <IconSparkle width="18" height="18" className="text-text-muted" />
           </span>

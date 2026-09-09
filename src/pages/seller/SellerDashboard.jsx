@@ -58,17 +58,17 @@ export default function SellerDashboard() {
         </Link>
       </div>
 
-      {error && <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>}
+      {error && <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>}
 
       {!error && (
         <>
           <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
             {loading
               ? Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="animate-pulse bg-white border border-border rounded-2xl p-5 h-[104px]" />
+                  <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl p-5 h-[104px]" />
                 ))
               : cards.map((card) => (
-                  <div key={card.label} className="bg-white border border-border rounded-2xl p-5">
+                  <div key={card.label} className="bg-surface border border-border rounded-2xl p-5">
                     <span className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${card.tint}`}>
                       <card.icon width="17" height="17" />
                     </span>
@@ -78,7 +78,7 @@ export default function SellerDashboard() {
                 ))}
           </div>
 
-          <div className="bg-white border border-border rounded-2xl overflow-hidden">
+          <div className="bg-surface border border-border rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="font-display text-base font-bold text-ink">Recent orders</h2>
               <Link to="/seller/orders" className="text-sm font-semibold text-green flex items-center gap-1 no-underline hover:gap-1.5 transition-all">

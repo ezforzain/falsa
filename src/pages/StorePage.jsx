@@ -48,10 +48,10 @@ export default function StorePage() {
   if (loading) {
     return (
       <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20">
-        <div className="animate-pulse bg-white border border-border rounded-2xl h-[140px] mb-8" />
+        <div className="animate-pulse bg-surface border border-border rounded-2xl h-[140px] mb-8" />
         <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="animate-pulse bg-white border border-border rounded-2xl h-[280px]" />
+            <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl h-[280px]" />
           ))}
         </div>
       </main>
@@ -83,7 +83,7 @@ export default function StorePage() {
 
   return (
     <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20 animate-fade-up">
-      <div className="bg-white border border-border rounded-2xl overflow-hidden mb-8">
+      <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-8">
         {store.bannerUrl && (
           <div className="h-[140px] sm:h-[180px] w-full overflow-hidden">
             <img src={store.bannerUrl} alt="" className="w-full h-full object-cover" />
@@ -164,7 +164,7 @@ export default function StorePage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-[60px] px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+        <div className="text-center py-[60px] px-5 bg-surface border border-dashed border-border-strong rounded-2xl">
           <p className="text-[15px] text-text">This store doesn't have any active listings right now.</p>
         </div>
       )}

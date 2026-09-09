@@ -181,7 +181,7 @@ export default function DesktopHome() {
                   className={`flex items-center gap-2 whitespace-nowrap px-[18px] py-2.5 rounded-full border text-[13.5px] font-medium cursor-pointer transition-colors ${
                     isActive
                       ? 'border-green text-green bg-green-tint'
-                      : 'border-border bg-white text-ink-soft hover:border-green hover:text-green hover:bg-green-tint'
+                      : 'border-border bg-surface text-ink-soft hover:border-green hover:text-green hover:bg-green-tint'
                   }`}
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -290,7 +290,7 @@ export default function DesktopHome() {
             {marketplaceLoading && (
               <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="animate-pulse bg-white border border-border rounded-2xl overflow-hidden">
+                  <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl overflow-hidden">
                     <div className="h-[180px] bg-surface-muted" />
                     <div className="px-[18px] pt-4 pb-[18px] flex flex-col gap-2">
                       <div className="h-4 bg-surface-muted rounded w-3/4" />
@@ -303,7 +303,7 @@ export default function DesktopHome() {
             )}
 
             {!marketplaceLoading && marketplaceError && (
-              <div className="text-center py-12 px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+              <div className="text-center py-12 px-5 bg-surface border border-dashed border-border-strong rounded-2xl">
                 <p className="text-[15px] text-orange-text m-0">{marketplaceError}</p>
               </div>
             )}
@@ -317,7 +317,7 @@ export default function DesktopHome() {
             )}
 
             {!marketplaceLoading && !marketplaceError && marketplaceProducts.length === 0 && (
-              <div className="text-center py-12 px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+              <div className="text-center py-12 px-5 bg-surface border border-dashed border-border-strong rounded-2xl">
                 <p className="text-[15px] text-text m-0">No products match this section yet. Try different filters.</p>
               </div>
             )}
@@ -360,7 +360,7 @@ export default function DesktopHome() {
             {productsLoading && (
               <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="animate-pulse bg-white border border-border rounded-2xl overflow-hidden">
+                  <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl overflow-hidden">
                     <div className="h-[180px] bg-surface-muted" />
                     <div className="px-[18px] pt-4 pb-[18px] flex flex-col gap-2">
                       <div className="h-4 bg-surface-muted rounded w-3/4" />
@@ -373,7 +373,7 @@ export default function DesktopHome() {
             )}
 
             {!productsLoading && productsError && (
-              <div className="text-center py-12 px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+              <div className="text-center py-12 px-5 bg-surface border border-dashed border-border-strong rounded-2xl">
                 <p className="text-[15px] text-orange-text m-0">{productsError}</p>
               </div>
             )}
@@ -387,7 +387,7 @@ export default function DesktopHome() {
             )}
 
             {!productsLoading && !productsError && displayedProducts.length === 0 && (
-              <div className="text-center py-12 px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+              <div className="text-center py-12 px-5 bg-surface border border-dashed border-border-strong rounded-2xl">
                 <p className="text-[15px] text-text m-0">
                   No products in {selectedCategory ? selectedCategory.name : 'this view'} yet. Check back soon.
                 </p>
@@ -399,7 +399,7 @@ export default function DesktopHome() {
 
       {/* Sourcing CTA */}
       <section
-        className="mt-14 bg-white border border-border rounded-[20px] grid overflow-hidden"
+        className="mt-14 bg-surface border border-border rounded-[20px] grid overflow-hidden"
         style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))' }}
       >
         <div className="relative min-h-[240px]">
