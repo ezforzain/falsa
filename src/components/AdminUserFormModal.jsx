@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { IconClose } from './icons';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 const emptyForm = { companyName: '', email: '', phone: '', country: '' };
 
@@ -8,6 +9,8 @@ const emptyForm = { companyName: '', email: '', phone: '', country: '' };
 // manage, so flipping role here would leave those in an inconsistent state.
 export default function AdminUserFormModal({ open, user, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (!open) return;

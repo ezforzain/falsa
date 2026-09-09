@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IconClose, IconChevronDown } from './icons';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 // Static/informational links only — real navigation (categories, spotlight, cart, account)
 // already lives in the bottom tab bar, so this stays a focused "About/Help" box rather than a
@@ -68,6 +69,8 @@ function InfoSection({ title, links, defaultOpen = false, onNavigate }) {
 // Slide-up "Information" sheet — same overlay/animation convention as the app's other bottom
 // sheets (see VariantBottomSheet), opened from the hamburger button in MobileTopBar.
 export default function InformationDrawer({ open, onClose }) {
+  useBodyScrollLock(open);
+
   useEffect(() => {
     if (!open) return undefined;
     const onKeyDown = (e) => e.key === 'Escape' && onClose();

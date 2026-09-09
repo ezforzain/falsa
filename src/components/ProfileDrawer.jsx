@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import AccountMenuContent from './AccountMenuContent';
 import { IconClose } from './icons';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 // Facebook-style left-slide profile drawer — the mobile presentation of the account menu
 // (see ProfileDropdown for the desktop dropdown version; both share AccountMenuContent).
@@ -12,17 +13,17 @@ export default function ProfileDrawer({ open, onClose }) {
   const closeBtnRef = useRef(null);
   const wasOpenRef = useRef(false);
 
+  useBodyScrollLock(open);
+
   useEffect(() => {
     if (!open) return undefined;
     const onKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKeyDown);
-    document.body.style.overflow = 'hidden';
     closeBtnRef.current?.focus();
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = '';
     };
   }, [open, onClose]);
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { IconClose } from './icons';
 import { ORDER_STATUSES } from '../pages/seller/statusStyles';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 const emptyForm = { sellerId: '', buyerCompany: '', buyerCountry: '', productName: '', qty: '', unitPrice: '', status: 'Pending' };
 
@@ -9,6 +10,8 @@ const emptyForm = { sellerId: '', buyerCompany: '', buyerCountry: '', productNam
 // admins seed real order data to test order management with.
 export default function AdminOrderFormModal({ open, sellersList, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (!open) return;

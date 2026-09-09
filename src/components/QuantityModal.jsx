@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { IconClose } from './icons';
 import { parseMoqNumber } from '../lib/moq';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 export default function QuantityModal({ product, open, alreadyInCart = 0, loading, error, onClose, onConfirm }) {
   const moqMin = parseMoqNumber(product?.moq) || 1;
   const [qty, setQty] = useState(moqMin);
   const [belowMoqNotice, setBelowMoqNotice] = useState(false);
   const inputRef = useRef(null);
+
+  useBodyScrollLock(open);
 
   const isTracked = typeof product?.stock === 'number';
   const remaining = isTracked ? Math.max(product.stock - alreadyInCart, 0) : Infinity;

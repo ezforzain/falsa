@@ -5,6 +5,7 @@ import VariantCard from './VariantCard';
 import QuantitySelector from './QuantitySelector';
 import BuyNowButton from './BuyNowButton';
 import { IconClose } from './icons';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 // Daraz-style product variant selection bottom sheet: slides up from the bottom over a dark
 // overlay, lets the buyer pick a "Color Family" option and a quantity, then confirms via a
@@ -15,6 +16,8 @@ export default function VariantBottomSheet({ product, open, initialVariant = nul
   const moqMin = parseMoqNumber(product?.moq) || 1;
   const [qty, setQty] = useState(moqMin);
   const [pendingIntent, setPendingIntent] = useState(null);
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (open && product) {
