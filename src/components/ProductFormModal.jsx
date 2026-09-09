@@ -77,7 +77,7 @@ function cartesianVariants(axesMap, template, basePrice) {
     }
     combos = next;
   }
-  return combos.map((parts) => ({ name: parts.join(' / '), price: basePrice || '', stock: '' }));
+  return combos.map((parts) => ({ name: parts.join(' / '), price: basePrice || '', stock: '', img: '' }));
 }
 
 // Collapsible section wrapper shared by Product details/Variants, Shipping, and the B2B block —
@@ -104,9 +104,14 @@ export default function ProductFormModal({ open, product, loading, error, onClos
   const [openSections, setOpenSections] = useState({ details: true, shipping: true, b2b: true });
   const [manualVariantOpen, setManualVariantOpen] = useState(false);
   const [manualVariant, setManualVariant] = useState({ name: '', price: '', stock: '' });
+  // One-at-a-time Model + Color + Photo builder — used instead of the axis/cartesian picker for
+  // categories with a "Model Variant" axis (e.g. Mobiles & Accessories), since a phone's model and
+  // color need their own dedicated photo rather than being auto-combined into a matrix.
+  const [photoVariant, setPhotoVariant] = useState({ model: '', color: '', img: '', price: '', stock: '' });
   const isEdit = Boolean(product);
   const template = form.category ? getCategoryTemplate(form.category) : null;
   const categoryGroup = form.category ? getCategoryGroup(form.category) : null;
+  const hasModelAxis = Boolean(template?.variantAxes.some((a) => a.key === 'variant'));
   const suggestions = useMemo(() => (form.category ? [] : suggestCategories(form.name, 3)), [form.name, form.category]);
   // #hashtags typed inline in the description (item 7: extra hashtags can live only in the
   // description) — merged with the explicit chip list (form.tags) at submit time below.
@@ -116,6 +121,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
     if (!open) return;
     setManualVariantOpen(false);
     setManualVariant({ name: '', price: '', stock: '' });
+    setPhotoVariant({ model: '', color: '', img: '', price: '', stock: '' });
     if (!product) {
       setForm(emptyForm);
       return;
@@ -148,6 +154,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
         name: v.name,
         price: v.price ?? '',
         stock: v.stock ?? '',
+        img: v.img || '',
         custom: !generatedNames.has(v.name),
       })),
       shipping: {
@@ -210,10 +217,25 @@ export default function ProductFormModal({ open, product, loading, error, onClos
     if (!name) return;
     setForm((f) => ({
       ...f,
-      variants: [...f.variants, { name, price: manualVariant.price, stock: manualVariant.stock || '0', custom: true }],
+      variants: [...f.variants, { name, price: manualVariant.price, stock: manualVariant.stock || '0', img: '', custom: true }],
     }));
     setManualVariant({ name: '', price: '', stock: '' });
     setManualVariantOpen(false);
+  };
+  const canAddPhotoVariant = Boolean(photoVariant.model.trim() && photoVariant.color.trim() && photoVariant.img && photoVariant.stock !== '');
+  const addPhotoVariant = () => {
+    const model = photoVariant.model.trim();
+    const color = photoVariant.color.trim();
+    if (!model || !color || !photoVariant.img || photoVariant.stock === '') return;
+    const name = `Color: ${color} / Model Variant: ${model}`;
+    setForm((f) => ({
+      ...f,
+      variants: [
+        ...f.variants,
+        { name, price: photoVariant.price, stock: photoVariant.stock, img: photoVariant.img, custom: true },
+      ],
+    }));
+    setPhotoVariant({ model: '', color: '', img: '', price: '', stock: '' });
   };
   const setShippingField = (key) => (e) => setForm((f) => ({ ...f, shipping: { ...f.shipping, [key]: e.target.value } }));
   const toggleSection = (key) => setOpenSections((s) => ({ ...s, [key]: !s[key] }));
@@ -234,7 +256,12 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       : [];
     const variants = form.variants
       .filter((v) => v.stock !== '')
-      .map((v) => ({ name: v.name, price: v.price === '' ? Number(form.price) : Number(v.price), stock: Number(v.stock) }));
+      .map((v) => ({
+        name: v.name,
+        price: v.price === '' ? Number(form.price) : Number(v.price),
+        stock: Number(v.stock),
+        img: v.img || null,
+      }));
 
     const shipping = {
       weightKg: form.shipping.weightKg === '' ? null : Number(form.shipping.weightKg),
@@ -470,138 +497,253 @@ export default function ProductFormModal({ open, product, loading, error, onClos
               {template.variantAxes.length > 0 && (
                 <div className="flex flex-col gap-3">
                   <p className={sectionTitleClass}>Variants (optional)</p>
-                  {template.variantAxes.map((axis) => {
-                    const preset = getVariantOptionPreset(axis.key, categoryGroup);
-                    return (
-                      <div key={axis.key}>
-                        <label className={labelClass}>{axis.label} options</label>
-                        {preset ? (
-                          <VariantOptionPicker
-                            preset={preset}
-                            value={form.variantAxes[axis.key] || ''}
-                            onChange={(val) => setForm((f) => ({ ...f, variantAxes: { ...f.variantAxes, [axis.key]: val } }))}
-                            placeholder={axis.placeholder}
-                            fieldClass={fieldClass}
-                          />
-                        ) : (
-                          <input
-                            type="text"
-                            value={form.variantAxes[axis.key] || ''}
-                            onChange={setAxis(axis.key)}
-                            placeholder={axis.placeholder}
-                            className={fieldClass}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
 
-                  {form.variants.length > 0 && (
-                    <div className="mt-1 flex flex-col gap-2">
-                      <p className="text-[11.5px] font-semibold text-ink-soft">Fill in stock for each variant you're offering:</p>
-                      {form.variants.map((v, i) => (
-                        <div key={`${v.name}-${i}`} className="grid grid-cols-[1fr_90px_80px_22px] gap-2 items-center">
-                          <span className="text-[12.5px] text-ink truncate flex items-center gap-1.5" title={v.name}>
-                            <span className="truncate">{v.name}</span>
-                            {v.custom && (
-                              <span className="shrink-0 text-[9.5px] font-bold text-orange-text bg-orange-tint rounded-full px-1.5 py-[1px]">
-                                Custom
-                              </span>
-                            )}
-                          </span>
+                  {hasModelAxis ? (
+                    <>
+                      <p className="text-[11.5px] text-text-muted -mt-2">
+                        Add each model + color one at a time with its own photo — buyers will see exactly that photo
+                        when they pick that variant.
+                      </p>
+
+                      <div className="border border-dashed border-border-strong rounded-lg p-3 flex flex-col gap-2.5">
+                        <div>
+                          <label className={labelClass}>Photo for this model &amp; color</label>
+                          <div className="w-20 [&>div>div]:!grid-cols-1">
+                            <ProductImagesUploader
+                              images={photoVariant.img ? [photoVariant.img] : []}
+                              onChange={(imgs) => setPhotoVariant((v) => ({ ...v, img: imgs[0] || '' }))}
+                              max={1}
+                              showCaption={false}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className={labelClass}>Model</label>
+                            <input
+                              type="text"
+                              value={photoVariant.model}
+                              onChange={(e) => setPhotoVariant((v) => ({ ...v, model: e.target.value }))}
+                              placeholder="e.g. iPhone 14 Pro"
+                              className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                            />
+                          </div>
+                          <div>
+                            <label className={labelClass}>Color</label>
+                            <VariantOptionPicker
+                              preset={getVariantOptionPreset('color', categoryGroup)}
+                              value={photoVariant.color}
+                              onChange={(val) => setPhotoVariant((v) => ({ ...v, color: val }))}
+                              placeholder="e.g. Rose Gold"
+                              fieldClass={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                              multiple={false}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
                           <input
                             type="text"
                             inputMode="numeric"
-                            value={v.price}
-                            onChange={setVariantField(i, 'price')}
+                            value={photoVariant.price}
+                            onChange={(e) => setPhotoVariant((v) => ({ ...v, price: e.target.value }))}
                             placeholder={form.price || 'Price'}
                             className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
                           />
                           <input
                             type="text"
                             inputMode="numeric"
-                            value={v.stock}
-                            onChange={setVariantField(i, 'stock')}
+                            value={photoVariant.stock}
+                            onChange={(e) => setPhotoVariant((v) => ({ ...v, stock: e.target.value }))}
                             placeholder="Stock"
                             className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
                           />
-                          {v.custom ? (
+                        </div>
+                        <button
+                          type="button"
+                          onClick={addPhotoVariant}
+                          disabled={!canAddPhotoVariant}
+                          className="self-start flex items-center gap-1.5 text-[12px] font-semibold text-white bg-green hover:bg-green-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg px-3 py-1.5 cursor-pointer transition-colors"
+                        >
+                          <IconPlus width="13" height="13" />
+                          Add this variant
+                        </button>
+                      </div>
+
+                      {form.variants.length > 0 && (
+                        <div className="flex flex-col gap-2">
+                          {form.variants.map((v, i) => (
+                            <div key={`${v.name}-${i}`} className="flex items-center gap-2.5 border border-border rounded-lg p-2">
+                              <span className="w-10 h-10 rounded-md overflow-hidden bg-surface-muted shrink-0 border border-border">
+                                {v.img && <img src={v.img} alt={v.name} className="w-full h-full object-cover" />}
+                              </span>
+                              <span className="flex-1 min-w-0 text-[12px] text-ink truncate" title={v.name}>
+                                {v.name}
+                              </span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={v.price}
+                                onChange={setVariantField(i, 'price')}
+                                placeholder={form.price || 'Price'}
+                                className={`${fieldClass} !w-[70px] shrink-0 !px-2.5 !py-1.5 text-[12.5px]`}
+                              />
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={v.stock}
+                                onChange={setVariantField(i, 'stock')}
+                                placeholder="Stock"
+                                className={`${fieldClass} !w-[64px] shrink-0 !px-2.5 !py-1.5 text-[12.5px]`}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeVariant(i)}
+                                aria-label={`Remove ${v.name}`}
+                                className="cursor-pointer shrink-0 flex items-center justify-center text-text-muted hover:text-orange-text p-1"
+                              >
+                                <IconTrash width="13" height="13" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {template.variantAxes.map((axis) => {
+                        const preset = getVariantOptionPreset(axis.key, categoryGroup);
+                        return (
+                          <div key={axis.key}>
+                            <label className={labelClass}>{axis.label} options</label>
+                            {preset ? (
+                              <VariantOptionPicker
+                                preset={preset}
+                                value={form.variantAxes[axis.key] || ''}
+                                onChange={(val) => setForm((f) => ({ ...f, variantAxes: { ...f.variantAxes, [axis.key]: val } }))}
+                                placeholder={axis.placeholder}
+                                fieldClass={fieldClass}
+                              />
+                            ) : (
+                              <input
+                                type="text"
+                                value={form.variantAxes[axis.key] || ''}
+                                onChange={setAxis(axis.key)}
+                                placeholder={axis.placeholder}
+                                className={fieldClass}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {form.variants.length > 0 && (
+                        <div className="mt-1 flex flex-col gap-2">
+                          <p className="text-[11.5px] font-semibold text-ink-soft">Fill in stock for each variant you're offering:</p>
+                          {form.variants.map((v, i) => (
+                            <div key={`${v.name}-${i}`} className="grid grid-cols-[1fr_90px_80px_22px] gap-2 items-center">
+                              <span className="text-[12.5px] text-ink truncate flex items-center gap-1.5" title={v.name}>
+                                <span className="truncate">{v.name}</span>
+                                {v.custom && (
+                                  <span className="shrink-0 text-[9.5px] font-bold text-orange-text bg-orange-tint rounded-full px-1.5 py-[1px]">
+                                    Custom
+                                  </span>
+                                )}
+                              </span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={v.price}
+                                onChange={setVariantField(i, 'price')}
+                                placeholder={form.price || 'Price'}
+                                className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                              />
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={v.stock}
+                                onChange={setVariantField(i, 'stock')}
+                                placeholder="Stock"
+                                className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                              />
+                              {v.custom ? (
+                                <button
+                                  type="button"
+                                  onClick={() => removeVariant(i)}
+                                  aria-label={`Remove ${v.name}`}
+                                  className="cursor-pointer flex items-center justify-center text-text-muted hover:text-orange-text p-1"
+                                >
+                                  <IconTrash width="13" height="13" />
+                                </button>
+                              ) : (
+                                <span />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {manualVariantOpen ? (
+                        <div className="border border-dashed border-border-strong rounded-lg p-3 flex flex-col gap-2">
+                          <p className="text-[11.5px] font-semibold text-ink-soft">
+                            Add one specific variant with its own price &amp; color — separate from the combinations above
+                          </p>
+                          <input
+                            type="text"
+                            value={manualVariant.name}
+                            onChange={(e) => setManualVariant((m) => ({ ...m, name: e.target.value }))}
+                            placeholder="e.g. Color: Rose Gold"
+                            className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={manualVariant.price}
+                              onChange={(e) => setManualVariant((m) => ({ ...m, price: e.target.value }))}
+                              placeholder={form.price || 'Price'}
+                              className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                            />
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={manualVariant.stock}
+                              onChange={(e) => setManualVariant((m) => ({ ...m, stock: e.target.value }))}
+                              placeholder="Stock"
+                              className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
+                            />
+                          </div>
+                          <div className="flex gap-2 mt-1">
                             <button
                               type="button"
-                              onClick={() => removeVariant(i)}
-                              aria-label={`Remove ${v.name}`}
-                              className="cursor-pointer flex items-center justify-center text-text-muted hover:text-orange-text p-1"
+                              onClick={() => {
+                                setManualVariantOpen(false);
+                                setManualVariant({ name: '', price: '', stock: '' });
+                              }}
+                              className="flex-1 text-[12px] font-semibold text-ink-soft border border-border rounded-lg py-1.5 cursor-pointer hover:bg-surface-muted transition-colors"
                             >
-                              <IconTrash width="13" height="13" />
+                              Cancel
                             </button>
-                          ) : (
-                            <span />
-                          )}
+                            <button
+                              type="button"
+                              onClick={addManualVariant}
+                              disabled={!manualVariant.name.trim()}
+                              className="flex-1 text-[12px] font-semibold text-white bg-green hover:bg-green-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg py-1.5 cursor-pointer transition-colors"
+                            >
+                              Add variant
+                            </button>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {manualVariantOpen ? (
-                    <div className="border border-dashed border-border-strong rounded-lg p-3 flex flex-col gap-2">
-                      <p className="text-[11.5px] font-semibold text-ink-soft">
-                        Add one specific variant with its own price &amp; color — separate from the combinations above
-                      </p>
-                      <input
-                        type="text"
-                        value={manualVariant.name}
-                        onChange={(e) => setManualVariant((m) => ({ ...m, name: e.target.value }))}
-                        placeholder="e.g. Color: Rose Gold"
-                        className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
-                      />
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={manualVariant.price}
-                          onChange={(e) => setManualVariant((m) => ({ ...m, price: e.target.value }))}
-                          placeholder={form.price || 'Price'}
-                          className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
-                        />
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={manualVariant.stock}
-                          onChange={(e) => setManualVariant((m) => ({ ...m, stock: e.target.value }))}
-                          placeholder="Stock"
-                          className={`${fieldClass} !px-2.5 !py-1.5 text-[12.5px]`}
-                        />
-                      </div>
-                      <div className="flex gap-2 mt-1">
+                      ) : (
                         <button
                           type="button"
-                          onClick={() => {
-                            setManualVariantOpen(false);
-                            setManualVariant({ name: '', price: '', stock: '' });
-                          }}
-                          className="flex-1 text-[12px] font-semibold text-ink-soft border border-border rounded-lg py-1.5 cursor-pointer hover:bg-surface-muted transition-colors"
+                          onClick={() => setManualVariantOpen(true)}
+                          className="self-start flex items-center gap-1.5 text-[12.5px] font-semibold text-green hover:underline cursor-pointer"
                         >
-                          Cancel
+                          <IconPlus width="13" height="13" />
+                          Add a variant separately (custom price/color)
                         </button>
-                        <button
-                          type="button"
-                          onClick={addManualVariant}
-                          disabled={!manualVariant.name.trim()}
-                          className="flex-1 text-[12px] font-semibold text-white bg-green hover:bg-green-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg py-1.5 cursor-pointer transition-colors"
-                        >
-                          Add variant
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setManualVariantOpen(true)}
-                      className="self-start flex items-center gap-1.5 text-[12.5px] font-semibold text-green hover:underline cursor-pointer"
-                    >
-                      <IconPlus width="13" height="13" />
-                      Add a variant separately (custom price/color)
-                    </button>
+                      )}
+                    </>
                   )}
                 </div>
               )}

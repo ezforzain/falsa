@@ -12,7 +12,7 @@ const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.hei
 // client-side before upload (see lib/heic.js) — the server converts again as a safety net. Every
 // entry in `images` is always a real, already-uploaded URL; nothing is added until its upload
 // has actually succeeded.
-export default function ProductImagesUploader({ images, onChange, max = 6, type = 'products' }) {
+export default function ProductImagesUploader({ images, onChange, max = 6, type = 'products', showCaption = true }) {
   const inputRef = useRef(null);
   const replaceInputRef = useRef(null);
   const replaceIndexRef = useRef(null);
@@ -159,10 +159,12 @@ export default function ProductImagesUploader({ images, onChange, max = 6, type 
 
       {error && <p className="text-xs text-orange-text mt-2">{error}</p>}
 
-      <p className="text-[11px] text-text-muted mt-2 flex items-center gap-1">
-        <IconCamera width="12" height="12" className="shrink-0" />
-        First photo is the cover · select from your gallery, camera, or files · JPG, PNG, WEBP, or HEIC · up to {max}
-      </p>
+      {showCaption && (
+        <p className="text-[11px] text-text-muted mt-2 flex items-center gap-1">
+          <IconCamera width="12" height="12" className="shrink-0" />
+          First photo is the cover · select from your gallery, camera, or files · JPG, PNG, WEBP, or HEIC · up to {max}
+        </p>
+      )}
     </div>
   );
 }

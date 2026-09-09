@@ -37,8 +37,11 @@ const sellerProductSchema = new mongoose.Schema(
     // Raw variant axis definitions the seller entered, e.g. { name: 'Color', values: ['Red', 'Blue'] }.
     variantAxes: { type: [{ name: String, values: [String] }], default: [] },
     // Generated combination matrix (e.g. "Red / S"), each row editable by the seller.
+    // `img` is optional per-variant — set when the seller attaches a specific photo to a
+    // model+color combination (see ProductFormModal.jsx's photo variant builder); falls back to
+    // the product's own `img` at read time (see publicCatalogSync.js) when not set.
     variants: {
-      type: [{ name: String, sku: String, price: Number, stock: Number }],
+      type: [{ name: String, sku: String, price: Number, stock: Number, img: { type: String, default: null } }],
       default: [],
     },
     shipping: {

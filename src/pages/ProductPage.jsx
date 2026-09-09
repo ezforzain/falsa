@@ -284,7 +284,14 @@ export default function ProductPage() {
   // Built from the product's own data (its cover photo plus real photos of other products in
   // its category — see server/src/seed/data.js) rather than one fixed set of stock photos
   // shared across every product regardless of category.
-  const images = product.images?.length ? product.images : product.img ? [product.img] : [];
+  const baseImages = product.images?.length ? product.images : product.img ? [product.img] : [];
+  // A variant with its own attached photo (see the photo variant builder in the seller's listing
+  // form) takes over as the lead image the moment it's selected — the rest of the gallery stays
+  // reachable underneath. Variants without one (the common case) leave the base gallery untouched.
+  const images =
+    selectedVariant?.img && selectedVariant.img !== baseImages[0]
+      ? [selectedVariant.img, ...baseImages.filter((url) => url !== selectedVariant.img)]
+      : baseImages;
   const reviewSummary = productReviewSummary(product);
   const reviews = productReviews(product);
   const soldCount = productSoldCount(product);
@@ -420,6 +427,7 @@ export default function ProductPage() {
         {/* Gallery — larger, swipeable, with pinch-to-zoom full-screen preview */}
         <div className="lg:sticky lg:top-24">
           <ImageGallery
+            key={images[0]}
             images={images}
             alt={product.name}
             heightClassName="h-[320px] sm:h-[440px] lg:h-[560px]"

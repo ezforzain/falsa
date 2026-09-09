@@ -75,7 +75,9 @@ export async function syncSellerProductToCatalog(sellerProduct, ownerUser) {
       variants: (sellerProduct.variants || []).map((v) => ({
         id: slugify(v.name) || undefined,
         name: v.name,
-        img: sellerProduct.img,
+        // A variant with its own attached photo (see the photo variant builder in
+        // ProductFormModal.jsx) shows that photo; anything else falls back to the product's own.
+        img: v.img || sellerProduct.img,
         sku: v.sku,
         price: v.price,
         stock: v.stock,
