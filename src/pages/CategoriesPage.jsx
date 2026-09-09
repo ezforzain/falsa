@@ -32,7 +32,7 @@ export default function CategoriesPage() {
       <p className="text-sm text-text-muted mb-7">Browse the marketplace by product category.</p>
 
       {loading && (
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="animate-pulse flex flex-col items-center gap-3 bg-white border border-border rounded-2xl py-6">
               <div className="w-14 h-14 rounded-full bg-surface-muted" />
@@ -49,7 +49,7 @@ export default function CategoriesPage() {
       )}
 
       {!loading && !error && (
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
           {categories.map((cat) => (
             <button
               key={cat.key}

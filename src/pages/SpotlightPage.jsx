@@ -194,7 +194,7 @@ export default function SpotlightPage() {
       </div>
 
       {loading && (
-        <div className="pt-8 grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+        <div className="pt-8 grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="animate-pulse bg-white border border-border rounded-2xl overflow-hidden">
               <div className="h-40 bg-surface-muted" />
@@ -266,7 +266,7 @@ export default function SpotlightPage() {
       {!loading && !error && rest.length > 0 && (
         <section className="pt-12">
           <h2 className="font-display text-[20px] font-bold m-0 mb-5">More from Spotlight</h2>
-          <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+          <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
             {rest.map((p) => (
               <Link
                 key={p.id}

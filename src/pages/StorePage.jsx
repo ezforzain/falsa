@@ -49,7 +49,7 @@ export default function StorePage() {
     return (
       <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20">
         <div className="animate-pulse bg-white border border-border rounded-2xl h-[140px] mb-8" />
-        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="animate-pulse bg-white border border-border rounded-2xl h-[280px]" />
           ))}
@@ -145,7 +145,7 @@ export default function StorePage() {
       {sections.map((section) => (
         <div key={section.id} className="mb-9">
           <h2 className="font-display text-xl font-bold m-0 mb-5 tracking-tight text-ink">{section.name}</h2>
-          <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+          <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
             {section.products.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
@@ -158,7 +158,7 @@ export default function StorePage() {
       </h2>
 
       {storeProducts.length > 0 ? (
-        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
           {storeProducts.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
