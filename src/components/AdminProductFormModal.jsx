@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import ProductImagesUploader from './ProductImagesUploader';
 import { IconClose } from './icons';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 const MAX_IMAGES = 6;
 
@@ -31,6 +32,8 @@ const emptyForm = {
 export default function AdminProductFormModal({ open, product, sellersList, categoriesList, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
   const isEdit = Boolean(product);
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (!open) return;

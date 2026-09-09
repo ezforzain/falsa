@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { IconClose } from './icons';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 const TYPE_LABELS = {
   category: 'Category',
@@ -27,6 +28,8 @@ const emptyForm = { type: '', label: '', options: '' };
 export default function AdminFilterFormModal({ open, section, existingTypes = [], filter, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
   const isEdit = Boolean(filter);
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (!open) return;

@@ -8,6 +8,7 @@ import VariantOptionPicker from './VariantOptionPicker';
 import { mergeHashtags } from '../lib/hashtags';
 import { getCategoryGroup, getCategoryTemplate, suggestCategories } from '../data/productCategories';
 import { getVariantOptionPreset } from '../data/variantOptions';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 import { IconBox, IconChevronDown, IconClose, IconPlus, IconSparkle, IconTrash } from './icons';
 
 const MAX_IMAGES = 6;
@@ -105,6 +106,8 @@ export default function ProductFormModal({ open, product, loading, error, onClos
   const [manualVariantOpen, setManualVariantOpen] = useState(false);
   const [manualVariant, setManualVariant] = useState({ name: '', price: '', stock: '' });
   const isEdit = Boolean(product);
+
+  useBodyScrollLock(open);
   const template = form.category ? getCategoryTemplate(form.category) : null;
   const categoryGroup = form.category ? getCategoryGroup(form.category) : null;
   const suggestions = useMemo(() => (form.category ? [] : suggestCategories(form.name, 3)), [form.name, form.category]);

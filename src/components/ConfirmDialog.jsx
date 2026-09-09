@@ -1,4 +1,8 @@
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
+
 export default function ConfirmDialog({ open, title, message, confirmLabel = 'Confirm', loading, onCancel, onConfirm }) {
+  useBodyScrollLock(open);
+
   if (!open) return null;
 
   return (

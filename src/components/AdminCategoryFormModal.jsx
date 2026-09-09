@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { IconClose } from './icons';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 const emptyForm = { key: '', name: '', icon: '', img: '' };
 
@@ -8,6 +9,8 @@ const emptyForm = { key: '', name: '', icon: '', img: '' };
 export default function AdminCategoryFormModal({ open, category, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
   const isEdit = Boolean(category);
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (!open) return;

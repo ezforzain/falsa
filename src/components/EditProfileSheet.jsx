@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import BannerUploader from './BannerUploader';
 import AvatarUploader from './AvatarUploader';
 import { IconClose, IconMail } from './icons';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 const fieldClass =
   'w-full px-3.5 py-2.5 border border-border rounded-xl text-[14px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
@@ -21,6 +22,8 @@ export default function EditProfileSheet({ open, onClose, onSaved }) {
   const [form, setForm] = useState({ companyName: '', handle: '', phone: '', country: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (!open || !user) return;

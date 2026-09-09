@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { seller } from '../../lib/api';
 import { IconClose, IconTruck, IconBox, IconCheck, IconAlertCircle, IconFile } from '../icons';
+import useBodyScrollLock from '../../hooks/useBodyScrollLock';
 
 const fieldClass =
   'w-full px-[14px] py-[11px] border border-border rounded-lg text-[14px] font-sans bg-white text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
@@ -24,6 +25,8 @@ export default function ShipOrderModal({ open, order, bankComplete, onClose, onS
   const [tracking, setTracking] = useState(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState(null);
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (!open) return;
