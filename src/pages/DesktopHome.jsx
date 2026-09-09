@@ -288,7 +288,7 @@ export default function DesktopHome() {
             </div>
 
             {marketplaceLoading && (
-              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="animate-pulse bg-white border border-border rounded-2xl overflow-hidden">
                     <div className="h-[180px] bg-surface-muted" />
@@ -309,7 +309,7 @@ export default function DesktopHome() {
             )}
 
             {!marketplaceLoading && !marketplaceError && marketplaceProducts.length > 0 && (
-              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
                 {marketplaceProducts.map((p) => (
                   <ProductCard key={p.id} product={p} />
                 ))}
@@ -358,7 +358,7 @@ export default function DesktopHome() {
             </div>
 
             {productsLoading && (
-              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="animate-pulse bg-white border border-border rounded-2xl overflow-hidden">
                     <div className="h-[180px] bg-surface-muted" />
@@ -379,7 +379,7 @@ export default function DesktopHome() {
             )}
 
             {!productsLoading && !productsError && displayedProducts.length > 0 && (
-              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
                 {displayedProducts.map((p) => (
                   <ProductCard key={p.id} product={p} />
                 ))}

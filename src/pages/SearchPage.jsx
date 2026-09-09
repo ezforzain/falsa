@@ -109,7 +109,7 @@ export default function SearchPage() {
       )}
 
       {loading && (
-        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="animate-pulse bg-white border border-border rounded-2xl overflow-hidden">
               <div className="h-[180px] bg-surface-muted" />
@@ -136,7 +136,7 @@ export default function SearchPage() {
       )}
 
       {!loading && !error && results.length > 0 && (
-        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
+        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
           {results.map((r) => (
             <ProductCard key={r.id} product={r} />
           ))}

@@ -135,7 +135,7 @@ export default function SellerProducts() {
       </div>
 
       {loading && (
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
+        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="animate-pulse bg-white border border-border rounded-2xl h-[220px]" />
           ))}
@@ -163,7 +163,7 @@ export default function SellerProducts() {
       )}
 
       {!loading && !error && products.length > 0 && (
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
+        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
           {products.map((p, i) => (
             <div key={p.id} className="bg-white border border-border rounded-2xl overflow-hidden">
               <Link to={`/seller/products/${p.id}`} className="block h-[130px] relative overflow-hidden cursor-pointer group">

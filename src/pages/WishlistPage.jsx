@@ -50,7 +50,7 @@ export default function WishlistPage() {
   );
 
   const LoadingSkeleton = (
-    <div className={isMobile ? 'grid grid-cols-2 gap-2.5' : 'grid gap-4'} style={!isMobile ? { gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' } : undefined}>
+    <div className={isMobile ? 'grid grid-cols-2 gap-2.5' : 'grid gap-4'} style={!isMobile ? { gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' } : undefined}>
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="animate-pulse bg-white border border-border rounded-2xl overflow-hidden">
           <div className={isMobile ? 'h-[150px] bg-surface-muted' : 'h-[180px] bg-surface-muted'} />
@@ -78,7 +78,7 @@ export default function WishlistPage() {
       {!loading && !error && saved.length > 0 && (
         <div
           className={isMobile ? 'grid grid-cols-2 gap-2.5' : 'grid gap-4'}
-          style={!isMobile ? { gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' } : undefined}
+          style={!isMobile ? { gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' } : undefined}
         >
           {saved.map((p) => (isMobile ? <MobileProductCard key={p.id} product={p} /> : <ProductCard key={p.id} product={p} />))}
         </div>

@@ -1105,7 +1105,7 @@ export default function AdminPage() {
             </div>
 
             {productsLoading && (
-              <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
+              <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl h-[220px]" />
                 ))}
@@ -1135,7 +1135,7 @@ export default function AdminPage() {
             )}
 
             {!productsLoading && !productsError && products.length > 0 && (
-              <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
+              <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
                 {products.map((p) => (
                   <div key={p.id} className="bg-surface border border-border rounded-2xl overflow-hidden">
                     <div className="h-[130px] relative overflow-hidden">
