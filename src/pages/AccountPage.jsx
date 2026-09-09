@@ -8,8 +8,6 @@ import {
   IconUser,
   IconMenu,
   IconMail,
-  IconPhone,
-  IconPin,
   IconClock,
   IconShield,
   IconEdit,
@@ -32,20 +30,6 @@ function MemberSince({ date }) {
       <IconClock width="13" height="13" />
       Member since {formatted}
     </span>
-  );
-}
-
-function InfoRow({ icon, label, children }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-cream/60 px-3.5 py-3 min-w-0">
-      <span className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center shrink-0 text-green border border-border/70">
-        {icon}
-      </span>
-      <span className="min-w-0">
-        <span className="block text-[10.5px] font-semibold uppercase tracking-wide text-text-muted">{label}</span>
-        <span className="block text-[13.5px] font-medium text-ink truncate">{children}</span>
-      </span>
-    </div>
   );
 }
 
@@ -229,28 +213,6 @@ export default function AccountPage() {
 
             <div className="mt-4">
               <LoyaltyBadge tier={tier} />
-            </div>
-          </div>
-
-          <div className="h-px bg-border mx-5 sm:mx-8" />
-
-          <div className="px-5 sm:px-8 py-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {user.email && (
-                <InfoRow icon={<IconMail width="14" height="14" />} label="Email">
-                  {user.email}
-                </InfoRow>
-              )}
-              {user.phone && (
-                <InfoRow icon={<IconPhone width="14" height="14" />} label="Phone">
-                  {user.phone}
-                </InfoRow>
-              )}
-              {user.country && (
-                <InfoRow icon={<IconPin width="14" height="14" />} label="Country">
-                  {user.country}
-                </InfoRow>
-              )}
             </div>
           </div>
         </div>
