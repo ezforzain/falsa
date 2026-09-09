@@ -842,7 +842,7 @@ export default function AdminPage() {
           </Link>
           <div className="flex-1" />
           <span className="hidden md:flex items-center gap-2 text-sm text-teal-mist truncate max-w-[260px]">
-            <Avatar src={user.avatarUrl} size={26} iconSize={13} bgClassName="bg-white/15" iconClassName="text-white" />
+            <Avatar src={user.avatarUrl} name={user.companyName} size={26} iconSize={13} bgClassName="bg-white/15" iconClassName="text-white" />
             {user.companyName}
             <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-white bg-white/15 px-1.5 py-0.5 rounded">Admin</span>
           </span>
@@ -1382,7 +1382,7 @@ export default function AdminPage() {
                   <div key={u.id} className={i !== usersList.length - 1 ? 'border-b border-border' : ''}>
                     <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <Avatar src={u.avatarUrl} size={36} iconSize={16} />
+                        <Avatar src={u.avatarUrl} name={u.companyName} size={36} iconSize={16} />
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-[14.5px] text-ink truncate">{u.companyName}</span>
