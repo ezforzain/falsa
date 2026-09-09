@@ -101,7 +101,7 @@ export default function SellerProductDetail() {
 
   if (notFound) {
     return (
-      <div className="bg-white border border-dashed border-border-strong rounded-2xl p-10 text-center">
+      <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
         <span className="w-14 h-14 rounded-full bg-orange-tint inline-flex items-center justify-center mb-4">
           <IconBox width="24" height="24" className="text-orange-text" />
         </span>
@@ -119,7 +119,7 @@ export default function SellerProductDetail() {
 
   if (error && !product) {
     return (
-      <div className="bg-white border border-dashed border-border-strong rounded-2xl p-10 text-center">
+      <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
         <p className="text-sm text-orange-text mb-5">{error}</p>
         <Link
           to="/seller/products"
@@ -188,7 +188,7 @@ export default function SellerProductDetail() {
               },
               { label: 'Views', value: (product.views || 0).toLocaleString('en-US'), icon: true },
             ].map((row) => (
-              <div key={row.label} className="bg-white border border-border rounded-xl px-4 py-3">
+              <div key={row.label} className="bg-surface border border-border rounded-xl px-4 py-3">
                 <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-1">{row.label}</div>
                 <div
                   className={`flex items-center gap-1.5 text-sm font-semibold ${
@@ -217,7 +217,7 @@ export default function SellerProductDetail() {
             <button
               type="button"
               onClick={() => setDeleteOpen(true)}
-              className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-white border border-border text-orange-text font-semibold text-sm py-3 rounded-full hover:bg-orange-tint transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-surface border border-border text-orange-text font-semibold text-sm py-3 rounded-full hover:bg-orange-tint transition-colors"
             >
               <IconTrash width="15" height="15" />
               Delete product

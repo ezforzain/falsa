@@ -119,7 +119,7 @@ export default function HashtagTextarea({ value, onChange, placeholder, rows = 3
       />
 
       {open && (
-        <div className="absolute z-20 left-0 right-0 mt-1.5 max-h-72 overflow-y-auto bg-white border border-border rounded-xl shadow-lg py-1.5">
+        <div className="absolute z-20 left-0 right-0 mt-1.5 max-h-72 overflow-y-auto bg-surface border border-border rounded-xl shadow-lg py-1.5">
           {loading && suggestions.length === 0 && <div className="px-3.5 py-3 text-sm text-text-muted">Searching…</div>}
           {!loading && suggestions.length === 0 && (
             <div className="px-3.5 py-3 text-sm text-text-muted">#{activeTag.text} — new hashtag, no products yet.</div>

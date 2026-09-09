@@ -11,7 +11,7 @@ const LABEL_ICON = { Home: '🏠', Office: '🏢' };
 
 function AddressSummaryCard({ address, onEdit }) {
   return (
-    <div className="bg-white border border-border rounded-2xl p-5 flex items-start justify-between gap-4">
+    <div className="bg-surface border border-border rounded-2xl p-5 flex items-start justify-between gap-4">
       <div className="min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
           <span className="text-[15px] font-semibold text-ink">{address.fullName}</span>
@@ -27,7 +27,7 @@ function AddressSummaryCard({ address, onEdit }) {
       <button
         type="button"
         onClick={onEdit}
-        className="shrink-0 cursor-pointer flex items-center gap-1.5 bg-white border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
+        className="shrink-0 cursor-pointer flex items-center gap-1.5 bg-surface border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
       >
         <IconEdit width="13" height="13" />
         Edit
@@ -94,7 +94,7 @@ export default function CartPage() {
   if (orderConfirmation) {
     return (
       <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20 animate-fade-up">
-        <div className="text-center py-16 px-5 bg-white border border-border rounded-2xl max-w-[480px] mx-auto">
+        <div className="text-center py-16 px-5 bg-surface border border-border rounded-2xl max-w-[480px] mx-auto">
           <span className="w-16 h-16 rounded-full bg-green inline-flex items-center justify-center mb-5 shadow-[0_12px_30px_rgba(14,90,70,0.3)]">
             <IconCheck width="28" height="28" className="text-white" strokeWidth="2.6" />
           </span>
@@ -128,7 +128,7 @@ export default function CartPage() {
         <h1 className="font-display text-[28px] font-bold m-0 mb-8 tracking-tight">Your Cart</h1>
         <div className="flex flex-col gap-4 max-w-[720px]">
           {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="animate-pulse flex gap-4 bg-white border border-border rounded-2xl p-4">
+            <div key={i} className="animate-pulse flex gap-4 bg-surface border border-border rounded-2xl p-4">
               <div className="w-20 h-20 rounded-xl bg-surface-muted shrink-0" />
               <div className="flex-1 flex flex-col gap-2 justify-center">
                 <div className="h-4 bg-surface-muted rounded w-2/3" />
@@ -145,7 +145,7 @@ export default function CartPage() {
     return (
       <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20 animate-fade-up">
         <h1 className="font-display text-[28px] font-bold m-0 mb-8 tracking-tight">Your Cart</h1>
-        <div className="text-center py-16 px-5 bg-white border border-dashed border-border-strong rounded-2xl max-w-[480px] mx-auto">
+        <div className="text-center py-16 px-5 bg-surface border border-dashed border-border-strong rounded-2xl max-w-[480px] mx-auto">
           <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center mb-5">
             <IconCart width="24" height="24" className="text-green" />
           </span>
@@ -175,7 +175,7 @@ export default function CartPage() {
             return (
               <div
                 key={product.id}
-                className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white border border-border rounded-2xl p-4 sm:p-5"
+                className="flex flex-col sm:flex-row sm:items-center gap-4 bg-surface border border-border rounded-2xl p-4 sm:p-5"
               >
                 {/* Image + product details */}
                 <div className="flex gap-4 sm:flex-1 min-w-0">
@@ -246,7 +246,7 @@ export default function CartPage() {
         </div>
 
         {/* Summary */}
-        <div className="bg-white border border-border rounded-2xl p-6 sticky top-24">
+        <div className="bg-surface border border-border rounded-2xl p-6 sticky top-24">
           <h2 className="font-display text-lg font-bold m-0 mb-5">Order Summary</h2>
 
           <div className="flex flex-col gap-3 text-sm mb-5">

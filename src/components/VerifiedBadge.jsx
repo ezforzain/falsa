@@ -34,7 +34,7 @@ export default function VerifiedBadge({
         <path d="M31 51 L44 64 L71 35" fill="none" stroke="#fff" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <span
-        className={`pointer-events-none absolute left-1/2 -translate-x-1/2 ${tooltipPosClass} z-50 whitespace-nowrap rounded-md bg-ink dark:bg-white px-2.5 py-1.5 text-[11px] font-medium text-white dark:text-ink opacity-0 shadow-lg transition-opacity duration-150 group-hover/verified:opacity-100 group-focus/verified:opacity-100`}
+        className={`pointer-events-none absolute left-1/2 -translate-x-1/2 ${tooltipPosClass} z-50 whitespace-nowrap rounded-md bg-ink px-2.5 py-1.5 text-[11px] font-medium text-cream opacity-0 shadow-lg transition-opacity duration-150 group-hover/verified:opacity-100 group-focus/verified:opacity-100`}
       >
         {tooltip}
       </span>

@@ -363,7 +363,7 @@ export default function ProductPage() {
                 {priceTiers(product.price).map((tier, i, arr) => (
                   <div
                     key={tier.range}
-                    className={`px-5 py-[18px] ${i < arr.length - 1 ? 'border-b sm:border-b-0 sm:border-r border-border' : ''} ${i === arr.length - 1 ? 'bg-green-tint' : 'bg-white'}`}
+                    className={`px-5 py-[18px] ${i < arr.length - 1 ? 'border-b sm:border-b-0 sm:border-r border-border' : ''} ${i === arr.length - 1 ? 'bg-green-tint' : 'bg-surface'}`}
                   >
                     <div className="font-mono text-[11px] text-text-muted mb-1.5">{tier.range}</div>
                     <div className="font-display font-bold text-xl text-green">{tier.price}</div>
@@ -526,7 +526,7 @@ export default function ProductPage() {
               type="button"
               onClick={openQuantityModal}
               disabled={outOfStock}
-              className="relative z-10 pointer-events-auto flex-1 min-w-[140px] text-center cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 font-semibold text-[15px] h-[52px] rounded-full transition-all active:scale-[0.98] bg-white border-[1.5px] border-green text-green hover:bg-green-tint active:bg-green-tint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
+              className="relative z-10 pointer-events-auto flex-1 min-w-[140px] text-center cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 font-semibold text-[15px] h-[52px] rounded-full transition-all active:scale-[0.98] bg-surface border-[1.5px] border-green text-green hover:bg-green-tint active:bg-green-tint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
             >
               {outOfStock ? 'Out of stock' : 'Add to Cart'}
             </button>

@@ -30,7 +30,7 @@ export default function FeatureBadges({ highlights }) {
             key={label}
             className="flex items-center gap-2 bg-green-tint border border-green-tint-border rounded-xl pl-2.5 pr-3.5 py-2"
           >
-            <span className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0 text-green">
+            <span className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center shrink-0 text-green">
               <Icon width="14" height="14" />
             </span>
             <div className="min-w-0 leading-tight">

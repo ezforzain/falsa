@@ -137,17 +137,17 @@ export default function SellerProducts() {
       {loading && (
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="animate-pulse bg-white border border-border rounded-2xl h-[220px]" />
+            <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl h-[220px]" />
           ))}
         </div>
       )}
 
       {!loading && error && (
-        <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>
+        <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>
       )}
 
       {!loading && !error && products.length === 0 && (
-        <div className="bg-white border border-dashed border-border-strong rounded-2xl p-10 text-center">
+        <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
           <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center mb-4">
             <IconBox width="24" height="24" className="text-green" />
           </span>
@@ -165,7 +165,7 @@ export default function SellerProducts() {
       {!loading && !error && products.length > 0 && (
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
           {products.map((p, i) => (
-            <div key={p.id} className="bg-white border border-border rounded-2xl overflow-hidden">
+            <div key={p.id} className="bg-surface border border-border rounded-2xl overflow-hidden">
               <Link to={`/seller/products/${p.id}`} className="block h-[130px] relative overflow-hidden cursor-pointer group">
                 <img
                   src={p.img}
@@ -204,7 +204,7 @@ export default function SellerProducts() {
                   <button
                     type="button"
                     onClick={() => openEdit(p)}
-                    className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer bg-white border border-border text-ink-soft font-semibold text-xs py-2 rounded-lg hover:bg-surface-muted transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer bg-surface border border-border text-ink-soft font-semibold text-xs py-2 rounded-lg hover:bg-surface-muted transition-colors"
                   >
                     <IconEdit width="13" height="13" />
                     Edit
@@ -212,7 +212,7 @@ export default function SellerProducts() {
                   <button
                     type="button"
                     onClick={() => setDeleteTarget(p)}
-                    className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer bg-white border border-border text-orange-text font-semibold text-xs py-2 rounded-lg hover:bg-orange-tint transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer bg-surface border border-border text-orange-text font-semibold text-xs py-2 rounded-lg hover:bg-orange-tint transition-colors"
                   >
                     <IconTrash width="13" height="13" />
                     Delete
@@ -225,7 +225,7 @@ export default function SellerProducts() {
                         disabled={i === 0 || reordering}
                         aria-label="Move up in store display order"
                         title="Move up in store display order"
-                        className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 bg-white border border-border text-ink-soft p-2 rounded-lg hover:bg-surface-muted transition-colors"
+                        className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 bg-surface border border-border text-ink-soft p-2 rounded-lg hover:bg-surface-muted transition-colors"
                       >
                         <IconChevronDown width="13" height="13" className="rotate-180" />
                       </button>
@@ -235,7 +235,7 @@ export default function SellerProducts() {
                         disabled={i === products.length - 1 || reordering}
                         aria-label="Move down in store display order"
                         title="Move down in store display order"
-                        className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 bg-white border border-border text-ink-soft p-2 rounded-lg hover:bg-surface-muted transition-colors"
+                        className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 bg-surface border border-border text-ink-soft p-2 rounded-lg hover:bg-surface-muted transition-colors"
                       >
                         <IconChevronDown width="13" height="13" />
                       </button>

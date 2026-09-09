@@ -54,7 +54,7 @@ export default function LocationDropdown({ value, onChange, label = 'Location', 
     }
   };
 
-  const fieldClass = `w-full px-[16px] py-[12px] border rounded-xl text-[14.5px] font-sans bg-white text-ink outline-none transition-shadow ${
+  const fieldClass = `w-full px-[16px] py-[12px] border rounded-xl text-[14.5px] font-sans bg-surface text-ink outline-none transition-shadow ${
     error ? 'border-orange focus:border-orange focus:shadow-[0_0_0_3px_rgba(255,106,0,0.12)]' : 'border-border focus:border-orange focus:shadow-[0_0_0_3px_rgba(255,106,0,0.12)]'
   }`;
 
@@ -92,7 +92,7 @@ export default function LocationDropdown({ value, onChange, label = 'Location', 
         <ul
           id={listboxId}
           role="listbox"
-          className="absolute z-20 left-0 right-0 mt-1.5 max-h-56 overflow-y-auto bg-white border border-border rounded-xl shadow-lg py-1.5"
+          className="absolute z-20 left-0 right-0 mt-1.5 max-h-56 overflow-y-auto bg-surface border border-border rounded-xl shadow-lg py-1.5"
         >
           {matches.map((city, i) => (
             <li
@@ -116,7 +116,7 @@ export default function LocationDropdown({ value, onChange, label = 'Location', 
       )}
 
       {open && matches.length === 0 && (
-        <div className="absolute z-20 left-0 right-0 mt-1.5 bg-white border border-border rounded-xl shadow-lg px-4 py-3 text-sm text-text-muted">
+        <div className="absolute z-20 left-0 right-0 mt-1.5 bg-surface border border-border rounded-xl shadow-lg px-4 py-3 text-sm text-text-muted">
           No matching cities.
         </div>
       )}

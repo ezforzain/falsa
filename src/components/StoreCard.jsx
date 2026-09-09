@@ -17,7 +17,7 @@ export default function StoreCard({ rating, seller }) {
   const initial = seller.name?.trim()?.[0]?.toUpperCase() || '?';
 
   return (
-    <div className="flex items-center gap-4 bg-white border border-border rounded-2xl px-5 py-4 mb-[22px] flex-wrap">
+    <div className="flex items-center gap-4 bg-surface border border-border rounded-2xl px-5 py-4 mb-[22px] flex-wrap">
       <Link
         to={`/store/${seller.id}`}
         className="w-12 h-12 rounded-full bg-green-tint flex items-center justify-center shrink-0 no-underline overflow-hidden"

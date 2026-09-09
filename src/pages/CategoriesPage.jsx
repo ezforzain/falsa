@@ -34,7 +34,7 @@ export default function CategoriesPage() {
       {loading && (
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="animate-pulse flex flex-col items-center gap-3 bg-white border border-border rounded-2xl py-6">
+            <div key={i} className="animate-pulse flex flex-col items-center gap-3 bg-surface border border-border rounded-2xl py-6">
               <div className="w-14 h-14 rounded-full bg-surface-muted" />
               <div className="h-3 w-3/5 bg-surface-muted rounded" />
             </div>
@@ -43,7 +43,7 @@ export default function CategoriesPage() {
       )}
 
       {!loading && error && (
-        <div className="text-center py-[60px] px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+        <div className="text-center py-[60px] px-5 bg-surface border border-dashed border-border-strong rounded-2xl">
           <p className="text-[15px] text-orange-text">{error}</p>
         </div>
       )}
@@ -55,7 +55,7 @@ export default function CategoriesPage() {
               key={cat.key}
               type="button"
               onClick={() => navigate(`/search?q=${encodeURIComponent(cat.name)}`)}
-              className="cursor-pointer flex flex-col items-center gap-3 bg-white border border-border rounded-2xl py-6 hover:border-border-strong hover:-translate-y-0.5 transition-all"
+              className="cursor-pointer flex flex-col items-center gap-3 bg-surface border border-border rounded-2xl py-6 hover:border-border-strong hover:-translate-y-0.5 transition-all"
             >
               <span className="w-14 h-14 rounded-full overflow-hidden border-2 border-cream-dark">
                 <img src={cat.img} alt="" className="w-full h-full object-cover" />

@@ -159,7 +159,7 @@ export default function AccountMenuContent({ onNavigate }) {
       {/* Profile header */}
       <div className="relative px-5 pb-5 pt-6 bg-green-tint shrink-0">
         <span className="inline-block rounded-full shadow-sm mb-3">
-          <Avatar src={isAuthenticated ? user?.avatarUrl : null} size={64} iconSize={28} bgClassName="bg-white" />
+          <Avatar src={isAuthenticated ? user?.avatarUrl : null} size={64} iconSize={28} bgClassName="bg-surface" />
         </span>
         <p className="text-[16px] font-bold text-ink m-0 truncate pr-10">
           {isAuthenticated ? user.companyName : t('common.welcome')}

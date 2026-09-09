@@ -68,7 +68,7 @@ export default function SellerSettings() {
   };
 
   const fieldClass =
-    'w-full px-[16px] py-[12px] border border-border rounded-xl text-[14.5px] font-sans bg-white text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
+    'w-full px-[16px] py-[12px] border border-border rounded-xl text-[14.5px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
   const labelClass = 'block text-[13px] font-semibold text-ink-soft mb-2';
 
   return (
@@ -78,7 +78,7 @@ export default function SellerSettings() {
         <p className="text-sm text-text mt-1">Keep your business profile up to date for buyers.</p>
       </div>
 
-      <div className="bg-white border border-border rounded-2xl p-6">
+      <div className="bg-surface border border-border rounded-2xl p-6">
         {error && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-5">{error}</p>}
 
         <div className="flex flex-col gap-4">
@@ -137,7 +137,7 @@ export default function SellerSettings() {
         </button>
       </div>
 
-      <div className="bg-white border border-border rounded-2xl p-6 mt-4">
+      <div className="bg-surface border border-border rounded-2xl p-6 mt-4">
         <h2 className="font-display text-lg font-bold text-ink mb-1">Bank details</h2>
         <p className="text-sm text-text mb-5">Required before you can ship an order with Falsafah — this is how payouts reach you.</p>
 
@@ -177,7 +177,7 @@ export default function SellerSettings() {
         </button>
       </div>
 
-      <div className="flex items-start gap-3 bg-white border border-border rounded-2xl p-5 mt-4">
+      <div className="flex items-start gap-3 bg-surface border border-border rounded-2xl p-5 mt-4">
         <span className="w-8 h-8 rounded-lg bg-green-tint flex items-center justify-center shrink-0">
           <IconCheck width="15" height="15" className="text-green" />
         </span>

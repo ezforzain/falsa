@@ -25,18 +25,18 @@ export default function SellerPayouts() {
 
       {loading && (
         <div className="flex flex-col gap-4">
-          <div className="animate-pulse bg-white border border-border rounded-2xl h-[100px]" />
-          <div className="animate-pulse bg-white border border-border rounded-2xl h-[200px]" />
+          <div className="animate-pulse bg-surface border border-border rounded-2xl h-[100px]" />
+          <div className="animate-pulse bg-surface border border-border rounded-2xl h-[200px]" />
         </div>
       )}
 
       {!loading && error && (
-        <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>
+        <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>
       )}
 
       {!loading && !error && data && (
         <>
-          <div className="bg-white border border-border rounded-2xl p-5 mb-6 max-w-[280px]">
+          <div className="bg-surface border border-border rounded-2xl p-5 mb-6 max-w-[280px]">
             <span className="w-9 h-9 rounded-lg bg-green-tint flex items-center justify-center mb-3">
               <IconWallet width="17" height="17" className="text-green" />
             </span>
@@ -45,11 +45,11 @@ export default function SellerPayouts() {
           </div>
 
           {data.payouts.length === 0 ? (
-            <div className="bg-white border border-dashed border-border-strong rounded-2xl p-10 text-center">
+            <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
               <p className="text-sm text-text">No payouts recorded yet.</p>
             </div>
           ) : (
-            <div className="bg-white border border-border rounded-2xl overflow-hidden">
+            <div className="bg-surface border border-border rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm min-w-[480px]">
                   <thead>

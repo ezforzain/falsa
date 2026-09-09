@@ -4,14 +4,14 @@ export default function ConfirmDialog({ open, title, message, confirmLabel = 'Co
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/45" onClick={onCancel} />
-      <div className="relative w-full max-w-[360px] bg-white rounded-2xl shadow-2xl p-6 animate-fade-up">
+      <div className="relative w-full max-w-[360px] bg-surface rounded-2xl shadow-2xl p-6 animate-fade-up">
         <h2 className="font-display text-lg font-bold text-ink mb-2">{title}</h2>
         <p className="text-sm text-text mb-6 leading-relaxed">{message}</p>
         <div className="flex gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 cursor-pointer bg-white border-[1.5px] border-border text-ink-soft font-semibold text-sm py-3 rounded-full hover:bg-surface-muted transition-colors"
+            className="flex-1 cursor-pointer bg-surface border-[1.5px] border-border text-ink-soft font-semibold text-sm py-3 rounded-full hover:bg-surface-muted transition-colors"
           >
             Cancel
           </button>
