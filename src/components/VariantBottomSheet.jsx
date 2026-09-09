@@ -58,7 +58,7 @@ export default function VariantBottomSheet({ product, open, initialVariant = nul
         {/* Header */}
         <div className="relative flex items-start gap-3 px-5 pt-5 pb-4 border-b border-border shrink-0">
           <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-border bg-surface-muted">
-            <img src={product.img} alt={product.name} className="w-full h-full object-cover" />
+            <img src={selectedVariant?.img || product.img} alt={product.name} className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0 pr-6">
             {discountPercent > 0 && originalPrice && (

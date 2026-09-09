@@ -1,22 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import { IconCheck, IconClose, IconPlus, IconSearch } from './icons';
 
-// Searchable, multi-select combobox for one variant axis (Color, Size, Shade…) — same combobox
-// shell as CategoryPicker, but multi-select with chips instead of single-select. `preset` supplies
-// the full option list (with search); anything the seller types that isn't in that list can be
-// added as a one-off custom option via the "Add …" row, so an unlisted color/size is never a
-// dead end. Selection is kept as the same comma-separated string the rest of the form already
-// reads (form.variantAxes[key]) so cartesianVariants/submit don't need to change.
-export default function VariantOptionPicker({ preset, value, onChange, placeholder, fieldClass }) {
+// Searchable combobox for one variant axis (Color, Size, Shade…) — same combobox shell as
+// CategoryPicker. Defaults to multi-select with chips (used for an axis like "available colors:
+// Red, Blue, Green", kept as the same comma-separated string the rest of the form already reads
+// via form.variantAxes[key], so cartesianVariants/submit don't need to change). Pass
+// `multiple={false}` for a plain single pick instead — e.g. the one-photo-per-model+color
+// builder below, where a photo can only ever represent exactly one color. `preset` supplies the
+// full option list (with search); anything the seller types that isn't in that list can be added
+// as a one-off custom option via the "Add …" row, so an unlisted color/size is never a dead end.
+export default function VariantOptionPicker({ preset, value, onChange, placeholder, fieldClass, multiple = true }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [customOptions, setCustomOptions] = useState([]);
   const rootRef = useRef(null);
 
-  const selected = String(value || '')
-    .split(',')
-    .map((v) => v.trim())
-    .filter(Boolean);
+  const selected = multiple
+    ? String(value || '')
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
+    : value
+      ? [value]
+      : [];
 
   useEffect(() => {
     const onClickOutside = (e) => {
@@ -34,9 +40,23 @@ export default function VariantOptionPicker({ preset, value, onChange, placehold
   const matches = q ? allOptions.filter((o) => o.name.toLowerCase().includes(q)) : allOptions;
   const exactMatch = allOptions.some((o) => o.name.toLowerCase() === q);
 
-  const commit = (names) => onChange(names.join(', '));
+  // Single-select commits immediately and closes the dropdown, like picking from a plain
+  // <select> — there's never a second value to add on top of the first.
+  const commit = (names) => {
+    if (multiple) {
+      onChange(names.join(', '));
+      return;
+    }
+    onChange(names[0] || '');
+    setOpen(false);
+    setQuery('');
+  };
 
   const toggle = (name) => {
+    if (!multiple) {
+      commit([name]);
+      return;
+    }
     const isSelected = selected.some((s) => s.toLowerCase() === name.toLowerCase());
     commit(isSelected ? selected.filter((s) => s.toLowerCase() !== name.toLowerCase()) : [...selected, name]);
   };
@@ -46,6 +66,10 @@ export default function VariantOptionPicker({ preset, value, onChange, placehold
     if (!name) return;
     if (!allOptions.some((o) => o.name.toLowerCase() === name.toLowerCase())) {
       setCustomOptions((c) => [...c, name]);
+    }
+    if (!multiple) {
+      commit([name]);
+      return;
     }
     if (!selected.some((s) => s.toLowerCase() === name.toLowerCase())) commit([...selected, name]);
     setQuery('');
@@ -72,7 +96,9 @@ export default function VariantOptionPicker({ preset, value, onChange, placehold
         <input
           type="text"
           value={query}
-          placeholder={selected.length > 0 ? 'Search or add more…' : placeholder || 'Search options…'}
+          placeholder={
+            selected.length > 0 ? (multiple ? 'Search or add more…' : 'Search to change…') : placeholder || 'Search options…'
+          }
           onFocus={() => setOpen(true)}
           onChange={(e) => {
             setQuery(e.target.value);

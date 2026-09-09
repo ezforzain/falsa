@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { toDisplayableImage } from '../lib/heic';
 import { validateProductImageFile } from '../lib/file';
 import { uploadFile } from '../lib/upload';
@@ -12,7 +12,11 @@ const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.hei
 // client-side before upload (see lib/heic.js) — the server converts again as a safety net. Every
 // entry in `images` is always a real, already-uploaded URL; nothing is added until its upload
 // has actually succeeded.
-export default function ProductImagesUploader({ images, onChange, max = 6, type = 'products' }) {
+export default function ProductImagesUploader({ images, onChange, max = 6, type = 'products', showCaption = true }) {
+  // Unique per instance — this component can render more than once on the same page (e.g. the
+  // main product photos grid alongside a per-variant photo slot), and a hardcoded id would create
+  // duplicate DOM ids, breaking the <label for> association for every instance but the first.
+  const inputId = useId();
   const inputRef = useRef(null);
   const replaceInputRef = useRef(null);
   const replaceIndexRef = useRef(null);
@@ -112,7 +116,7 @@ export default function ProductImagesUploader({ images, onChange, max = 6, type 
 
         {remainingSlots > 0 && (
           <label
-            htmlFor="product-images-input"
+            htmlFor={inputId}
             onDragEnter={(e) => {
               e.preventDefault();
               setDragActive(true);
@@ -130,7 +134,7 @@ export default function ProductImagesUploader({ images, onChange, max = 6, type 
             <IconUpload width="16" height="16" className="text-orange" />
             <span className="text-[10.5px] font-semibold text-ink-soft leading-tight">Add photo</span>
             <input
-              id="product-images-input"
+              id={inputId}
               ref={inputRef}
               type="file"
               accept={ACCEPT}
@@ -159,10 +163,12 @@ export default function ProductImagesUploader({ images, onChange, max = 6, type 
 
       {error && <p className="text-xs text-orange-text mt-2">{error}</p>}
 
-      <p className="text-[11px] text-text-muted mt-2 flex items-center gap-1">
-        <IconCamera width="12" height="12" className="shrink-0" />
-        First photo is the cover · select from your gallery, camera, or files · JPG, PNG, WEBP, or HEIC · up to {max}
-      </p>
+      {showCaption && (
+        <p className="text-[11px] text-text-muted mt-2 flex items-center gap-1">
+          <IconCamera width="12" height="12" className="shrink-0" />
+          First photo is the cover · select from your gallery, camera, or files · JPG, PNG, WEBP, or HEIC · up to {max}
+        </p>
+      )}
     </div>
   );
 }
