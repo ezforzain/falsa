@@ -5,6 +5,7 @@ import VariantCard from './VariantCard';
 import QuantitySelector from './QuantitySelector';
 import BuyNowButton from './BuyNowButton';
 import { IconClose } from './icons';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 // Daraz-style product variant selection bottom sheet: slides up from the bottom over a dark
 // overlay, lets the buyer pick a "Color Family" option and a quantity, then confirms via a
@@ -15,6 +16,8 @@ export default function VariantBottomSheet({ product, open, initialVariant = nul
   const moqMin = parseMoqNumber(product?.moq) || 1;
   const [qty, setQty] = useState(moqMin);
   const [pendingIntent, setPendingIntent] = useState(null);
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (open && product) {
@@ -54,10 +57,10 @@ export default function VariantBottomSheet({ product, open, initialVariant = nul
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
       <div className="absolute inset-0 bg-black/50 animate-fade-up" onClick={onClose} />
 
-      <div className="relative w-full sm:max-w-[420px] max-h-[88vh] bg-white rounded-t-[24px] sm:rounded-[24px] shadow-2xl flex flex-col animate-slide-up">
+      <div className="relative w-full sm:max-w-[420px] max-h-[85vh] sm:max-h-[90vh] bg-white rounded-t-[24px] sm:rounded-[24px] shadow-2xl flex flex-col animate-slide-up">
         {/* Header */}
-        <div className="relative flex items-start gap-3 px-5 pt-5 pb-4 border-b border-border shrink-0">
-          <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-border bg-surface-muted">
+        <div className="relative flex items-start gap-3 px-5 pt-4 pb-3.5 border-b border-border shrink-0">
+          <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-border bg-surface-muted">
             <img src={product.img} alt={product.name} className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0 pr-6">
@@ -87,8 +90,11 @@ export default function VariantBottomSheet({ product, open, initialVariant = nul
           </button>
         </div>
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-6">
+        {/* Scrollable content — min-h-0 is load-bearing: without it, a flex child with flex-1
+            defaults to min-height:auto, so on a small screen where header+content+footer would
+            exceed the sheet's max-height, this region refuses to shrink/scroll and instead pushes
+            the sticky footer (Add to Cart / Buy Now) below the sheet's own height, off-screen. */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
           {product.variants?.length > 0 && (
             <div>
               <div className="text-[13.5px] font-semibold text-ink-soft mb-3">
@@ -131,10 +137,13 @@ export default function VariantBottomSheet({ product, open, initialVariant = nul
           {error && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5">{error}</p>}
         </div>
 
-        {/* Sticky footer — live total updates as qty changes, then Add to Cart / Buy Now */}
+        {/* Sticky footer — pinned outside the scrollable region above (shrink-0), so Total and
+            both action buttons stay reachable no matter how tall the content above gets. Padding
+            bottom always includes at least 12px plus whatever the device's home-indicator/nav-bar
+            safe area needs, so the buttons never sit flush against (or under) it. */}
         <div
-          className="shrink-0 px-5 pt-3.5 pb-4 border-t border-border flex flex-col gap-3"
-          style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
+          className="shrink-0 px-5 pt-3 border-t border-border flex flex-col gap-2.5"
+          style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
         >
           <div className="flex items-baseline justify-between">
             <span className="text-[13px] font-semibold text-ink-soft">Total</span>
@@ -146,7 +155,7 @@ export default function VariantBottomSheet({ product, open, initialVariant = nul
               onClick={() => confirm('cart')}
               disabled={outOfStock || moqUnreachable || loading}
               aria-busy={loading && pendingIntent === 'cart'}
-              className="flex-1 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-white border-[1.5px] border-green text-green font-bold text-[14.5px] py-[15px] rounded-full transition-all active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-white border-[1.5px] border-green text-green font-bold text-[14.5px] py-3.5 rounded-full transition-all active:scale-[0.98]"
             >
               {loading && pendingIntent === 'cart' ? 'Adding…' : 'Add to Cart'}
             </button>
