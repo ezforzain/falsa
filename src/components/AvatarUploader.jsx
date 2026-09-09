@@ -68,7 +68,7 @@ export default function AvatarUploader({ size = 96, avatarClassName = '' }) {
   return (
     <div className="flex flex-col items-center gap-2.5">
       <div className="relative">
-        <Avatar src={displaySrc} size={size} iconSize={Math.round(size * 0.4)} className={avatarClassName} />
+        <Avatar src={displaySrc} name={user?.companyName} size={size} iconSize={Math.round(size * 0.4)} className={avatarClassName} />
         {uploading && (
           <span className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
             <span

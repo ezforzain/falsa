@@ -184,7 +184,7 @@ export default function AccountPage() {
           </div>
 
           <div className="px-5 sm:px-8 pb-6 sm:pb-8 flex flex-col items-center text-center -mt-11 sm:-mt-12">
-            <Avatar src={user.avatarUrl} size={92} iconSize={40} className="ring-[5px] ring-surface" />
+            <Avatar src={user.avatarUrl} name={user.companyName} size={92} iconSize={40} className="ring-[5px] ring-surface" />
 
             <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
               <p className="font-display text-[20px] sm:text-[22px] font-bold text-ink truncate m-0 tracking-tight max-w-full">
