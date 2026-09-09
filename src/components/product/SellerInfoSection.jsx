@@ -3,6 +3,7 @@ import SectionCard from './SectionCard';
 import VerifiedBadge from '../VerifiedBadge';
 import FollowButton from '../FollowButton';
 import ChatButton from '../ChatButton';
+import { resolveMediaUrl } from '../../lib/media';
 import { IconStar, IconPin, IconBox, IconClock } from '../icons';
 
 export default function SellerInfoSection({ seller, rating }) {
@@ -16,7 +17,7 @@ export default function SellerInfoSection({ seller, rating }) {
           className="w-16 h-16 rounded-2xl bg-green-tint flex items-center justify-center shrink-0 no-underline overflow-hidden"
         >
           {seller.logoUrl ? (
-            <img src={seller.logoUrl} alt="" className="w-full h-full object-cover" />
+            <img src={resolveMediaUrl(seller.logoUrl)} alt="" className="w-full h-full object-cover" />
           ) : (
             <span className="font-display font-bold text-2xl text-green">{initial}</span>
           )}

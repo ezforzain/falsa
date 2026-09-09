@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import VerifiedBadge from './VerifiedBadge';
 import FollowButton from './FollowButton';
+import { resolveMediaUrl } from '../lib/media';
 import { IconStar } from './icons';
 
 // Compact store summary shown on the Product Detail page — logo, name, verified badge, plus
@@ -23,7 +24,7 @@ export default function StoreCard({ rating, seller }) {
         className="w-12 h-12 rounded-full bg-green-tint flex items-center justify-center shrink-0 no-underline overflow-hidden"
       >
         {seller.logoUrl ? (
-          <img src={seller.logoUrl} alt="" className="w-full h-full object-cover" />
+          <img src={resolveMediaUrl(seller.logoUrl)} alt="" className="w-full h-full object-cover" />
         ) : (
           <span className="font-display font-bold text-lg text-green">{initial}</span>
         )}
