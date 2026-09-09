@@ -342,11 +342,13 @@ export default function MobileHome() {
         </div>
       </div>
 
-      {/* Category circles */}
-      <div className="grid grid-cols-4 gap-x-2 gap-y-4 px-[18px] pt-4 pb-1.5">
+      {/* Category circles — a horizontally scrollable row rather than a fixed 4-column grid, so
+          a category count that isn't a multiple of 4 doesn't leave the last row left-aligned
+          with a big dead gap on the right (that read as "extra space" and looked unfinished). */}
+      <div className="flex gap-x-4 overflow-x-auto no-scrollbar px-[18px] pt-4 pb-1.5">
         {metaLoading
           ? Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-2">
+              <div key={i} className="flex flex-col items-center gap-2 shrink-0 w-[62px]">
                 <div className="animate-pulse w-[62px] h-[62px] rounded-full bg-surface-muted" />
               </div>
             ))
@@ -356,7 +358,7 @@ export default function MobileHome() {
                 <div
                   key={cat.key}
                   onClick={() => setActiveCategory((c) => (c === cat.key ? 'all' : cat.key))}
-                  className="flex flex-col items-center gap-2 cursor-pointer"
+                  className="flex flex-col items-center gap-2 cursor-pointer shrink-0 w-[62px]"
                 >
                   <span
                     className="w-[62px] h-[62px] rounded-full overflow-hidden transition-colors"
