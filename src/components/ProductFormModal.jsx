@@ -5,9 +5,11 @@ import HashtagTextarea from './HashtagTextarea';
 import HashtagChipInput from './HashtagChipInput';
 import HashtagAiSuggestions from './HashtagAiSuggestions';
 import VariantOptionPicker from './VariantOptionPicker';
+import AttributeOptionPicker from './AttributeOptionPicker';
 import { mergeHashtags } from '../lib/hashtags';
 import { getCategoryGroup, getCategoryTemplate, suggestCategories } from '../data/productCategories';
 import { getVariantOptionPreset } from '../data/variantOptions';
+import { getAttributeOptionPreset } from '../data/attributeOptions';
 import { IconBox, IconChevronDown, IconClose, IconPlus, IconSparkle, IconTrash } from './icons';
 
 const MAX_IMAGES = 6;
@@ -452,18 +454,32 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             <Section title="Product details & Variants" open={openSections.details} onToggle={() => toggleSection('details')}>
               {template.attributes.length > 0 && (
                 <div className="flex flex-col gap-3">
-                  {template.attributes.map((attr) => (
-                    <div key={attr.key}>
-                      <label className={labelClass}>{attr.label} (optional)</label>
-                      <input
-                        type="text"
-                        value={form.specifications[attr.key] || ''}
-                        onChange={setSpec(attr.key)}
-                        placeholder={attr.placeholder}
-                        className={fieldClass}
-                      />
-                    </div>
-                  ))}
+                  {template.attributes.map((attr) => {
+                    const preset = getAttributeOptionPreset(attr.key, categoryGroup);
+                    return (
+                      <div key={attr.key}>
+                        <label className={labelClass}>{attr.label} (optional)</label>
+                        {preset ? (
+                          <AttributeOptionPicker
+                            options={preset}
+                            value={form.specifications[attr.key] || ''}
+                            onChange={(val) => setForm((f) => ({ ...f, specifications: { ...f.specifications, [attr.key]: val } }))}
+                            placeholder={attr.placeholder}
+                            itemLabel={attr.label.toLowerCase()}
+                            fieldClass={fieldClass}
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            value={form.specifications[attr.key] || ''}
+                            onChange={setSpec(attr.key)}
+                            placeholder={attr.placeholder}
+                            className={fieldClass}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
