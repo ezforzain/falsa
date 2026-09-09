@@ -184,12 +184,15 @@ export default function AccountPage() {
         <div className="bg-surface border border-border rounded-3xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_36px_-12px_rgba(0,0,0,0.12)] overflow-hidden">
           {/* Brand banner — the avatar overlaps its bottom edge, TikTok-style, instead of sitting
               flush in a flat box. Shows the account's own uploaded banner once set (see
-              BannerUploader inside EditProfileSheet), otherwise the same green gradient as before. */}
+              BannerUploader inside EditProfileSheet), otherwise the same green gradient as before,
+              softened with a translucent white wash — the plain gradient read too dark/heavy
+              behind the avatar. */}
           <div className="relative h-28 sm:h-36 bg-gradient-to-br from-green-deep via-green to-green-hover overflow-hidden">
             {user.bannerUrl ? (
               <img src={user.bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
             ) : (
               <>
+                <div className="absolute inset-0 bg-white/30" />
                 <div className="absolute -top-10 -right-6 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
                 <div className="absolute -bottom-16 left-10 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
               </>
