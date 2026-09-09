@@ -115,7 +115,7 @@ export default function SellerLayout() {
           <div className="flex-1" />
 
           <span className="hidden md:flex items-center gap-2 text-sm text-teal-mist truncate max-w-[260px]">
-            <Avatar src={user.avatarUrl} size={26} iconSize={13} bgClassName="bg-white/15" iconClassName="text-white" />
+            <Avatar src={user.avatarUrl} name={user.companyName} size={26} iconSize={13} bgClassName="bg-white/15" iconClassName="text-white" />
             {user.companyName}
             {user.verified && <VerifiedBadge size={16} tooltipPosition="bottom" />}
             <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-white bg-white/15 px-1.5 py-0.5 rounded">Seller</span>

@@ -329,7 +329,7 @@ export default function AccountCenterPage() {
         {/* Profile */}
         <section className="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-[0_1px_3px_rgba(27,31,29,0.04)]">
           <div className="flex items-center gap-4">
-            <Avatar src={user.avatarUrl} size={56} />
+            <Avatar src={user.avatarUrl} name={user.companyName} size={56} />
             <div className="min-w-0 flex-1">
               <p className="font-display text-[16px] font-bold text-ink truncate m-0">{user.companyName}</p>
               <span className="inline-flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wide text-green bg-green-tint px-2 py-0.5 rounded-full mt-1">
