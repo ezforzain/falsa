@@ -4,7 +4,7 @@ import { seller } from '../../lib/api';
 import { IconClose, IconTruck, IconBox, IconCheck, IconAlertCircle, IconFile } from '../icons';
 
 const fieldClass =
-  'w-full px-[14px] py-[11px] border border-border rounded-lg text-[14px] font-sans bg-white text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
+  'w-full px-[14px] py-[11px] border border-border rounded-lg text-[14px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
 const labelClass = 'block text-[12.5px] font-semibold text-ink-soft mb-1.5';
 
 // Ship Now flow: pick Falsafah (books a real TCS Courier shipment server-side — see
@@ -112,7 +112,7 @@ export default function ShipOrderModal({ open, order, bankComplete, onClose, onS
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8">
       <div className="absolute inset-0 bg-black/45" onClick={onClose} />
-      <div className="relative w-full max-w-[480px] max-h-full overflow-y-auto bg-white rounded-2xl shadow-2xl p-6 animate-fade-up">
+      <div className="relative w-full max-w-[480px] max-h-full overflow-y-auto bg-surface rounded-2xl shadow-2xl p-6 animate-fade-up">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-display text-lg font-bold text-ink">Ship order</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="text-text-muted hover:text-ink cursor-pointer p-1">

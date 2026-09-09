@@ -65,7 +65,7 @@ export default function FollowButton({ sellerId, initialFollowing = false, onCha
         className={`inline-flex items-center justify-center gap-1.5 rounded-[10px] font-semibold text-sm px-5 py-2.5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-90 transition-colors duration-200 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF6A00] ${
           following
             ? 'bg-[#FF6A00] border border-[#FF6A00] text-white hover:bg-[#E65F00]'
-            : 'bg-white border border-[#FF6A00] text-[#FF6A00] hover:bg-[#FFF4EC]'
+            : 'bg-surface border border-[#FF6A00] text-[#FF6A00] hover:bg-[#FFF4EC]'
         } ${className}`}
       >
         <span className="w-3.5 h-3.5 shrink-0 flex items-center justify-center">

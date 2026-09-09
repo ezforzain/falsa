@@ -56,7 +56,7 @@ function ConsumerFacts({ product, outOfStock }) {
   const facts = b2cFacts(product, outOfStock);
 
   return (
-    <div className="border border-border rounded-2xl overflow-hidden mb-6 bg-white">
+    <div className="border border-border rounded-2xl overflow-hidden mb-6 bg-surface">
       <button
         type="button"
         onClick={() => setReturnOpen((open) => !open)}
@@ -96,7 +96,7 @@ function SupplierFacts({ product, outOfStock }) {
     <div className="grid grid-cols-2 gap-2.5 mb-6">
       {facts.map(({ icon: Icon, label, value }) => (
         <div key={label} className="min-w-0 flex items-start gap-2.5 bg-surface-muted rounded-xl px-3.5 py-3">
-          <span className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center shrink-0 text-green">
+          <span className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center shrink-0 text-green">
             <Icon width="15" height="15" />
           </span>
           <div className="min-w-0">

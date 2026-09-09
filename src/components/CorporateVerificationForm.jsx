@@ -6,7 +6,7 @@ import { IconAlertCircle, IconCheck } from './icons';
 const isValidEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 
 function fieldClass(hasError) {
-  return `w-full px-[16px] py-[12px] border rounded-xl text-[14.5px] font-sans bg-white text-ink outline-none transition-shadow ${
+  return `w-full px-[16px] py-[12px] border rounded-xl text-[14.5px] font-sans bg-surface text-ink outline-none transition-shadow ${
     hasError
       ? 'border-orange focus:border-orange focus:shadow-[0_0_0_3px_rgba(255,106,0,0.12)]'
       : 'border-border focus:border-orange focus:shadow-[0_0_0_3px_rgba(255,106,0,0.12)]'
@@ -110,7 +110,7 @@ export default function CorporateVerificationForm({ value, onChange, onSubmit, o
                       ? 'bg-orange border-orange text-white'
                       : step === n
                         ? 'border-orange text-orange bg-orange-tint'
-                        : 'border-border text-text-muted bg-white'
+                        : 'border-border text-text-muted bg-surface'
                   }`}
                 >
                   {step > n ? <IconCheck width="14" height="14" strokeWidth="3" /> : n}
@@ -270,7 +270,7 @@ export default function CorporateVerificationForm({ value, onChange, onSubmit, o
           </button>
 
           {/* Sticky on mobile so the primary action is always reachable without scrolling the long form. */}
-          <div className="sm:hidden sticky bottom-0 -mx-6 px-6 py-3 bg-white/95 backdrop-blur-sm border-t border-border">
+          <div className="sm:hidden sticky bottom-0 -mx-6 px-6 py-3 bg-surface/95 backdrop-blur-sm border-t border-border">
             <button
               type="button"
               onClick={goNext}
@@ -353,7 +353,7 @@ export default function CorporateVerificationForm({ value, onChange, onSubmit, o
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="cursor-pointer bg-white border-[1.5px] border-border text-ink-soft font-semibold text-[15px] py-[14px] px-7 rounded-xl hover:bg-surface-muted transition-colors"
+              className="cursor-pointer bg-surface border-[1.5px] border-border text-ink-soft font-semibold text-[15px] py-[14px] px-7 rounded-xl hover:bg-surface-muted transition-colors"
             >
               Back
             </button>
@@ -370,11 +370,11 @@ export default function CorporateVerificationForm({ value, onChange, onSubmit, o
             </button>
           </div>
 
-          <div className="sm:hidden sticky bottom-0 -mx-6 px-6 py-3 bg-white/95 backdrop-blur-sm border-t border-border flex gap-3">
+          <div className="sm:hidden sticky bottom-0 -mx-6 px-6 py-3 bg-surface/95 backdrop-blur-sm border-t border-border flex gap-3">
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="cursor-pointer bg-white border-[1.5px] border-border text-ink-soft font-semibold text-sm py-[14px] px-5 rounded-xl hover:bg-surface-muted transition-colors"
+              className="cursor-pointer bg-surface border-[1.5px] border-border text-ink-soft font-semibold text-sm py-[14px] px-5 rounded-xl hover:bg-surface-muted transition-colors"
             >
               Back
             </button>

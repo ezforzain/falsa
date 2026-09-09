@@ -69,7 +69,7 @@ export default function SellerPromotions() {
   };
 
   const fieldClass =
-    'w-full px-[14px] py-[11px] border border-border rounded-lg text-[14px] font-sans bg-white text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
+    'w-full px-[14px] py-[11px] border border-border rounded-lg text-[14px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
   const labelClass = 'block text-[12.5px] font-semibold text-ink-soft mb-1.5';
 
   return (
@@ -79,15 +79,15 @@ export default function SellerPromotions() {
         <p className="text-sm text-text mt-1">Request to boost one of your listings — an admin reviews every request.</p>
       </div>
 
-      {loading && <div className="animate-pulse bg-white border border-border rounded-2xl h-[400px]" />}
+      {loading && <div className="animate-pulse bg-surface border border-border rounded-2xl h-[400px]" />}
 
       {!loading && error && (
-        <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>
+        <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>
       )}
 
       {!loading && !error && (
         <>
-          <div className="bg-white border border-border rounded-2xl p-6 mb-6 max-w-[520px]">
+          <div className="bg-surface border border-border rounded-2xl p-6 mb-6 max-w-[520px]">
             <h2 className="font-display text-base font-bold text-ink mb-4">Request a boost</h2>
 
             {submitError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-4">{submitError}</p>}
@@ -139,7 +139,7 @@ export default function SellerPromotions() {
                         className={`text-[11.5px] font-semibold px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${
                           form.budgetPkr === String(s.amount)
                             ? 'border-green text-green bg-green-tint'
-                            : 'border-border text-ink-soft bg-white hover:border-green/40'
+                            : 'border-border text-ink-soft bg-surface hover:border-green/40'
                         }`}
                       >
                         {formatPKR(s.amount)} → {s.views}
@@ -171,14 +171,14 @@ export default function SellerPromotions() {
 
           <h2 className="font-display text-base font-bold text-ink mb-4">Your requests</h2>
           {requests.length === 0 ? (
-            <div className="bg-white border border-dashed border-border-strong rounded-2xl p-10 text-center">
+            <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
               <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center mb-4">
                 <IconSparkle width="22" height="22" className="text-green" />
               </span>
               <p className="text-sm text-text">No promotion requests yet.</p>
             </div>
           ) : (
-            <div className="bg-white border border-border rounded-2xl overflow-hidden">
+            <div className="bg-surface border border-border rounded-2xl overflow-hidden">
               {requests.map((r, i) => (
                 <div key={r.id} className={`flex items-center justify-between gap-4 px-5 py-4 flex-wrap ${i !== requests.length - 1 ? 'border-b border-border' : ''}`}>
                   <div className="min-w-0">

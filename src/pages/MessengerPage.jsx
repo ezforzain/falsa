@@ -108,9 +108,9 @@ export default function MessengerPage() {
       <p className="text-sm text-text-muted mb-7">Conversations with sellers about your orders and enquiries.</p>
 
       {loading ? (
-        <div className="bg-white border border-border rounded-2xl h-[560px] max-h-[70vh] animate-pulse" />
+        <div className="bg-surface border border-border rounded-2xl h-[560px] max-h-[70vh] animate-pulse" />
       ) : error && conversations.length === 0 ? (
-        <div className="text-center py-[60px] px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+        <div className="text-center py-[60px] px-5 bg-surface border border-dashed border-border-strong rounded-2xl">
           <p className="text-sm text-orange-text">{error}</p>
         </div>
       ) : conversations.length === 0 ? (
@@ -122,7 +122,7 @@ export default function MessengerPage() {
           <p className="text-sm text-text-muted">Tap "Chat" on a product or seller page to start a conversation.</p>
         </div>
       ) : (
-        <div className="bg-white border border-border rounded-2xl overflow-hidden flex h-[560px] max-h-[70vh]">
+        <div className="bg-surface border border-border rounded-2xl overflow-hidden flex h-[560px] max-h-[70vh]">
           <div className={`w-full sm:w-[280px] shrink-0 border-r border-border overflow-y-auto ${active ? 'hidden sm:block' : 'block'}`}>
             {conversations.map((c) => {
               const last = c.messages[c.messages.length - 1];
@@ -205,7 +205,7 @@ export default function MessengerPage() {
                     onChange={(e) => setDraft(e.target.value)}
                     placeholder={`Message ${active.sellerName}…`}
                     disabled={sending}
-                    className="flex-1 px-3.5 py-2.5 border border-border rounded-full text-sm outline-none focus:border-green bg-white disabled:opacity-60"
+                    className="flex-1 px-3.5 py-2.5 border border-border rounded-full text-sm outline-none focus:border-green bg-surface disabled:opacity-60"
                   />
                   <button
                     type="submit"

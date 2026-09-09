@@ -5,7 +5,7 @@ import { IconHome, IconStore } from './icons';
 export const EMPTY_ADDRESS = { fullName: '', phone: '', city: '', address: '', label: 'Home' };
 
 const fieldClass =
-  'w-full px-[16px] py-[12px] border border-border rounded-xl text-[14.5px] font-sans bg-white text-ink outline-none focus:border-orange focus:shadow-[0_0_0_3px_rgba(255,106,0,0.12)] transition-shadow';
+  'w-full px-[16px] py-[12px] border border-border rounded-xl text-[14.5px] font-sans bg-surface text-ink outline-none focus:border-orange focus:shadow-[0_0_0_3px_rgba(255,106,0,0.12)] transition-shadow';
 const labelClass = 'block text-[13px] font-semibold text-ink-soft mb-2';
 
 // Delivery-address form for checkout (see CartPage) — full name, phone, city (existing
@@ -106,7 +106,7 @@ export default function AddressForm({ value, onChange, onSubmit, onCancel, submi
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-white border border-border text-ink-soft font-semibold text-sm px-5 py-3 rounded-full hover:bg-surface-muted transition-colors"
+            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-surface border border-border text-ink-soft font-semibold text-sm px-5 py-3 rounded-full hover:bg-surface-muted transition-colors"
           >
             Cancel
           </button>

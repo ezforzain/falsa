@@ -63,7 +63,7 @@ export default function HashtagPage() {
       {loading && (
         <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="animate-pulse bg-white border border-border rounded-2xl overflow-hidden">
+            <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl overflow-hidden">
               <div className="h-[180px] bg-surface-muted" />
               <div className="px-[18px] pt-4 pb-[18px] flex flex-col gap-2">
                 <div className="h-4 bg-surface-muted rounded w-3/4" />
@@ -76,7 +76,7 @@ export default function HashtagPage() {
       )}
 
       {!loading && error && (
-        <div className="text-center py-[60px] px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+        <div className="text-center py-[60px] px-5 bg-surface border border-dashed border-border-strong rounded-2xl">
           <p className="text-[15px] text-orange-text mb-5">{error}</p>
           <Link
             to="/"
@@ -96,7 +96,7 @@ export default function HashtagPage() {
       )}
 
       {!loading && !error && results.length === 0 && (
-        <div className="text-center py-[60px] px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+        <div className="text-center py-[60px] px-5 bg-surface border border-dashed border-border-strong rounded-2xl">
           <span className="w-14 h-14 rounded-full bg-surface-muted inline-flex items-center justify-center mb-5">
             <IconSearch width="22" height="22" className="text-text-muted" />
           </span>

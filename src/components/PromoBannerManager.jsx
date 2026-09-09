@@ -95,7 +95,7 @@ export default function PromoBannerManager({ banners, onChange }) {
         <div className="flex flex-col gap-2">
           {banners.map((b, i) => (
             <div key={b.id} className="flex items-center gap-2.5 bg-surface-muted rounded-xl p-2">
-              <img src={b.url} alt="" className="w-20 h-12 object-cover rounded-lg shrink-0 bg-white" />
+              <img src={b.url} alt="" className="w-20 h-12 object-cover rounded-lg shrink-0 bg-surface-muted" />
               <span className="flex-1 min-w-0 text-xs text-text-muted truncate">Banner {i + 1}</span>
               <div className="flex items-center gap-1 shrink-0">
                 <button
@@ -103,7 +103,7 @@ export default function PromoBannerManager({ banners, onChange }) {
                   onClick={() => move(i, -1)}
                   disabled={i === 0 || busyId === b.id}
                   aria-label="Move up"
-                  className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 text-text-muted hover:text-ink p-1.5 rounded-lg hover:bg-white transition-colors"
+                  className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 text-text-muted hover:text-ink p-1.5 rounded-lg hover:bg-surface transition-colors"
                 >
                   <IconChevronDown width="13" height="13" className="rotate-180" />
                 </button>
@@ -112,7 +112,7 @@ export default function PromoBannerManager({ banners, onChange }) {
                   onClick={() => move(i, 1)}
                   disabled={i === banners.length - 1 || busyId === b.id}
                   aria-label="Move down"
-                  className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 text-text-muted hover:text-ink p-1.5 rounded-lg hover:bg-white transition-colors"
+                  className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 text-text-muted hover:text-ink p-1.5 rounded-lg hover:bg-surface transition-colors"
                 >
                   <IconChevronDown width="13" height="13" />
                 </button>
@@ -121,7 +121,7 @@ export default function PromoBannerManager({ banners, onChange }) {
                   onClick={() => remove(b.id)}
                   disabled={busyId === b.id}
                   aria-label="Remove banner"
-                  className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-orange-text hover:text-orange p-1.5 rounded-lg hover:bg-white transition-colors"
+                  className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-orange-text hover:text-orange p-1.5 rounded-lg hover:bg-surface transition-colors"
                 >
                   <IconTrash width="14" height="14" />
                 </button>

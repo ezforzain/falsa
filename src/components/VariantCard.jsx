@@ -10,7 +10,7 @@ export default function VariantCard({ variant, selected, onSelect }) {
       onClick={() => onSelect(variant)}
       aria-pressed={selected}
       className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-2 text-center cursor-pointer transition-colors duration-150 ${
-        selected ? 'border-orange bg-orange-tint' : 'border-border bg-white hover:border-border-strong'
+        selected ? 'border-orange bg-orange-tint' : 'border-border bg-surface hover:border-border-strong'
       }`}
     >
       {selected && (

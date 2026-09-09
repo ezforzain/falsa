@@ -16,7 +16,7 @@ export default function MobileProductHeader({ product }) {
 
   return (
     <div
-      className="sticky top-0 z-40 flex items-center gap-1.5 bg-white/95 backdrop-blur-md border-b border-border px-2 py-2"
+      className="sticky top-0 z-40 flex items-center gap-1.5 bg-surface/95 backdrop-blur-md border-b border-border px-2 py-2"
       style={{ paddingTop: 'max(8px, env(safe-area-inset-top))' }}
     >
       <button type="button" onClick={() => navigate(-1)} aria-label="Back" className={iconBtnClass}>

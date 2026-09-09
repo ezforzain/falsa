@@ -40,7 +40,7 @@ export default function FirstVisitSignupPrompt() {
         role="dialog"
         aria-modal="true"
         aria-label="Sign up"
-        className="relative w-full sm:max-w-[400px] bg-white rounded-t-[24px] sm:rounded-[24px] shadow-2xl p-6 sm:p-7 text-center animate-slide-up"
+        className="relative w-full sm:max-w-[400px] bg-surface rounded-t-[24px] sm:rounded-[24px] shadow-2xl p-6 sm:p-7 text-center animate-slide-up"
       >
         <button
           type="button"

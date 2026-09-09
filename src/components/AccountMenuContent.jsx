@@ -164,7 +164,7 @@ export default function AccountMenuContent({ onNavigate }) {
             name={isAuthenticated ? user?.companyName : null}
             size={64}
             iconSize={28}
-            bgClassName="bg-white"
+            bgClassName="bg-surface"
           />
         </span>
         <p className="text-[16px] font-bold text-ink m-0 truncate pr-10">

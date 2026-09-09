@@ -49,7 +49,7 @@ export default function SellerStoreProfile() {
   };
 
   const fieldClass =
-    'w-full px-[16px] py-[12px] border border-border rounded-xl text-[14.5px] font-sans bg-white text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
+    'w-full px-[16px] py-[12px] border border-border rounded-xl text-[14.5px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
   const labelClass = 'block text-[13px] font-semibold text-ink-soft mb-2';
 
   return (
@@ -59,14 +59,14 @@ export default function SellerStoreProfile() {
         <p className="text-sm text-text mt-1">This is what buyers see on your public store page.</p>
       </div>
 
-      {loading && <div className="animate-pulse bg-white border border-border rounded-2xl h-[320px]" />}
+      {loading && <div className="animate-pulse bg-surface border border-border rounded-2xl h-[320px]" />}
 
       {!loading && error && (
-        <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>
+        <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>
       )}
 
       {!loading && !error && store && (
-        <div className="bg-white border border-border rounded-2xl p-6">
+        <div className="bg-surface border border-border rounded-2xl p-6">
           {saveError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-5">{saveError}</p>}
 
           <div className="flex flex-col gap-4">
@@ -122,13 +122,13 @@ export default function SellerStoreProfile() {
 
       {!loading && !error && store && (
         <>
-          <div className="bg-white border border-border rounded-2xl p-6 mt-4">
+          <div className="bg-surface border border-border rounded-2xl p-6 mt-4">
             <h2 className="font-display text-lg font-bold text-ink mb-1">Promo banners</h2>
             <p className="text-sm text-text mb-5">Extra sale/announcement banners, shown as a carousel above your products. GIFs supported.</p>
             <PromoBannerManager banners={store.promoBanners} onChange={(promoBanners) => setStore((s) => ({ ...s, promoBanners }))} />
           </div>
 
-          <div className="bg-white border border-border rounded-2xl p-6 mt-4">
+          <div className="bg-surface border border-border rounded-2xl p-6 mt-4">
             <h2 className="font-display text-lg font-bold text-ink mb-1">Custom sections</h2>
             <p className="text-sm text-text mb-5">
               Group your own products into named sections — e.g. "New Arrivals" — shown on your public store page. Only affects your

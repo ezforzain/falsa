@@ -75,10 +75,10 @@ export default function MarketplaceFilters({ section: rawSection, value, onChang
   const toggleRating = (n) => () => onChange({ ...value, ratingMin: value.ratingMin === n ? '' : n });
 
   const fieldClass =
-    'px-3 py-2 border border-border rounded-lg text-[13px] font-sans bg-white text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
+    'px-3 py-2 border border-border rounded-lg text-[13px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
   const pillClass = (active) =>
     `flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-[12.5px] font-semibold cursor-pointer transition-colors whitespace-nowrap ${
-      active ? 'border-green text-green bg-green-tint' : 'border-border bg-white text-ink-soft hover:border-green/40'
+      active ? 'border-green text-green bg-green-tint' : 'border-border bg-surface text-ink-soft hover:border-green/40'
     }`;
   const groupLabelClass = 'text-[11px] font-bold uppercase tracking-wide text-text-muted mb-1.5';
 

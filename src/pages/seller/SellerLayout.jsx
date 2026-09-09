@@ -74,7 +74,7 @@ export default function SellerLayout() {
   if (user.role !== 'seller') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream px-4">
-        <div className="max-w-[420px] text-center bg-white border border-border rounded-2xl shadow-xl p-8">
+        <div className="max-w-[420px] text-center bg-surface border border-border rounded-2xl shadow-xl p-8">
           <span className="w-14 h-14 rounded-full bg-orange-tint inline-flex items-center justify-center mb-5">
             <IconAlertCircle width="26" height="26" className="text-orange-text" />
           </span>

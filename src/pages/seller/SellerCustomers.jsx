@@ -32,24 +32,24 @@ export default function SellerCustomers() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by buyer company…"
-          className="w-full max-w-[320px] px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-white mb-5"
+          className="w-full max-w-[320px] px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface mb-5"
         />
       )}
 
       {loading && (
         <div className="flex flex-col gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="animate-pulse h-16 bg-white border border-border rounded-2xl" />
+            <div key={i} className="animate-pulse h-16 bg-surface border border-border rounded-2xl" />
           ))}
         </div>
       )}
 
       {!loading && error && (
-        <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>
+        <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>
       )}
 
       {!loading && !error && customers.length === 0 && (
-        <div className="bg-white border border-dashed border-border-strong rounded-2xl p-10 text-center">
+        <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
           <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center mb-4">
             <IconUser width="24" height="24" className="text-green" />
           </span>
@@ -58,7 +58,7 @@ export default function SellerCustomers() {
       )}
 
       {!loading && !error && customers.length > 0 && (
-        <div className="bg-white border border-border rounded-2xl overflow-hidden">
+        <div className="bg-surface border border-border rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[560px]">
               <thead>

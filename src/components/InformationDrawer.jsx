@@ -33,7 +33,7 @@ function InfoSection({ title, links, defaultOpen = false, onNavigate }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between px-5 py-4 cursor-pointer bg-white hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green"
+        className="w-full flex items-center justify-between px-5 py-4 cursor-pointer bg-surface hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green"
       >
         <span className="text-[15px] font-semibold text-ink">{title}</span>
         <IconChevronDown
@@ -81,7 +81,7 @@ export default function InformationDrawer({ open, onClose }) {
     <div className="fixed inset-0 z-[100] flex items-end justify-center">
       <div className="absolute inset-0 bg-black/50 animate-fade-up" onClick={onClose} />
 
-      <div className="relative w-full max-h-[80vh] bg-white rounded-t-[24px] shadow-2xl flex flex-col animate-slide-up">
+      <div className="relative w-full max-h-[80vh] bg-surface rounded-t-[24px] shadow-2xl flex flex-col animate-slide-up">
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border shrink-0">
           <h2 className="font-display text-lg font-bold text-ink m-0">Information</h2>
           <button

@@ -52,7 +52,7 @@ export default function SpotlightPage() {
 
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-white font-sans">
+      <div className="min-h-screen bg-surface font-sans">
         <MobileTopBar />
 
         <div className="px-[18px] pt-2 pb-3">
@@ -64,7 +64,7 @@ export default function SpotlightPage() {
         </div>
 
         {!loading && !error && featured && (
-          <div className="mx-[18px] mb-5 bg-white border border-border rounded-[18px] overflow-hidden">
+          <div className="mx-[18px] mb-5 bg-surface border border-border rounded-[18px] overflow-hidden">
             <div className="relative h-[190px]">
               <img src={featured.img} alt={featured.name} className="w-full h-full object-cover" />
               <span className="absolute top-3 left-3 bg-green text-white text-[11px] font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5">
@@ -104,7 +104,7 @@ export default function SpotlightPage() {
         {loading && (
           <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-8">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="animate-pulse bg-white border border-[#EFEBE2] rounded-[14px] overflow-hidden">
+              <div key={i} className="animate-pulse bg-surface border border-[#EFEBE2] rounded-[14px] overflow-hidden">
                 <div className="h-[130px] bg-surface-muted" />
                 <div className="px-2.5 pt-2.5 pb-3 flex flex-col gap-1.5">
                   <div className="h-3 bg-surface-muted rounded w-full" />
@@ -125,7 +125,7 @@ export default function SpotlightPage() {
           <>
             <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-3">
               {feedProducts.map((p) => (
-                <div key={p.feedKey} className="bg-white border border-[#EFEBE2] rounded-[14px] overflow-hidden">
+                <div key={p.feedKey} className="bg-surface border border-[#EFEBE2] rounded-[14px] overflow-hidden">
                   <Link to={`/product/${p.id}`} className="block no-underline text-inherit">
                     <div className="h-[130px] overflow-hidden">
                       <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
@@ -186,7 +186,7 @@ export default function SpotlightPage() {
             from other countries so there's always something new to discover.
           </p>
         </div>
-        <div className="flex items-center gap-2.5 bg-white border-[1.5px] border-border rounded-xl px-[18px] py-3">
+        <div className="flex items-center gap-2.5 bg-surface border-[1.5px] border-border rounded-xl px-[18px] py-3">
           <IconPin className="text-text-muted" />
           <span className="text-[13px] text-text-muted">Your country</span>
           <span className="font-semibold text-sm">{buyerCountry}</span>
@@ -196,7 +196,7 @@ export default function SpotlightPage() {
       {loading && (
         <div className="pt-8 grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="animate-pulse bg-white border border-border rounded-2xl overflow-hidden">
+            <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl overflow-hidden">
               <div className="h-40 bg-surface-muted" />
               <div className="px-[18px] pt-4 pb-[18px] flex flex-col gap-2">
                 <div className="h-4 bg-surface-muted rounded w-3/4" />
@@ -208,7 +208,7 @@ export default function SpotlightPage() {
       )}
 
       {!loading && error && (
-        <div className="mt-8 text-center py-12 px-5 bg-white border border-dashed border-border-strong rounded-2xl">
+        <div className="mt-8 text-center py-12 px-5 bg-surface border border-dashed border-border-strong rounded-2xl">
           <p className="text-[15px] text-orange-text m-0">{error}</p>
         </div>
       )}
@@ -217,7 +217,7 @@ export default function SpotlightPage() {
           full details, and a clear CTA, rather than competing for attention with a dozen tiles. */}
       {!loading && !error && featured && (
         <section className="pt-8">
-          <div className="grid lg:grid-cols-2 bg-white border border-border rounded-[24px] overflow-hidden">
+          <div className="grid lg:grid-cols-2 bg-surface border border-border rounded-[24px] overflow-hidden">
             <div className="relative h-[300px] lg:h-full min-h-[380px] bg-surface-muted order-1">
               <img src={featured.img} alt={featured.name} className="w-full h-full object-cover" />
               <span className="absolute top-4 left-4 bg-green text-white text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
@@ -271,7 +271,7 @@ export default function SpotlightPage() {
               <Link
                 key={p.id}
                 to={`/product/${p.id}`}
-                className="block bg-white border border-border rounded-2xl overflow-hidden no-underline text-inherit transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(20,40,32,0.12)]"
+                className="block bg-surface border border-border rounded-2xl overflow-hidden no-underline text-inherit transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(20,40,32,0.12)]"
               >
                 <div className="h-36 overflow-hidden">
                   <img src={p.img} alt={p.name} className="w-full h-full object-cover" />

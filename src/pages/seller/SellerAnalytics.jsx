@@ -6,7 +6,7 @@ import { formatPKR } from '../../data/mockData';
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
+    <div className="bg-surface border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
       <div className="font-semibold text-ink mb-1">{label}</div>
       {payload.map((p) => (
         <div key={p.dataKey} className="text-text-muted">
@@ -47,29 +47,29 @@ export default function SellerAnalytics() {
 
       {loading && (
         <div className="flex flex-col gap-4">
-          <div className="animate-pulse bg-white border border-border rounded-2xl h-[280px]" />
-          <div className="animate-pulse bg-white border border-border rounded-2xl h-[240px]" />
+          <div className="animate-pulse bg-surface border border-border rounded-2xl h-[280px]" />
+          <div className="animate-pulse bg-surface border border-border rounded-2xl h-[240px]" />
         </div>
       )}
 
       {!loading && error && (
-        <div className="bg-white border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>
+        <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{error}</div>
       )}
 
       {!loading && !error && data && (
         <>
           <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-            <div className="bg-white border border-border rounded-2xl p-5">
+            <div className="bg-surface border border-border rounded-2xl p-5">
               <div className="font-display text-xl font-bold text-ink">{formatPKR(totalRevenue)}</div>
               <div className="text-xs text-text-muted mt-0.5">Revenue (last 30 days)</div>
             </div>
-            <div className="bg-white border border-border rounded-2xl p-5">
+            <div className="bg-surface border border-border rounded-2xl p-5">
               <div className="font-display text-xl font-bold text-ink">{totalOrders}</div>
               <div className="text-xs text-text-muted mt-0.5">Orders (last 30 days)</div>
             </div>
           </div>
 
-          <div className="bg-white border border-border rounded-2xl p-5 mb-6">
+          <div className="bg-surface border border-border rounded-2xl p-5 mb-6">
             <h2 className="font-display text-base font-bold text-ink mb-4">Revenue trend</h2>
             <div className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -90,7 +90,7 @@ export default function SellerAnalytics() {
             </div>
           </div>
 
-          <div className="bg-white border border-border rounded-2xl p-5">
+          <div className="bg-surface border border-border rounded-2xl p-5">
             <h2 className="font-display text-base font-bold text-ink mb-4">Top products by revenue</h2>
             {data.topProducts.length === 0 ? (
               <p className="text-sm text-text-muted py-6 text-center">No sales yet.</p>

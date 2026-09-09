@@ -139,7 +139,7 @@ export default function DragDropUpload({
           />
         </label>
       ) : (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-white">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-surface">
           {previewUrl ? (
             <img src={previewUrl} alt={file.name} className="w-14 h-14 rounded-lg object-cover border border-border shrink-0" />
           ) : (
