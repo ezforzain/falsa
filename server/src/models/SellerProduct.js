@@ -10,8 +10,10 @@ const sellerProductSchema = new mongoose.Schema(
     description: { type: String, default: '' },
     sku: { type: String, required: true },
     price: { type: Number, required: true },
-    unit: { type: String, required: true },
-    moq: { type: String, required: true },
+    // Required only for B2B listings (see the route-level check in seller.routes.js) — a
+    // Spotlight (B2C) listing sells as one unit with no minimum order, so both stay blank.
+    unit: { type: String, default: '' },
+    moq: { type: String, default: '' },
     stock: { type: Number, required: true },
     status: { type: String, default: 'active' },
     images: { type: [String], default: [] },

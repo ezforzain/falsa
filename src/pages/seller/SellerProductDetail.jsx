@@ -172,22 +172,32 @@ export default function SellerProductDetail() {
 
           <div className="font-display font-bold text-green text-2xl mb-4">
             {formatPKR(product.price)}
-            <span className="text-sm font-medium text-text-muted"> /{product.unit}</span>
+            {product.unit && <span className="text-sm font-medium text-text-muted"> /{product.unit}</span>}
           </div>
 
           {product.description && <p className="text-sm text-text leading-relaxed mb-5">{product.description}</p>}
 
           <div className="grid grid-cols-2 gap-3 mb-6">
             {[
-              { label: 'MOQ', value: product.moq },
-              { label: 'Stock', value: product.stock === 0 ? 'Out of stock' : `${product.stock.toLocaleString('en-US')} ${product.unit}` },
+              product.moq && { label: 'MOQ', value: product.moq },
+              {
+                label: 'Stock',
+                value:
+                  product.stock === 0
+                    ? 'Out of stock'
+                    : product.unit
+                      ? `${product.stock.toLocaleString('en-US')} ${product.unit}`
+                      : product.stock.toLocaleString('en-US'),
+              },
               { label: 'SKU', value: product.sku || '—' },
               {
                 label: 'Created',
                 value: new Date(product.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
               },
               { label: 'Views', value: (product.views || 0).toLocaleString('en-US'), icon: true },
-            ].map((row) => (
+            ]
+              .filter(Boolean)
+              .map((row) => (
               <div key={row.label} className="bg-white border border-border rounded-xl px-4 py-3">
                 <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-1">{row.label}</div>
                 <div

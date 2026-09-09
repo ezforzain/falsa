@@ -134,9 +134,11 @@ export default function SpotlightPage() {
                       <div className="text-[12.5px] font-semibold text-ink leading-snug mb-1.5 line-clamp-2">{p.name}</div>
                       <div className="flex items-baseline justify-between">
                         <span className="font-display font-bold text-[14.5px] text-green">{p.price}</span>
-                        <span className="text-[10px] text-orange-text bg-orange-tint px-1.5 py-1 rounded-md font-semibold">
-                          MOQ {p.moq}
-                        </span>
+                        {p.moq && (
+                          <span className="text-[10px] text-orange-text bg-orange-tint px-1.5 py-1 rounded-md font-semibold">
+                            MOQ {p.moq}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </Link>
@@ -239,9 +241,13 @@ export default function SpotlightPage() {
                 {featured.verified && <VerifiedBadge size={14} />}
               </div>
               <div className="font-display font-bold text-[28px] text-green mb-1">{featured.price}</div>
-              <div className="text-[13px] text-text-muted mb-5">
-                MOQ {featured.moq} / {featured.unit}
-              </div>
+              {(featured.moq || featured.unit) && (
+                <div className="text-[13px] text-text-muted mb-5">
+                  {featured.moq && `MOQ ${featured.moq}`}
+                  {featured.moq && featured.unit && ' / '}
+                  {featured.unit}
+                </div>
+              )}
 
               {featured.freeShipping && (
                 <div className="inline-flex items-center gap-1.5 self-start bg-green-tint text-green text-[12.5px] font-bold px-3 py-1.5 rounded-full mb-6">

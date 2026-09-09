@@ -115,7 +115,7 @@ router.post(
       variants,
       shipping,
     } = req.body;
-    if (!name || !category || !price || !unit || !moq) {
+    if (!name || !category || !price || (b2bEnabled && (!unit || !moq))) {
       return res.status(400).json({ message: 'Please fill in all required fields.' });
     }
     if (!Number.isFinite(price) || price <= 0) {

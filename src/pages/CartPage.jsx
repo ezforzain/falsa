@@ -191,7 +191,7 @@ export default function CartPage() {
                     </Link>
                     <div className="text-[12.5px] text-text-muted mt-1">{product.seller}</div>
                     <div className="text-[13px] text-text-muted mt-1.5">
-                      {product.price} <span>/{product.unit}</span>
+                      {product.price} {product.unit && <span>/{product.unit}</span>}
                     </div>
                   </div>
                 </div>

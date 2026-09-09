@@ -53,7 +53,8 @@ export default function SpotlightCard({ item }) {
         <div className="font-display font-bold text-[16px] text-green mt-0.5">{product.price}</div>
 
         <div className="text-[11px] text-text-muted truncate">
-          MOQ {product.moq} · {product.location}
+          {product.moq ? `MOQ ${product.moq} · ` : ''}
+          {product.location}
         </div>
 
         <Link
