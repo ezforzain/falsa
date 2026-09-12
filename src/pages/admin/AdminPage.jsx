@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { sellers, admin, adminUsers, adminOrders, adminCategories, adminFilters } from '../../lib/api';
-import { formatPKR } from '../../data/mockData';
-import { ORDER_STATUSES, statusBadgeClass } from '../seller/statusStyles';
-import VerifiedBadge from '../../components/VerifiedBadge';
-import OfficialBadge from '../../components/OfficialBadge';
-import Avatar from '../../components/Avatar';
 import AdminProductFormModal from '../../components/AdminProductFormModal';
 import AdminUserFormModal from '../../components/AdminUserFormModal';
 import AdminCategoryFormModal from '../../components/AdminCategoryFormModal';
@@ -15,67 +9,18 @@ import AdminFilterFormModal from '../../components/AdminFilterFormModal';
 import AdminOrderFormModal from '../../components/AdminOrderFormModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import Toast from '../../components/Toast';
-import {
-  IconAlertCircle,
-  IconBox,
-  IconChevronDown,
-  IconChevronRight,
-  IconClock,
-  IconEdit,
-  IconGrid,
-  IconHome,
-  IconLayers,
-  IconLogout,
-  IconPlus,
-  IconReceipt,
-  IconSettings,
-  IconShield,
-  IconSliders,
-  IconSparkle,
-  IconStore,
-  IconTrash,
-  IconTrendingUp,
-  IconUser,
-  IconWallet,
-} from '../../components/icons';
-import logoMark from '../../assets/logo-mark.png';
-
-const PIE_COLORS = ['#0E5A46', '#C97B2D', '#2D6FC9', '#8B5CF6', '#DC5A5A'];
-
-// Same 4 marketplace sections as MarketplaceTabs (src/components/marketplace/MarketplaceTabs.jsx)
-// and FilterConfig.FILTER_SECTIONS on the backend — kept in this fixed order everywhere.
-const FILTER_SECTIONS = [
-  { key: 'b2b', label: 'B2B' },
-  { key: 'spotlight', label: 'Spotlight' },
-  { key: 'worldwide', label: 'Worldwide' },
-  { key: 'freeshipping', label: 'Free Shipping' },
-];
-const FILTER_TYPE_LABELS = {
-  category: 'Category',
-  country: 'Country',
-  priceRange: 'Price range',
-  moq: 'Max MOQ',
-  verified: 'Verified Sellers',
-  officialStore: 'Mall / Official Store',
-  freeShipping: 'Free Shipping',
-  rating: 'Rating',
-  discount: 'On Sale',
-  sortBy: 'Sort by',
-};
-
-function ChartTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-surface border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
-      <div className="font-semibold text-ink mb-1">{label}</div>
-      {payload.map((p) => (
-        <div key={p.dataKey} className="text-text-muted">
-          {p.name}: <span className="font-semibold text-ink-soft">{p.dataKey === 'revenue' ? formatPKR(p.value) : p.value}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
+import { IconAlertCircle } from '../../components/icons';
+import AdminLayout from './AdminLayout';
+import { FILTER_SECTIONS } from './filterConstants';
+import DashboardTab from './tabs/DashboardTab';
+import ProductsTab from './tabs/ProductsTab';
+import OrdersTab from './tabs/OrdersTab';
+import SellersTab from './tabs/SellersTab';
+import UsersTab from './tabs/UsersTab';
+import CategoriesTab from './tabs/CategoriesTab';
+import FiltersTab from './tabs/FiltersTab';
+import ReportsTab from './tabs/ReportsTab';
+import SettingsTab from './tabs/SettingsTab';
 
 export default function AdminPage() {
   const { user, status, isAuthenticated, logout, updateProfile } = useAuth();
@@ -825,1462 +770,161 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-cream font-sans text-ink flex flex-col">
-      <header className="bg-green-deep text-white sticky top-0 z-40 shadow-[0_1px_0_rgba(255,255,255,0.06)]">
-        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4 h-16">
-          <Link to="/" className="flex items-center gap-2 no-underline shrink-0">
-            <img src={logoMark} alt="" className="w-9 h-9 object-contain" />
-            <span className="hidden sm:flex flex-col leading-none">
-              <span className="flex items-center gap-1.5">
-                <span className="font-display text-base font-bold text-white tracking-tight">
-                  Falsafah
-                </span>
-                <OfficialBadge size={14} tooltipPosition="bottom" />
-              </span>
-              <span className="font-mono text-[9px] text-teal-soft tracking-[0.2em] uppercase mt-0.5">Admin Panel</span>
-            </span>
-          </Link>
-          <div className="flex-1" />
-          <span className="hidden md:flex items-center gap-2 text-sm text-teal-mist truncate max-w-[260px]">
-            <Avatar src={user.avatarUrl} name={user.companyName} size={26} iconSize={13} bgClassName="bg-white/15" iconClassName="text-white" />
-            {user.companyName}
-            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-white bg-white/15 px-1.5 py-0.5 rounded">Admin</span>
-          </span>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="cursor-pointer flex items-center gap-1.5 text-sm font-semibold text-white/90 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
-          >
-            <IconLogout width="17" height="17" />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
-        </div>
-      </header>
-
-      <main className="flex-1 max-w-[1100px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-up">
-        <div className="flex items-center gap-1 mb-8 border-b border-border overflow-x-auto no-scrollbar">
-          {[
-            { key: 'overview', label: 'Overview', icon: IconHome },
-            { key: 'products', label: 'Products', icon: IconBox },
-            { key: 'orders', label: 'Orders', icon: IconReceipt },
-            { key: 'stores', label: 'Verified Stores', icon: IconStore },
-            { key: 'users', label: 'Users', icon: IconUser },
-            { key: 'categories', label: 'Categories', icon: IconGrid },
-            { key: 'filters', label: 'Filters', icon: IconSliders },
-            { key: 'reports', label: 'Reports', icon: IconTrendingUp },
-            { key: 'settings', label: 'Settings', icon: IconSettings },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`cursor-pointer whitespace-nowrap flex items-center gap-1.5 text-sm font-semibold px-3 py-2.5 -mb-px rounded-t-lg border-b-2 transition-colors ${
-                activeTab === tab.key
-                  ? 'text-green border-green bg-green-tint/60'
-                  : 'text-text-muted border-transparent hover:text-ink hover:bg-surface-muted'
-              }`}
-            >
-              <tab.icon width="15" height="15" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {activeTab === 'overview' && (
-          <>
-            <div className="mb-6">
-              <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Overview</h1>
-              <p className="text-sm text-text mt-1">A snapshot of the whole marketplace, right now.</p>
-            </div>
-
-            {overviewLoading && (
-              <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl h-[92px]" />
-                ))}
-              </div>
-            )}
-
-            {!overviewLoading && overviewError && (
-              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{overviewError}</div>
-            )}
-
-            {!overviewLoading && !overviewError && overview && (
-              <>
-                <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-                  {[
-                    { label: 'Total sellers', value: overview.totals.sellers.toLocaleString('en-US'), icon: IconStore, tint: 'bg-green-tint text-green' },
-                    { label: 'Total products', value: overview.totals.products.toLocaleString('en-US'), icon: IconBox, tint: 'bg-orange-tint text-orange-text' },
-                    { label: 'Total orders', value: overview.totals.orders.toLocaleString('en-US'), icon: IconReceipt, tint: 'bg-green-tint text-green' },
-                    { label: 'Total revenue', value: formatPKR(overview.totals.revenue), icon: IconWallet, tint: 'bg-orange-tint text-orange-text' },
-                    { label: 'Pending orders', value: overview.totals.pendingOrders.toLocaleString('en-US'), icon: IconClock, tint: 'bg-orange-tint text-orange-text' },
-                  ].map((stat) => (
-                    <div
-                      key={stat.label}
-                      className="bg-surface border border-border rounded-2xl p-5 transition-all hover:shadow-md hover:-translate-y-0.5"
-                    >
-                      <span className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${stat.tint}`}>
-                        <stat.icon width="17" height="17" />
-                      </span>
-                      <div className="font-display text-xl font-bold text-ink">{stat.value}</div>
-                      <div className="text-xs text-text-muted mt-0.5">{stat.label}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid gap-6 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-                  <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-                    <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
-                      <h2 className="font-display text-[15px] font-bold text-ink">Recent orders</h2>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('orders')}
-                        className="cursor-pointer text-xs font-semibold text-green hover:text-green-hover flex items-center gap-1"
-                      >
-                        View all
-                        <IconChevronRight width="12" height="12" />
-                      </button>
-                    </div>
-                    {overview.recentOrders.length === 0 ? (
-                      <p className="text-sm text-text-muted p-6 text-center">No orders yet.</p>
-                    ) : (
-                      overview.recentOrders.map((o) => (
-                        <div
-                          key={o.id}
-                          className="flex items-center gap-3 px-5 py-3 border-b border-border last:border-0 hover:bg-surface-muted transition-colors"
-                        >
-                          <span className="shrink-0 w-8 h-8 rounded-full bg-green-tint text-green flex items-center justify-center">
-                            <IconReceipt width="14" height="14" />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="font-semibold text-[13.5px] text-ink truncate">{o.buyerCompany}</div>
-                            <div className="text-xs text-text-muted truncate">{o.sellerName} · {o.productName}</div>
-                          </div>
-                          <div className="shrink-0 text-right">
-                            <div className="font-semibold text-[13.5px] text-ink">{formatPKR(o.total)}</div>
-                            <span className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${statusBadgeClass(o.status)}`}>{o.status}</span>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-                    <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
-                      <h2 className="font-display text-[15px] font-bold text-ink">Recent seller registrations</h2>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('stores')}
-                        className="cursor-pointer text-xs font-semibold text-green hover:text-green-hover flex items-center gap-1"
-                      >
-                        View all
-                        <IconChevronRight width="12" height="12" />
-                      </button>
-                    </div>
-                    {overview.recentSellers.length === 0 ? (
-                      <p className="text-sm text-text-muted p-6 text-center">No sellers yet.</p>
-                    ) : (
-                      overview.recentSellers.map((s) => (
-                        <div
-                          key={s.id}
-                          className="flex items-center gap-3 px-5 py-3 border-b border-border last:border-0 hover:bg-surface-muted transition-colors"
-                        >
-                          <span className="shrink-0 w-8 h-8 rounded-full bg-orange-tint text-orange-text flex items-center justify-center">
-                            <IconStore width="14" height="14" />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="font-semibold text-[13.5px] text-ink truncate">{s.companyName}</div>
-                            <div className="text-xs text-text-muted truncate">{s.email}</div>
-                          </div>
-                          {s.createdAt && (
-                            <span className="shrink-0 text-[11px] text-text-muted">
-                              {new Date(s.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                            </span>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-
-        {activeTab === 'products' && (
-          <>
-            {!promotionsLoading && !promotionsError && promotionRequests.some((r) => r.status === 'pending') && (
-              <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-6">
-                <div className="flex items-center gap-2 px-5 py-3.5 border-b border-border bg-orange-tint/40">
-                  <IconSparkle width="14" height="14" className="text-orange shrink-0" />
-                  <h2 className="font-display text-[15px] font-bold text-ink">
-                    Pending promotion requests ({promotionRequests.filter((r) => r.status === 'pending').length})
-                  </h2>
-                </div>
-                {promotionRequests
-                  .filter((r) => r.status === 'pending')
-                  .map((req, i, arr) => (
-                    <div key={req.id} className={`px-5 py-4 flex items-center justify-between gap-4 flex-wrap ${i !== arr.length - 1 ? 'border-b border-border' : ''}`}>
-                      <div className="min-w-0">
-                        <div className="text-[14px] font-semibold text-ink truncate">{req.productName}</div>
-                        <div className="text-xs text-text-muted truncate">
-                          {req.sellerName || 'Unknown seller'} · requesting{' '}
-                          <span className="font-semibold text-ink-soft capitalize">{req.spotlightType}</span>
-                          {req.budgetPkr && (
-                            <>
-                              {' '}· budget <span className="font-semibold text-ink-soft">{formatPKR(req.budgetPkr)}</span>
-                            </>
-                          )}
-                          {req.note && ` · "${req.note}"`}
-                        </div>
-                      </div>
-
-                      {rejectingPromoId === req.id ? (
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <input
-                            type="text"
-                            value={promoRejectReason}
-                            onChange={(e) => setPromoRejectReason(e.target.value)}
-                            placeholder="Reason (optional)"
-                            className="px-3 py-2 border border-border rounded-lg text-xs outline-none focus:border-green w-[200px]"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setRejectingPromoId(null)}
-                            className="cursor-pointer bg-surface border border-border text-ink-soft font-semibold text-xs px-3 py-2 rounded-full hover:bg-surface-muted transition-colors"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            disabled={reviewingPromoId === req.id}
-                            onClick={() => handleRejectPromotion(req)}
-                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-orange hover:bg-orange-hover text-white font-semibold text-xs px-4 py-2 rounded-full transition-colors"
-                          >
-                            {reviewingPromoId === req.id ? 'Submitting…' : 'Confirm reject'}
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            disabled={reviewingPromoId === req.id}
-                            onClick={() => {
-                              setRejectingPromoId(req.id);
-                              setPromoRejectReason('');
-                            }}
-                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-surface border border-border text-orange-text font-semibold text-xs px-4 py-2 rounded-full hover:bg-orange-tint transition-colors"
-                          >
-                            Reject
-                          </button>
-                          <button
-                            type="button"
-                            disabled={reviewingPromoId === req.id}
-                            onClick={() => handleApprovePromotion(req)}
-                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-xs px-4 py-2 rounded-full transition-colors"
-                          >
-                            {reviewingPromoId === req.id ? 'Submitting…' : 'Approve'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            )}
-
-            <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
-              <div>
-                <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Products</h1>
-                <p className="text-sm text-text mt-1">Add, edit, and manage products listed on the marketplace.</p>
-              </div>
-              <button
-                type="button"
-                onClick={openAddProduct}
-                className="cursor-pointer flex items-center gap-1.5 bg-green hover:bg-green-hover text-white font-semibold text-sm px-5 py-2.5 rounded-full transition-colors"
-              >
-                <IconPlus width="16" height="16" />
-                Add Product
-              </button>
-            </div>
-
-            {productsLoading && (
-              <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl h-[220px]" />
-                ))}
-              </div>
-            )}
-
-            {!productsLoading && productsError && (
-              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">
-                {productsError}
-              </div>
-            )}
-
-            {!productsLoading && !productsError && products.length === 0 && (
-              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
-                <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center mb-4">
-                  <IconBox width="24" height="24" className="text-green" />
-                </span>
-                <p className="text-sm text-text mb-5">No products yet.</p>
-                <button
-                  type="button"
-                  onClick={openAddProduct}
-                  className="cursor-pointer bg-green hover:bg-green-hover text-white font-semibold text-sm px-6 py-3 rounded-full transition-colors"
-                >
-                  Add your first product
-                </button>
-              </div>
-            )}
-
-            {!productsLoading && !productsError && products.length > 0 && (
-              <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
-                {products.map((p) => (
-                  <div key={p.id} className="bg-surface border border-border rounded-2xl overflow-hidden">
-                    <div className="h-[130px] relative overflow-hidden">
-                      <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
-                      {p.images?.length > 1 && (
-                        <span className="absolute top-2.5 right-2.5 bg-black/55 text-white text-[10.5px] font-semibold px-2 py-1 rounded-full">
-                          +{p.images.length - 1} photo{p.images.length - 1 === 1 ? '' : 's'}
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <div className="text-[14.5px] font-semibold text-ink leading-snug line-clamp-2 mb-1 min-h-[38px]">{p.name}</div>
-                      <div className="flex items-center gap-1 mb-1.5 min-w-0">
-                        <span className="text-xs text-text-muted truncate">{p.sellerName}</span>
-                        {p.verified && <VerifiedBadge size={13} />}
-                      </div>
-                      <div className="flex items-baseline justify-between mb-3">
-                        <span className="font-display font-bold text-green text-[15px]">
-                          {p.price}
-                          {p.unit && <span className="text-xs font-medium text-text-muted"> /{p.unit}</span>}
-                        </span>
-                        {p.stock !== null && p.stock !== undefined && (
-                          <span className={`text-xs font-semibold ${p.stock === 0 ? 'text-orange-text' : 'text-text-muted'}`}>
-                            {p.stock === 0 ? 'Out of stock' : `${p.stock} in stock`}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex gap-2 mb-2">
-                        <button
-                          type="button"
-                          onClick={() => openEditProduct(p)}
-                          className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer bg-surface border border-border text-ink-soft font-semibold text-xs py-2 rounded-lg hover:bg-surface-muted transition-colors"
-                        >
-                          <IconEdit width="13" height="13" />
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteProductTarget(p)}
-                          className="flex-1 flex items-center justify-center gap-1.5 cursor-pointer bg-surface border border-border text-orange-text font-semibold text-xs py-2 rounded-lg hover:bg-orange-tint transition-colors"
-                        >
-                          <IconTrash width="13" height="13" />
-                          Delete
-                        </button>
-                      </div>
-
-                      {/* Home "Spotlight" tab curation — the only control surface for it. */}
-                      <div className="flex items-center gap-1 pt-2 border-t border-border">
-                        <IconSparkle width="12" height="12" className="text-orange shrink-0" />
-                        <div className="flex gap-1 flex-1">
-                          {[
-                            { value: null, label: 'Off' },
-                            { value: 'featured', label: 'Featured' },
-                            { value: 'sponsored', label: 'Sponsored' },
-                          ].map((opt) => {
-                            const isActive = opt.value === null ? !p.spotlight : p.spotlight && p.spotlightType === opt.value;
-                            return (
-                              <button
-                                key={opt.label}
-                                type="button"
-                                disabled={spotlightUpdatingId === p.id}
-                                onClick={() => handleSetSpotlight(p, opt.value !== null, opt.value || 'featured')}
-                                className={`flex-1 text-[10.5px] font-semibold py-1.5 rounded-md cursor-pointer transition-colors disabled:opacity-50 ${
-                                  isActive ? 'bg-green text-white' : 'bg-surface-muted text-text-muted hover:bg-[#EFEBE2]'
-                                }`}
-                              >
-                                {opt.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Admin reach multiplier — scales this product's ranking everywhere (home
-                          feed, category pages, marketplace tabs). 1× is normal, 10× is a hard push. */}
-                      <div className="flex items-center gap-2 pt-2 mt-2 border-t border-border">
-                        <span className="text-[10.5px] font-semibold text-text-muted uppercase tracking-wide shrink-0">Reach</span>
-                        <div className="flex items-center gap-1.5 flex-1 justify-end">
-                          <button
-                            type="button"
-                            disabled={reachPendingId === p.id || (p.reachBoost || 1) <= 1}
-                            onClick={() => handleSetReach(p, (p.reachBoost || 1) - 1)}
-                            className="cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed w-6 h-6 rounded-md bg-surface-muted text-ink-soft font-bold text-sm flex items-center justify-center hover:bg-[#EFEBE2] transition-colors"
-                            aria-label="Lower reach"
-                          >
-                            −
-                          </button>
-                          <span className={`min-w-[34px] text-center text-xs font-bold ${(p.reachBoost || 1) > 1 ? 'text-green' : 'text-text-muted'}`}>
-                            {reachPendingId === p.id ? '…' : `${p.reachBoost || 1}×`}
-                          </span>
-                          <button
-                            type="button"
-                            disabled={reachPendingId === p.id || (p.reachBoost || 1) >= 10}
-                            onClick={() => handleSetReach(p, (p.reachBoost || 1) + 1)}
-                            className="cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed w-6 h-6 rounded-md bg-surface-muted text-ink-soft font-bold text-sm flex items-center justify-center hover:bg-[#EFEBE2] transition-colors"
-                            aria-label="Raise reach"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {activeTab === 'stores' && (
-          <>
-        <div className="mb-6">
-          <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Verified Stores</h1>
-          <p className="text-sm text-text mt-1">
-            Verify or unverify seller stores. Only admins can change this — sellers cannot verify themselves.
-          </p>
-        </div>
-
-        {actionError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-5">{actionError}</p>}
-
-        <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-          {loading && (
-            <div className="p-6 flex flex-col gap-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="animate-pulse h-12 bg-surface-muted rounded-xl" />
-              ))}
-            </div>
-          )}
-
-          {!loading && error && <div className="p-8 text-center text-sm text-orange-text">{error}</div>}
-
-          {!loading &&
-            !error &&
-            list.map((s, i) => (
-              <div
-                key={s.id}
-                className={`flex items-center justify-between gap-4 px-5 py-4 flex-wrap ${i !== list.length - 1 ? 'border-b border-border' : ''}`}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="w-9 h-9 rounded-lg bg-green-tint flex items-center justify-center shrink-0">
-                    <IconShield width="16" height="16" className="text-green" strokeWidth="2.2" />
-                  </span>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-[14.5px] text-ink truncate">{s.name}</span>
-                      {s.verified && <VerifiedBadge size={16} />}
-                    </div>
-                    <span className={`text-xs font-medium ${s.verified ? 'text-green' : 'text-text-muted'}`}>
-                      {s.verified ? 'Verified Store' : 'Not verified'}
-                      {s.officialStore ? ' · Official Store' : ''}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    disabled={pendingId === s.id}
-                    onClick={() => toggleOfficialStore(s)}
-                    className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 font-semibold text-xs px-4 py-2 rounded-full transition-colors ${
-                      s.officialStore
-                        ? 'bg-surface border border-border text-text hover:bg-surface-muted'
-                        : 'bg-orange hover:bg-orange-hover text-white'
-                    }`}
-                  >
-                    {pendingId === s.id ? 'Saving…' : s.officialStore ? 'Remove official store' : 'Mark official store'}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={pendingId === s.id}
-                    onClick={() => toggleVerified(s)}
-                    className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 font-semibold text-xs px-4 py-2 rounded-full transition-colors ${
-                      s.verified
-                        ? 'bg-surface border border-border text-text hover:bg-surface-muted'
-                        : 'bg-green hover:bg-green-hover text-white'
-                    }`}
-                  >
-                    {pendingId === s.id ? 'Saving…' : s.verified ? 'Remove verification' : 'Verify store'}
-                  </button>
-                </div>
-              </div>
-            ))}
-
-          {!loading && !error && list.length === 0 && (
-            <div className="p-10 text-center text-sm text-text">No stores found.</div>
-          )}
-        </div>
-          </>
-        )}
-
-
-        {activeTab === 'users' && (
-          <>
-            <div className="mb-6">
-              <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Users</h1>
-              <p className="text-sm text-text mt-1">View, edit, suspend, or delete any buyer, seller, or admin account.</p>
-            </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                loadUsers();
-              }}
-              className="flex items-center gap-3 flex-wrap mb-5"
-            >
-              <input
-                type="text"
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                placeholder="Search by name, email, or phone…"
-                className="flex-1 min-w-[220px] px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-              />
-              <select
-                value={userRoleFilter}
-                onChange={(e) => setUserRoleFilter(e.target.value)}
-                className="px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-              >
-                <option value="">All roles</option>
-                <option value="buyer">Buyers</option>
-                <option value="seller">Sellers</option>
-                <option value="admin">Admins</option>
-              </select>
-              <button
-                type="submit"
-                className="cursor-pointer bg-green hover:bg-green-hover text-white font-semibold text-sm px-5 py-2.5 rounded-full transition-colors"
-              >
-                Search
-              </button>
-            </form>
-
-            <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-              {usersLoading && (
-                <div className="p-6 flex flex-col gap-3">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="animate-pulse h-12 bg-surface-muted rounded-xl" />
-                  ))}
-                </div>
-              )}
-
-              {!usersLoading && usersError && <div className="p-8 text-center text-sm text-orange-text">{usersError}</div>}
-
-              {!usersLoading &&
-                !usersError &&
-                usersList.map((u, i) => (
-                  <div key={u.id} className={i !== usersList.length - 1 ? 'border-b border-border' : ''}>
-                    <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Avatar src={u.avatarUrl} name={u.companyName} size={36} iconSize={16} />
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-[14.5px] text-ink truncate">{u.companyName}</span>
-                            {u.verified && <VerifiedBadge size={14} />}
-                            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-text-muted bg-surface-muted px-1.5 py-0.5 rounded capitalize">
-                              {u.role}
-                            </span>
-                            {u.status === 'suspended' ? (
-                              <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-tint text-orange-text">
-                                {banLabel(u) || 'Suspended'}
-                              </span>
-                            ) : (
-                              <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-green-tint text-green">
-                                Active
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-text-muted truncate">
-                            {u.email} · {u.phone}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                        {u.role === 'seller' && (
-                          <button
-                            type="button"
-                            onClick={() => toggleUserExpand(u)}
-                            className="cursor-pointer bg-surface border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
-                          >
-                            {expandedUserId === u.id ? 'Close' : 'Payouts'}
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => openEditUser(u)}
-                          className="cursor-pointer bg-surface border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          disabled={userVerifyPendingId === u.id}
-                          onClick={() => handleToggleUserVerified(u)}
-                          style={u.verified ? undefined : { backgroundColor: '#3B82F6' }}
-                          className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 font-semibold text-xs px-3.5 py-2 rounded-full transition-colors ${
-                            u.verified
-                              ? 'bg-surface border border-border text-text hover:bg-surface-muted'
-                              : 'text-white hover:brightness-110'
-                          }`}
-                        >
-                          {userVerifyPendingId === u.id ? 'Saving…' : u.verified ? 'Remove tick' : 'Blue tick'}
-                        </button>
-                        {u.status === 'suspended' ? (
-                          <button
-                            type="button"
-                            disabled={banPending || u.id === user.id}
-                            onClick={() => submitBan(u, { lift: true }, 'Ban lifted')}
-                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 font-semibold text-xs px-3.5 py-2 rounded-full bg-green hover:bg-green-hover text-white transition-colors"
-                          >
-                            {banPending ? 'Saving…' : 'Unban'}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={u.id === user.id}
-                            onClick={() => {
-                              setBanDays('7');
-                              setBanningUserId(banningUserId === u.id ? null : u.id);
-                            }}
-                            className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 font-semibold text-xs px-3.5 py-2 rounded-full border border-border transition-colors ${
-                              banningUserId === u.id
-                                ? 'bg-orange-tint text-orange-text'
-                                : 'bg-surface text-orange-text hover:bg-orange-tint'
-                            }`}
-                          >
-                            {banningUserId === u.id ? 'Cancel' : 'Ban'}
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          disabled={u.id === user.id}
-                          onClick={() => setDeleteUserTarget(u)}
-                          className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center bg-surface border border-border text-orange-text p-2 rounded-full hover:bg-orange-tint transition-colors"
-                          aria-label="Delete user"
-                        >
-                          <IconTrash width="13" height="13" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {banningUserId === u.id && u.status !== 'suspended' && (
-                      <div className="px-5 pb-4 -mt-1">
-                        <div className="flex items-end gap-2 flex-wrap bg-surface-muted rounded-xl p-3">
-                          <div>
-                            <label className="block text-[11px] font-semibold text-text-muted mb-1">Ban length (days)</label>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={banDays}
-                              onChange={(e) => setBanDays(e.target.value.replace(/[^\d]/g, ''))}
-                              className="w-[90px] px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            disabled={banPending || !banDays || Number(banDays) <= 0}
-                            onClick={() => submitBan(u, { days: Number(banDays) }, `Banned for ${banDays} day${banDays === '1' ? '' : 's'}`)}
-                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-orange hover:bg-orange-hover text-white font-semibold text-xs px-4 py-2.5 rounded-full transition-colors"
-                          >
-                            {banPending ? 'Saving…' : `Ban ${banDays || '…'} day${banDays === '1' ? '' : 's'}`}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={banPending}
-                            onClick={() => setPermanentBanTarget(u)}
-                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-surface border border-orange text-orange-text font-semibold text-xs px-4 py-2.5 rounded-full hover:bg-orange-tint transition-colors"
-                          >
-                            Permanent ban
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {expandedUserId === u.id && (
-                      <div className="px-5 pb-5 bg-surface-muted/60">
-                        <div className="text-[11px] font-semibold text-text-muted mb-2.5 uppercase tracking-wide pt-1">Payout ledger</div>
-
-                        {userPayoutsLoading && <div className="text-sm text-text-muted py-2">Loading…</div>}
-
-                        {!userPayoutsLoading && userPayouts.length > 0 && (
-                          <div className="flex flex-col gap-2 mb-4">
-                            {userPayouts.map((p) => (
-                              <div key={p.id} className="flex items-center justify-between gap-3 bg-surface border border-border rounded-lg px-3.5 py-2.5 text-sm">
-                                <div className="min-w-0">
-                                  <span className="font-semibold text-ink">Rs {Number(p.amount).toLocaleString('en-US')}</span>
-                                  <span className="text-xs text-text-muted ml-2 capitalize">{p.method.replace('_', ' ')}</span>
-                                  {p.reference && <span className="text-xs text-text-muted ml-2">Ref: {p.reference}</span>}
-                                </div>
-                                <span className="text-xs text-text-muted shrink-0">{new Date(p.paidAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {!userPayoutsLoading && userPayouts.length === 0 && (
-                          <p className="text-sm text-text-muted mb-4">No payouts recorded yet.</p>
-                        )}
-
-                        {payoutError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-3">{payoutError}</p>}
-
-                        <div className="flex items-end gap-2 flex-wrap">
-                          <div>
-                            <label className="block text-[11px] font-semibold text-text-muted mb-1">Amount (Rs)</label>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={payoutForm.amount}
-                              onChange={(e) => setPayoutForm((f) => ({ ...f, amount: e.target.value }))}
-                              className="w-[120px] px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-semibold text-text-muted mb-1">Method</label>
-                            <select
-                              value={payoutForm.method}
-                              onChange={(e) => setPayoutForm((f) => ({ ...f, method: e.target.value }))}
-                              className="px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                            >
-                              <option value="bank_transfer">Bank transfer</option>
-                              <option value="cash">Cash</option>
-                              <option value="other">Other</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-semibold text-text-muted mb-1">Reference (optional)</label>
-                            <input
-                              type="text"
-                              value={payoutForm.reference}
-                              onChange={(e) => setPayoutForm((f) => ({ ...f, reference: e.target.value }))}
-                              className="w-[150px] px-3 py-2 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            disabled={payoutSubmitting}
-                            onClick={() => handleAddPayout(u)}
-                            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-xs px-4 py-2.5 rounded-full transition-colors"
-                          >
-                            {payoutSubmitting ? 'Recording…' : 'Record payout'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-              {!usersLoading && !usersError && usersList.length === 0 && (
-                <div className="p-10 text-center text-sm text-text">No users found.</div>
-              )}
-            </div>
-          </>
-        )}
-
-        {activeTab === 'orders' && (
-          <>
-            <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
-              <div>
-                <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Orders</h1>
-                <p className="text-sm text-text mt-1">Every order across every seller, in one place.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setOrderFormError(null);
-                  setOrderFormOpen(true);
-                }}
-                className="cursor-pointer flex items-center gap-1.5 bg-green hover:bg-green-hover text-white font-semibold text-sm px-4 py-2.5 rounded-full transition-colors"
-              >
-                <IconPlus width="15" height="15" />
-                Record order
-              </button>
-            </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                loadOrders();
-              }}
-              className="flex items-center gap-3 flex-wrap mb-5"
-            >
-              <input
-                type="text"
-                value={orderSearch}
-                onChange={(e) => setOrderSearch(e.target.value)}
-                placeholder="Search by buyer, product, or seller…"
-                className="flex-1 min-w-[220px] px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-              />
-              <select
-                value={orderStatusFilter}
-                onChange={(e) => setOrderStatusFilter(e.target.value)}
-                className="px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-              >
-                <option value="">All statuses</option>
-                {ORDER_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                className="cursor-pointer bg-green hover:bg-green-hover text-white font-semibold text-sm px-5 py-2.5 rounded-full transition-colors"
-              >
-                Search
-              </button>
-            </form>
-
-            {ordersLoading && (
-              <div className="flex flex-col gap-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="animate-pulse h-16 bg-surface border border-border rounded-2xl" />
-                ))}
-              </div>
-            )}
-
-            {!ordersLoading && ordersError && (
-              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{ordersError}</div>
-            )}
-
-            {!ordersLoading && !ordersError && ordersList.length === 0 && (
-              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
-                <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center mb-4">
-                  <IconReceipt width="24" height="24" className="text-green" />
-                </span>
-                <p className="text-sm text-text">No orders match yet. Record one manually, or wait for a seller's first sale.</p>
-              </div>
-            )}
-
-            {!ordersLoading && !ordersError && ordersList.length > 0 && (
-              <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm min-w-[880px]">
-                    <thead>
-                      <tr className="border-b border-border text-left text-xs text-text-muted uppercase tracking-wide">
-                        <th className="px-5 py-3 font-semibold">Seller</th>
-                        <th className="px-5 py-3 font-semibold">Buyer</th>
-                        <th className="px-5 py-3 font-semibold">Product</th>
-                        <th className="px-5 py-3 font-semibold">Qty</th>
-                        <th className="px-5 py-3 font-semibold">Total</th>
-                        <th className="px-5 py-3 font-semibold">Date</th>
-                        <th className="px-5 py-3 font-semibold">Status</th>
-                        <th className="px-5 py-3 font-semibold">Shipping</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ordersList.map((o) => (
-                        <tr key={o.id} className="border-b border-border last:border-0 align-top">
-                          <td className="px-5 py-4 text-ink-soft max-w-[160px]">{o.sellerName}</td>
-                          <td className="px-5 py-4">
-                            <div className="font-semibold text-ink">{o.buyerCompany}</div>
-                            <div className="text-xs text-text-muted">{o.buyerCountry}</div>
-                          </td>
-                          <td className="px-5 py-4 text-text-muted max-w-[160px]">{o.productName}</td>
-                          <td className="px-5 py-4 text-ink-soft whitespace-nowrap">{o.qty.toLocaleString('en-US')}</td>
-                          <td className="px-5 py-4 font-semibold text-ink whitespace-nowrap">{formatPKR(o.total)}</td>
-                          <td className="px-5 py-4 text-text-muted whitespace-nowrap">
-                            {new Date(o.placedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </td>
-                          <td className="px-5 py-4">
-                            <select
-                              value={o.status}
-                              disabled={orderStatusPendingId === o.id}
-                              onChange={(e) => handleUpdateOrderStatus(o, e.target.value)}
-                              className={`text-xs font-semibold px-2.5 py-1.5 rounded-full border-none outline-none cursor-pointer disabled:cursor-wait disabled:opacity-60 ${statusBadgeClass(o.status)}`}
-                            >
-                              {ORDER_STATUSES.map((s) => (
-                                <option key={s} value={s}>
-                                  {s}
-                                </option>
-                              ))}
-                            </select>
-                            {orderRowError?.id === o.id && <div className="text-[11px] text-orange-text mt-1.5 max-w-[140px]">{orderRowError.message}</div>}
-                          </td>
-                          <td className="px-5 py-4 min-w-[180px]">
-                            {o.shippingMethod === 'falsafah' ? (
-                              <div className="text-xs">
-                                <div className="font-semibold text-ink">{o.courierName}</div>
-                                <div className="text-text-muted">CN: {o.trackingId}</div>
-                                {o.labelUrl && (
-                                  <a href={o.labelUrl} download className="text-green font-semibold hover:underline block mt-0.5">
-                                    Download label
-                                  </a>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => handleTrackTcsOrder(o)}
-                                  disabled={tcsTrackingLoadingId === o.id}
-                                  className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 text-ink-soft font-semibold hover:underline mt-1"
-                                >
-                                  {tcsTrackingLoadingId === o.id ? 'Checking…' : 'Track shipment'}
-                                </button>
-                                {tcsTrackingById[o.id]?.error && (
-                                  <div className="text-orange-text mt-1">{tcsTrackingById[o.id].error}</div>
-                                )}
-                                {tcsTrackingById[o.id]?.tracking && (
-                                  <div className="mt-1 text-text-muted">
-                                    {tcsTrackingById[o.id].tracking.deliveryinfo?.[0]?.status || 'Status unavailable'}
-                                  </div>
-                                )}
-                              </div>
-                            ) : o.shippingMethod ? (
-                              <div className="text-xs">
-                                <div className="font-semibold text-ink">{o.courierName}</div>
-                                <div className="text-text-muted">{o.trackingId}</div>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-text-muted">Not shipped yet</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {activeTab === 'categories' && (
-          <>
-            <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
-              <div>
-                <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Categories</h1>
-                <p className="text-sm text-text mt-1">The taxonomy buyers browse and sellers list products under.</p>
-              </div>
-              <button
-                type="button"
-                onClick={openAddCategory}
-                className="cursor-pointer flex items-center gap-1.5 bg-green hover:bg-green-hover text-white font-semibold text-sm px-4 py-2.5 rounded-full transition-colors"
-              >
-                <IconPlus width="15" height="15" />
-                Add category
-              </button>
-            </div>
-
-            {categoriesLoading && (
-              <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="animate-pulse h-16 bg-surface border border-border rounded-2xl" />
-                ))}
-              </div>
-            )}
-
-            {!categoriesLoading && categoriesError && (
-              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{categoriesError}</div>
-            )}
-
-            {!categoriesLoading && !categoriesError && categoriesList.length === 0 && (
-              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
-                <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center mb-4">
-                  <IconLayers width="24" height="24" className="text-green" />
-                </span>
-                <p className="text-sm text-text">No categories yet — add the first one.</p>
-              </div>
-            )}
-
-            {!categoriesLoading && !categoriesError && categoriesList.length > 0 && (
-              <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-                {categoriesList.map((c) => (
-                  <div key={c.id} className="bg-surface border border-border rounded-2xl p-4 flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex items-center gap-2.5">
-                      <span className="w-8 h-8 rounded-lg bg-green-tint flex items-center justify-center shrink-0">
-                        {c.icon ? (
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <path d={c.icon} />
-                          </svg>
-                        ) : (
-                          <IconLayers width="15" height="15" className="text-green" />
-                        )}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-[14px] text-ink truncate">{c.name}</div>
-                        <div className="text-xs text-text-muted truncate">{c.key}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => openEditCategory(c)}
-                        aria-label="Edit category"
-                        className="cursor-pointer flex items-center justify-center bg-surface border border-border text-ink-soft p-2 rounded-full hover:bg-surface-muted transition-colors"
-                      >
-                        <IconEdit width="13" height="13" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteCategoryTarget(c)}
-                        aria-label="Delete category"
-                        className="cursor-pointer flex items-center justify-center bg-surface border border-border text-orange-text p-2 rounded-full hover:bg-orange-tint transition-colors"
-                      >
-                        <IconTrash width="13" height="13" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {activeTab === 'filters' && (
-          <>
-            <div className="mb-6">
-              <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Filters</h1>
-              <p className="text-sm text-text mt-1">
-                Choose which filters shoppers see on each marketplace section, in what order, and (for Category / Country)
-                which values are offered. Every filter is backed by real product data — nothing here is decorative.
-              </p>
-            </div>
-
-            {filtersLoading && (
-              <div className="flex flex-col gap-4">
-                {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="animate-pulse h-40 bg-surface border border-border rounded-2xl" />
-                ))}
-              </div>
-            )}
-
-            {!filtersLoading && filtersError && (
-              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{filtersError}</div>
-            )}
-
-            {!filtersLoading && !filtersError && (
-              <div className="flex flex-col gap-6">
-                {FILTER_SECTIONS.map((section) => {
-                  const sectionFilters = filtersList.filter((f) => f.section === section.key).sort((a, b) => a.order - b.order);
-                  return (
-                    <div key={section.key} className="bg-surface border border-border rounded-2xl overflow-hidden">
-                      <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-border">
-                        <h2 className="font-display text-[15px] font-bold text-ink">{section.label}</h2>
-                        <button
-                          type="button"
-                          onClick={() => openAddFilter(section.key)}
-                          className="cursor-pointer flex items-center gap-1.5 bg-surface border border-border text-ink-soft font-semibold text-xs px-3.5 py-2 rounded-full hover:bg-surface-muted transition-colors"
-                        >
-                          <IconPlus width="13" height="13" />
-                          Add filter
-                        </button>
-                      </div>
-
-                      {sectionFilters.length === 0 ? (
-                        <p className="text-sm text-text-muted px-5 py-6 text-center">No filters added to this section yet.</p>
-                      ) : (
-                        sectionFilters.map((f, i) => (
-                          <div key={f.id} className={`flex items-center justify-between gap-3 px-5 py-3.5 flex-wrap ${i !== sectionFilters.length - 1 ? 'border-b border-border' : ''}`}>
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="flex flex-col shrink-0">
-                                <button
-                                  type="button"
-                                  onClick={() => handleMoveFilter(f, 'up')}
-                                  disabled={i === 0 || filterRowPendingId === f.id}
-                                  aria-label="Move up"
-                                  className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 text-text-muted hover:text-ink rotate-180"
-                                >
-                                  <IconChevronDown width="13" height="13" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleMoveFilter(f, 'down')}
-                                  disabled={i === sectionFilters.length - 1 || filterRowPendingId === f.id}
-                                  aria-label="Move down"
-                                  className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 text-text-muted hover:text-ink"
-                                >
-                                  <IconChevronDown width="13" height="13" />
-                                </button>
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-semibold text-[14px] text-ink truncate">{f.label}</span>
-                                  <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-text-muted bg-surface-muted px-1.5 py-0.5 rounded">
-                                    {FILTER_TYPE_LABELS[f.type] || f.type}
-                                  </span>
-                                </div>
-                                {f.options?.length > 0 && (
-                                  <div className="text-xs text-text-muted truncate mt-0.5">{f.options.join(', ')}</div>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => handleToggleFilterEnabled(f)}
-                                disabled={filterRowPendingId === f.id}
-                                className={`cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
-                                  f.enabled ? 'bg-green-tint text-green' : 'bg-surface-muted text-text-muted'
-                                }`}
-                              >
-                                {f.enabled ? 'Enabled' : 'Disabled'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => openEditFilter(f)}
-                                aria-label="Edit filter"
-                                className="cursor-pointer flex items-center justify-center bg-surface border border-border text-ink-soft p-2 rounded-full hover:bg-surface-muted transition-colors"
-                              >
-                                <IconEdit width="13" height="13" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setDeleteFilterTarget(f)}
-                                aria-label="Delete filter"
-                                className="cursor-pointer flex items-center justify-center bg-surface border border-border text-orange-text p-2 rounded-full hover:bg-orange-tint transition-colors"
-                              >
-                                <IconTrash width="13" height="13" />
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        )}
-
-        {activeTab === 'reports' && (
-          <>
-            <div className="mb-6">
-              <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Reports</h1>
-              <p className="text-sm text-text mt-1">Sales, order, and seller performance statistics across the marketplace.</p>
-            </div>
-
-            {reportsLoading && (
-              <div className="flex flex-col gap-4">
-                <div className="animate-pulse bg-surface border border-border rounded-2xl h-[280px]" />
-                <div className="animate-pulse bg-surface border border-border rounded-2xl h-[240px]" />
-              </div>
-            )}
-
-            {!reportsLoading && reportsError && (
-              <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-8 text-center text-orange-text text-sm">{reportsError}</div>
-            )}
-
-            {!reportsLoading && !reportsError && reports && (
-              <>
-                <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-                  <div className="bg-surface border border-border rounded-2xl p-5">
-                    <div className="font-display text-xl font-bold text-ink">
-                      {formatPKR(reports.daily.reduce((sum, d) => sum + d.revenue, 0))}
-                    </div>
-                    <div className="text-xs text-text-muted mt-0.5">Revenue (last 30 days)</div>
-                  </div>
-                  <div className="bg-surface border border-border rounded-2xl p-5">
-                    <div className="font-display text-xl font-bold text-ink">{reports.daily.reduce((sum, d) => sum + d.orders, 0)}</div>
-                    <div className="text-xs text-text-muted mt-0.5">Orders (last 30 days)</div>
-                  </div>
-                  {Object.entries(reports.statusBreakdown).map(([statusKey, count]) => (
-                    <div key={statusKey} className="bg-surface border border-border rounded-2xl p-5">
-                      <div className="font-display text-xl font-bold text-ink">{count}</div>
-                      <div className="text-xs text-text-muted mt-0.5">{statusKey} orders</div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="bg-surface border border-border rounded-2xl p-5 mb-6">
-                  <h2 className="font-display text-base font-bold text-ink mb-4">Revenue trend</h2>
-                  <div className="h-[260px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart
-                        data={reports.daily.map((d) => ({ ...d, label: new Date(d.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) }))}
-                        margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
-                      >
-                        <defs>
-                          <linearGradient id="adminRevenueFill" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#0E5A46" stopOpacity={0.25} />
-                            <stop offset="100%" stopColor="#0E5A46" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E4E0D6" vertical={false} />
-                        <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#5A564C' }} axisLine={{ stroke: '#E4E0D6' }} tickLine={false} interval="preserveStartEnd" />
-                        <YAxis tick={{ fontSize: 11, fill: '#5A564C' }} axisLine={false} tickLine={false} width={40} />
-                        <Tooltip content={<ChartTooltip />} />
-                        <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#0E5A46" strokeWidth={2} fill="url(#adminRevenueFill)" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-                  <div className="bg-surface border border-border rounded-2xl p-5">
-                    <h2 className="font-display text-base font-bold text-ink mb-4">Top sellers by revenue</h2>
-                    {reports.sellerPerformance.length === 0 ? (
-                      <p className="text-sm text-text-muted py-6 text-center">No sales yet.</p>
-                    ) : (
-                      <div className="h-[240px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={reports.sellerPerformance} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#E4E0D6" horizontal={false} />
-                            <XAxis type="number" tick={{ fontSize: 11, fill: '#5A564C' }} axisLine={false} tickLine={false} />
-                            <YAxis
-                              type="category"
-                              dataKey="name"
-                              tick={{ fontSize: 11, fill: '#5A564C' }}
-                              axisLine={false}
-                              tickLine={false}
-                              width={120}
-                              tickFormatter={(v) => (v.length > 16 ? `${v.slice(0, 16)}…` : v)}
-                            />
-                            <Tooltip content={<ChartTooltip />} />
-                            <Bar dataKey="revenue" name="Revenue" fill="#C97B2D" radius={[0, 4, 4, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bg-surface border border-border rounded-2xl p-5">
-                    <h2 className="font-display text-base font-bold text-ink mb-4">Orders by status</h2>
-                    <div className="h-[240px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={Object.entries(reports.statusBreakdown).map(([name, value]) => ({ name, value }))}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={55}
-                            outerRadius={85}
-                            paddingAngle={2}
-                          >
-                            {Object.keys(reports.statusBreakdown).map((key, i) => (
-                              <Cell key={key} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip content={<ChartTooltip />} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1.5 justify-center mt-2">
-                      {Object.keys(reports.statusBreakdown).map((key, i) => (
-                        <span key={key} className="flex items-center gap-1.5 text-xs text-text-muted">
-                          <span className="w-2.5 h-2.5 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                          {key}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        {activeTab === 'settings' && (
-          <>
-            <div className="mb-6">
-              <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Settings</h1>
-              <p className="text-sm text-text mt-1">Your admin profile, and basic marketplace-wide settings.</p>
-            </div>
-
-            <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-              <div className="bg-surface border border-border rounded-2xl p-5">
-                <h2 className="font-display text-base font-bold text-ink mb-4">Your profile</h2>
-                {profileSaveError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-4">{profileSaveError}</p>}
-                <div className="flex flex-col gap-3.5">
-                  <div>
-                    <label className="block text-[12.5px] font-semibold text-ink-soft mb-1.5">Name</label>
-                    <input
-                      type="text"
-                      value={profileForm.companyName}
-                      onChange={(e) => setProfileForm((f) => ({ ...f, companyName: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[12.5px] font-semibold text-ink-soft mb-1.5">Phone</label>
-                    <input
-                      type="text"
-                      value={profileForm.phone}
-                      onChange={(e) => setProfileForm((f) => ({ ...f, phone: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[12.5px] font-semibold text-ink-soft mb-1.5">Country</label>
-                    <input
-                      type="text"
-                      value={profileForm.country}
-                      onChange={(e) => setProfileForm((f) => ({ ...f, country: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                    />
-                  </div>
-                  <div className="text-xs text-text-muted">Email: {user.email}</div>
-                  <button
-                    type="button"
-                    onClick={handleSaveProfile}
-                    disabled={profileSaving || !profileForm.companyName.trim()}
-                    className="self-start cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-sm px-5 py-2.5 rounded-full transition-colors"
-                  >
-                    {profileSaving ? 'Saving…' : 'Save profile'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-surface border border-border rounded-2xl p-5">
-                <h2 className="font-display text-base font-bold text-ink mb-4">Marketplace settings</h2>
-                {settingsLoading && <div className="animate-pulse h-40 bg-surface-muted rounded-xl" />}
-                {!settingsLoading && settingsError && <p className="text-sm text-orange-text">{settingsError}</p>}
-                {!settingsLoading && !settingsError && settingsForm && (
-                  <div className="flex flex-col gap-3.5">
-                    {settingsSaveError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5">{settingsSaveError}</p>}
-                    <div>
-                      <label className="block text-[12.5px] font-semibold text-ink-soft mb-1.5">Marketplace name</label>
-                      <input
-                        type="text"
-                        value={settingsForm.siteName}
-                        onChange={(e) => setSettingsForm((f) => ({ ...f, siteName: e.target.value }))}
-                        className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[12.5px] font-semibold text-ink-soft mb-1.5">Support email</label>
-                      <input
-                        type="email"
-                        value={settingsForm.supportEmail}
-                        onChange={(e) => setSettingsForm((f) => ({ ...f, supportEmail: e.target.value }))}
-                        className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[12.5px] font-semibold text-ink-soft mb-1.5">Commission rate (%)</label>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={settingsForm.commissionRatePercent}
-                          onChange={(e) => setSettingsForm((f) => ({ ...f, commissionRatePercent: e.target.value }))}
-                          className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[12.5px] font-semibold text-ink-soft mb-1.5">Currency</label>
-                        <input
-                          type="text"
-                          value={settingsForm.currency}
-                          onChange={(e) => setSettingsForm((f) => ({ ...f, currency: e.target.value }))}
-                          className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                        />
-                      </div>
-                    </div>
-                    <label className="flex items-center gap-2.5 text-[13.5px] font-medium text-ink cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={settingsForm.maintenanceMode}
-                        onChange={(e) => setSettingsForm((f) => ({ ...f, maintenanceMode: e.target.checked }))}
-                        className="w-4 h-4 accent-green cursor-pointer"
-                      />
-                      Maintenance mode
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleSaveSettings}
-                      disabled={settingsSaving || !settingsForm.siteName?.trim()}
-                      className="self-start cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-sm px-5 py-2.5 rounded-full transition-colors"
-                    >
-                      {settingsSaving ? 'Saving…' : 'Save settings'}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-surface border border-border rounded-2xl p-5">
-                <h2 className="font-display text-base font-bold text-ink mb-1">TCS shipping</h2>
-                <p className="text-xs text-text-muted mb-4">
-                  One-time setup — once these are set, every seller's "Ship with Falsafah" click books a real TCS Courier shipment
-                  automatically, with no extra input from them.
-                </p>
-                {!settingsLoading && !settingsError && settingsForm && (
-                  <div className="flex flex-col gap-3.5">
-                    <div>
-                      <label className="block text-[12.5px] font-semibold text-ink-soft mb-1.5">Cost center</label>
-                      {tcsCostCenters ? (
-                        <select
-                          value={settingsForm.tcsCostCenterCode || ''}
-                          onChange={(e) => setSettingsForm((f) => ({ ...f, tcsCostCenterCode: e.target.value }))}
-                          className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                        >
-                          <option value="">Select a cost center…</option>
-                          {tcsCostCenters.map((c) => (
-                            <option key={c.costcentercode} value={c.costcentercode}>
-                              {c.costcentercode} — {c.costcentername}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={settingsForm.tcsCostCenterCode || ''}
-                            onChange={(e) => setSettingsForm((f) => ({ ...f, tcsCostCenterCode: e.target.value }))}
-                            placeholder="e.g. 001 - LHR"
-                            className="flex-1 px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                          />
-                          <button
-                            type="button"
-                            onClick={loadTcsCostCenters}
-                            disabled={tcsCostCentersLoading}
-                            className="shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-surface border border-border text-ink-soft font-semibold text-xs px-3.5 py-2.5 rounded-lg hover:bg-surface-muted transition-colors"
-                          >
-                            {tcsCostCentersLoading ? 'Loading…' : 'Load from TCS'}
-                          </button>
-                        </div>
-                      )}
-                      {tcsCostCentersError && <p className="text-xs text-orange-text mt-1.5">{tcsCostCentersError}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-[12.5px] font-semibold text-ink-soft mb-1.5">Service code</label>
-                      <input
-                        type="text"
-                        value={settingsForm.tcsServiceCode || ''}
-                        onChange={(e) => setSettingsForm((f) => ({ ...f, tcsServiceCode: e.target.value }))}
-                        placeholder="e.g. O"
-                        className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[12.5px] font-semibold text-ink-soft mb-1.5">Default parcel weight (kg)</label>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={settingsForm.tcsDefaultWeightKg ?? ''}
-                        onChange={(e) => setSettingsForm((f) => ({ ...f, tcsDefaultWeightKg: e.target.value }))}
-                        className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm outline-none focus:border-green bg-surface"
-                      />
-                      <p className="text-[11.5px] text-text-muted mt-1.5">
-                        Used for every booking until per-product weight is tracked — TCS requires at least 0.5kg.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleSaveSettings}
-                      disabled={settingsSaving}
-                      className="self-start cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-sm px-5 py-2.5 rounded-full transition-colors"
-                    >
-                      {settingsSaving ? 'Saving…' : 'Save TCS settings'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </main>
+    <AdminLayout activeTab={activeTab} onTabChange={setActiveTab} user={user} onLogout={handleLogout}>
+      {activeTab === 'overview' && (
+        <DashboardTab
+          overview={overview}
+          overviewLoading={overviewLoading}
+          overviewError={overviewError}
+          usersList={usersList}
+          reports={reports}
+          reportsLoading={reportsLoading}
+          products={products}
+          onNavigate={setActiveTab}
+        />
+      )}
+
+      {activeTab === 'products' && (
+        <ProductsTab
+          promotionRequests={promotionRequests}
+          promotionsLoading={promotionsLoading}
+          promotionsError={promotionsError}
+          rejectingPromoId={rejectingPromoId}
+          setRejectingPromoId={setRejectingPromoId}
+          promoRejectReason={promoRejectReason}
+          setPromoRejectReason={setPromoRejectReason}
+          reviewingPromoId={reviewingPromoId}
+          handleApprovePromotion={handleApprovePromotion}
+          handleRejectPromotion={handleRejectPromotion}
+          products={products}
+          productsLoading={productsLoading}
+          productsError={productsError}
+          openAddProduct={openAddProduct}
+          openEditProduct={openEditProduct}
+          setDeleteProductTarget={setDeleteProductTarget}
+          spotlightUpdatingId={spotlightUpdatingId}
+          handleSetSpotlight={handleSetSpotlight}
+          reachPendingId={reachPendingId}
+          handleSetReach={handleSetReach}
+        />
+      )}
+
+      {activeTab === 'orders' && (
+        <OrdersTab
+          ordersList={ordersList}
+          ordersLoading={ordersLoading}
+          ordersError={ordersError}
+          orderSearch={orderSearch}
+          setOrderSearch={setOrderSearch}
+          orderStatusFilter={orderStatusFilter}
+          setOrderStatusFilter={setOrderStatusFilter}
+          loadOrders={loadOrders}
+          orderStatusPendingId={orderStatusPendingId}
+          orderRowError={orderRowError}
+          handleUpdateOrderStatus={handleUpdateOrderStatus}
+          tcsTrackingById={tcsTrackingById}
+          tcsTrackingLoadingId={tcsTrackingLoadingId}
+          handleTrackTcsOrder={handleTrackTcsOrder}
+          setOrderFormOpen={setOrderFormOpen}
+          setOrderFormError={setOrderFormError}
+        />
+      )}
+
+      {activeTab === 'stores' && (
+        <SellersTab
+          list={list}
+          loading={loading}
+          error={error}
+          actionError={actionError}
+          pendingId={pendingId}
+          toggleOfficialStore={toggleOfficialStore}
+          toggleVerified={toggleVerified}
+        />
+      )}
+
+      {activeTab === 'users' && (
+        <UsersTab
+          usersList={usersList}
+          usersLoading={usersLoading}
+          usersError={usersError}
+          userSearch={userSearch}
+          setUserSearch={setUserSearch}
+          userRoleFilter={userRoleFilter}
+          setUserRoleFilter={setUserRoleFilter}
+          loadUsers={loadUsers}
+          currentUser={user}
+          banLabel={banLabel}
+          expandedUserId={expandedUserId}
+          toggleUserExpand={toggleUserExpand}
+          openEditUser={openEditUser}
+          userVerifyPendingId={userVerifyPendingId}
+          handleToggleUserVerified={handleToggleUserVerified}
+          banningUserId={banningUserId}
+          setBanningUserId={setBanningUserId}
+          banDays={banDays}
+          setBanDays={setBanDays}
+          banPending={banPending}
+          submitBan={submitBan}
+          setPermanentBanTarget={setPermanentBanTarget}
+          setDeleteUserTarget={setDeleteUserTarget}
+          userPayoutsLoading={userPayoutsLoading}
+          userPayouts={userPayouts}
+          payoutError={payoutError}
+          payoutForm={payoutForm}
+          setPayoutForm={setPayoutForm}
+          payoutSubmitting={payoutSubmitting}
+          handleAddPayout={handleAddPayout}
+        />
+      )}
+
+      {activeTab === 'categories' && (
+        <CategoriesTab
+          categoriesList={categoriesList}
+          categoriesLoading={categoriesLoading}
+          categoriesError={categoriesError}
+          openAddCategory={openAddCategory}
+          openEditCategory={openEditCategory}
+          setDeleteCategoryTarget={setDeleteCategoryTarget}
+        />
+      )}
+
+      {activeTab === 'filters' && (
+        <FiltersTab
+          filtersList={filtersList}
+          filtersLoading={filtersLoading}
+          filtersError={filtersError}
+          openAddFilter={openAddFilter}
+          openEditFilter={openEditFilter}
+          handleToggleFilterEnabled={handleToggleFilterEnabled}
+          handleMoveFilter={handleMoveFilter}
+          filterRowPendingId={filterRowPendingId}
+          setDeleteFilterTarget={setDeleteFilterTarget}
+        />
+      )}
+
+      {activeTab === 'reports' && <ReportsTab reports={reports} reportsLoading={reportsLoading} reportsError={reportsError} />}
+
+      {activeTab === 'settings' && (
+        <SettingsTab
+          user={user}
+          profileForm={profileForm}
+          setProfileForm={setProfileForm}
+          profileSaving={profileSaving}
+          profileSaveError={profileSaveError}
+          handleSaveProfile={handleSaveProfile}
+          settingsLoading={settingsLoading}
+          settingsError={settingsError}
+          settingsForm={settingsForm}
+          setSettingsForm={setSettingsForm}
+          settingsSaving={settingsSaving}
+          settingsSaveError={settingsSaveError}
+          handleSaveSettings={handleSaveSettings}
+          tcsCostCenters={tcsCostCenters}
+          tcsCostCentersLoading={tcsCostCentersLoading}
+          tcsCostCentersError={tcsCostCentersError}
+          loadTcsCostCenters={loadTcsCostCenters}
+        />
+      )}
 
       <AdminProductFormModal
         open={productFormOpen}
@@ -2381,9 +1025,7 @@ export default function AdminPage() {
         onConfirm={handleDeleteFilter}
       />
 
-
       <Toast message={toastMessage} show={toastVisible} onHide={() => setToastVisible(false)} />
-    </div>
+    </AdminLayout>
   );
 }
-
