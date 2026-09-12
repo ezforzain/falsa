@@ -86,55 +86,13 @@
   --color-hashtag-hover: #6CBDFF;
 }
 
-/* Admin Panel theme — a separate violet-accented palette, scoped to `.admin-shell` (the root
-   wrapper of every /admin page) so it never leaks into the buyer/seller-facing app, which keeps
-   the green/orange brand tokens above. Follows the same data-theme='dark' convention as the rest
-   of the app (see the comment above) rather than a prefers-color-scheme media query. */
+/* Admin Panel theme — a separate violet-accented, always-dark palette, scoped to `.admin-shell`
+   (the root wrapper of every /admin page) so it never leaks into the buyer/seller-facing app,
+   which keeps the green/orange brand tokens above and its own light/dark toggle. The Admin Panel
+   deliberately does NOT follow that site-wide Light/Dark/System setting — it always renders dark,
+   like a dedicated ops dashboard (Vercel/Linear/Stripe-style), regardless of `data-theme` on
+   <html>. There is intentionally no light variant of these tokens. */
 .admin-shell {
-  --admin-canvas: #F4F4F6;
-  --admin-surface: #FFFFFF;
-  --admin-surface-hover: #FAFAFB;
-  --admin-border: #EBEBF0;
-  --admin-border-strong: #D9D9E0;
-
-  --admin-ink: #141416;
-  --admin-ink-soft: #4A4A54;
-  --admin-text: #6E6E78;
-  --admin-text-muted: #9A9AA4;
-
-  --admin-primary: #7C3AED;
-  --admin-primary-hover: #6A2BD9;
-  --admin-primary-active: #5B21B6;
-  --admin-primary-tint: #EDE4FF;
-  --admin-primary-border: #DCCEFF;
-
-  --admin-sidebar-bg: #18181B;
-  --admin-sidebar-bg-hover: #232327;
-  --admin-sidebar-text: #A6A6B0;
-  --admin-sidebar-text-active: #FFFFFF;
-  --admin-sidebar-border: #26262B;
-  /* Fixed (not theme-swapped) — the sidebar is always dark regardless of light/dark mode, so its
-     active-item tint must not flip to a pale lavender under the light theme's --admin-primary-tint. */
-  --admin-sidebar-active-bg: #2A2340;
-
-  --admin-success: #1E8E5A;
-  --admin-success-tint: #E3F5EC;
-  --admin-info: #2D6FC9;
-  --admin-info-tint: #E8F0FB;
-  --admin-warning: #9A4A15;
-  --admin-warning-tint: #FFF1E6;
-  --admin-danger: #B03A2C;
-  --admin-danger-tint: #FDEAE7;
-
-  --admin-shadow-sm: 0 1px 2px rgba(20, 20, 22, 0.06);
-  --admin-shadow-md: 0 4px 16px rgba(20, 20, 22, 0.08);
-  --admin-shadow-lg: 0 12px 32px rgba(20, 20, 22, 0.14);
-
-  background: var(--admin-canvas);
-  color: var(--admin-ink);
-}
-
-:root[data-theme='dark'] .admin-shell {
   --admin-canvas: #101012;
   --admin-surface: #1B1B1F;
   --admin-surface-hover: #212126;
@@ -171,6 +129,10 @@
   --admin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --admin-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
   --admin-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+
+  background: var(--admin-canvas);
+  color: var(--admin-ink);
+  color-scheme: dark;
 }
 
 /* Reduce motion (Settings > App Settings) — near-zero rather than `none` so animationend/
