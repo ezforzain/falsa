@@ -3,6 +3,7 @@ import { formatPKR } from '../../../data/mockData';
 import Card from '../../../components/admin/ui/Card';
 
 const PIE_COLORS = ['#7C3AED', '#C97B2D', '#2D6FC9', '#1E8E5A', '#B03A2C'];
+const compactPKR = (n) => `Rs ${new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n)}`;
 
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -21,9 +22,9 @@ function ChartTooltip({ active, payload, label }) {
 export default function ReportsTab({ reports, reportsLoading, reportsError }) {
   return (
     <>
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-[var(--admin-ink)] tracking-tight">Reports</h1>
-        <p className="text-sm text-[var(--admin-text)] mt-1">Sales, order, and seller performance statistics across the marketplace.</p>
+      <div className="mb-8">
+        <h1 className="font-display text-3xl font-bold text-[var(--admin-ink)] tracking-tight">Reports</h1>
+        <p className="text-sm text-[var(--admin-text)] mt-1.5">Sales, order, and seller performance statistics across the marketplace.</p>
       </div>
 
       {reportsLoading && (
@@ -37,26 +38,28 @@ export default function ReportsTab({ reports, reportsLoading, reportsError }) {
 
       {!reportsLoading && !reportsError && reports && (
         <>
-          <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-5 mb-8">
             <Card>
-              <div className="font-display text-xl font-bold text-[var(--admin-ink)]">{formatPKR(reports.daily.reduce((sum, d) => sum + d.revenue, 0))}</div>
-              <div className="text-xs text-[var(--admin-text-muted)] mt-0.5">Revenue (last 30 days)</div>
+              <div className="font-display text-2xl font-bold text-[var(--admin-ink)]">{formatPKR(reports.daily.reduce((sum, d) => sum + d.revenue, 0))}</div>
+              <div className="text-[13px] text-[var(--admin-text-muted)] mt-1 font-medium">Revenue (30d)</div>
             </Card>
             <Card>
-              <div className="font-display text-xl font-bold text-[var(--admin-ink)]">{reports.daily.reduce((sum, d) => sum + d.orders, 0)}</div>
-              <div className="text-xs text-[var(--admin-text-muted)] mt-0.5">Orders (last 30 days)</div>
+              <div className="font-display text-2xl font-bold text-[var(--admin-ink)]">{reports.daily.reduce((sum, d) => sum + d.orders, 0)}</div>
+              <div className="text-[13px] text-[var(--admin-text-muted)] mt-1 font-medium">Orders (30d)</div>
             </Card>
             {Object.entries(reports.statusBreakdown).map(([statusKey, count]) => (
               <Card key={statusKey}>
-                <div className="font-display text-xl font-bold text-[var(--admin-ink)]">{count}</div>
-                <div className="text-xs text-[var(--admin-text-muted)] mt-0.5">{statusKey} orders</div>
+                <div className="font-display text-2xl font-bold text-[var(--admin-ink)]">{count}</div>
+                <div className="text-[13px] text-[var(--admin-text-muted)] mt-1 font-medium">{statusKey} orders</div>
               </Card>
             ))}
           </div>
 
-          <Card className="mb-6">
-            <h2 className="font-display text-base font-bold text-[var(--admin-ink)] mb-4">Revenue trend</h2>
-            <div className="h-[260px]">
+          <Card className="mb-8" padded={false}>
+            <div className="px-6 py-5 border-b border-[var(--admin-border)]">
+              <h2 className="font-display text-base font-bold text-[var(--admin-ink)]">Revenue trend</h2>
+            </div>
+            <div className="h-[300px] p-6">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={reports.daily.map((d) => ({ ...d, label: new Date(d.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) }))}
@@ -69,10 +72,10 @@ export default function ReportsTab({ reports, reportsLoading, reportsError }) {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-border)" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--admin-text-muted)' }} axisLine={{ stroke: 'var(--admin-border)' }} tickLine={false} interval="preserveStartEnd" />
-                  <YAxis tick={{ fontSize: 11, fill: 'var(--admin-text-muted)' }} axisLine={false} tickLine={false} width={40} />
+                  <XAxis dataKey="label" tick={{ fontSize: 12, fill: 'var(--admin-text-muted)' }} axisLine={{ stroke: 'var(--admin-border)' }} tickLine={false} interval="preserveStartEnd" minTickGap={24} />
+                  <YAxis tick={{ fontSize: 12, fill: 'var(--admin-text-muted)' }} axisLine={false} tickLine={false} width={68} tickFormatter={compactPKR} />
                   <Tooltip content={<ChartTooltip />} />
-                  <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#7C3AED" strokeWidth={2} fill="url(#adminRevenueFill)" />
+                  <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#7C3AED" strokeWidth={2.5} fill="url(#adminRevenueFill)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

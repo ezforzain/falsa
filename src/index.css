@@ -113,6 +113,9 @@
   --admin-sidebar-text: #A6A6B0;
   --admin-sidebar-text-active: #FFFFFF;
   --admin-sidebar-border: #26262B;
+  /* Fixed (not theme-swapped) — the sidebar is always dark regardless of light/dark mode, so its
+     active-item tint must not flip to a pale lavender under the light theme's --admin-primary-tint. */
+  --admin-sidebar-active-bg: #2A2340;
 
   --admin-success: #1E8E5A;
   --admin-success-tint: #E3F5EC;
@@ -154,6 +157,7 @@
   --admin-sidebar-text: #8E8E99;
   --admin-sidebar-text-active: #FFFFFF;
   --admin-sidebar-border: #1F1F24;
+  --admin-sidebar-active-bg: #2A2340;
 
   --admin-success: #3FAE7C;
   --admin-success-tint: #16281F;

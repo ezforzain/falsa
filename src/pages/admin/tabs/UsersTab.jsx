@@ -51,9 +51,9 @@ export default function UsersTab({
 
   return (
     <>
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-[var(--admin-ink)] tracking-tight">Users</h1>
-        <p className="text-sm text-[var(--admin-text)] mt-1">View, edit, suspend, or delete any buyer, seller, or admin account.</p>
+      <div className="mb-8">
+        <h1 className="font-display text-3xl font-bold text-[var(--admin-ink)] tracking-tight">Users</h1>
+        <p className="text-sm text-[var(--admin-text)] mt-1.5">View, edit, suspend, or delete any buyer, seller, or admin account.</p>
       </div>
 
       <form

@@ -77,10 +77,10 @@ export default function OrdersTab({
 
   return (
     <>
-      <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap mb-8">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[var(--admin-ink)] tracking-tight">Orders</h1>
-          <p className="text-sm text-[var(--admin-text)] mt-1">Every order across every seller, in one place.</p>
+          <h1 className="font-display text-3xl font-bold text-[var(--admin-ink)] tracking-tight">Orders</h1>
+          <p className="text-sm text-[var(--admin-text)] mt-1.5">Every order across every seller, in one place.</p>
         </div>
         <Button
           onClick={() => {

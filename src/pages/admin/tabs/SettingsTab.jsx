@@ -27,9 +27,9 @@ export default function SettingsTab({
 }) {
   return (
     <>
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-[var(--admin-ink)] tracking-tight">Settings</h1>
-        <p className="text-sm text-[var(--admin-text)] mt-1">Your admin profile, and basic marketplace-wide settings.</p>
+      <div className="mb-8">
+        <h1 className="font-display text-3xl font-bold text-[var(--admin-ink)] tracking-tight">Settings</h1>
+        <p className="text-sm text-[var(--admin-text)] mt-1.5">Your admin profile, and basic marketplace-wide settings.</p>
       </div>
 
       <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>

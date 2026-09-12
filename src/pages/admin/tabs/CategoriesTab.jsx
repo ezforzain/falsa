@@ -6,10 +6,10 @@ import { IconEdit, IconLayers, IconPlus, IconTrash } from '../../../components/i
 export default function CategoriesTab({ categoriesList, categoriesLoading, categoriesError, openAddCategory, openEditCategory, setDeleteCategoryTarget }) {
   return (
     <>
-      <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap mb-8">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[var(--admin-ink)] tracking-tight">Categories</h1>
-          <p className="text-sm text-[var(--admin-text)] mt-1">The taxonomy buyers browse and sellers list products under.</p>
+          <h1 className="font-display text-3xl font-bold text-[var(--admin-ink)] tracking-tight">Categories</h1>
+          <p className="text-sm text-[var(--admin-text)] mt-1.5">The taxonomy buyers browse and sellers list products under.</p>
         </div>
         <Button onClick={openAddCategory}>
           <IconPlus width="15" height="15" />
@@ -18,7 +18,7 @@ export default function CategoriesTab({ categoriesList, categoriesLoading, categ
       </div>
 
       {categoriesLoading && (
-        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="animate-pulse h-16 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-2xl" />
           ))}
@@ -32,7 +32,7 @@ export default function CategoriesTab({ categoriesList, categoriesLoading, categ
       )}
 
       {!categoriesLoading && !categoriesError && categoriesList.length > 0 && (
-        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {categoriesList.map((c) => (
             <Card key={c.id} className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex items-center gap-2.5">

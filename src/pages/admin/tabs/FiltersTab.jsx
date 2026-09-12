@@ -16,9 +16,9 @@ export default function FiltersTab({
 }) {
   return (
     <>
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-[var(--admin-ink)] tracking-tight">Filters</h1>
-        <p className="text-sm text-[var(--admin-text)] mt-1">
+      <div className="mb-8">
+        <h1 className="font-display text-3xl font-bold text-[var(--admin-ink)] tracking-tight">Filters</h1>
+        <p className="text-sm text-[var(--admin-text)] mt-1.5">
           Choose which filters shoppers see on each marketplace section, in what order, and (for Category / Country)
           which values are offered. Every filter is backed by real product data — nothing here is decorative.
         </p>
