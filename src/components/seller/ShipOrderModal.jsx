@@ -21,6 +21,7 @@ export default function ShipOrderModal({ open, order, bankComplete, pickupComple
   const [trackingId, setTrackingId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [errorDetail, setErrorDetail] = useState(null);
   const [shippedOrder, setShippedOrder] = useState(null);
   const [labelLoading, setLabelLoading] = useState(false);
   const [tracking, setTracking] = useState(null);
@@ -34,6 +35,7 @@ export default function ShipOrderModal({ open, order, bankComplete, pickupComple
     setTrackingId('');
     setLoading(false);
     setError(null);
+    setErrorDetail(null);
     setTracking(null);
     setTrackingError(null);
     // Defensive: if this order was somehow already shipped, show its result instead of the picker.
@@ -51,6 +53,7 @@ export default function ShipOrderModal({ open, order, bankComplete, pickupComple
       onShipped?.(updated);
     } catch (err) {
       setError(friendlyShippingError(err.message));
+      setErrorDetail(err.message);
     } finally {
       setLoading(false);
     }
@@ -73,6 +76,7 @@ export default function ShipOrderModal({ open, order, bankComplete, pickupComple
       onShipped?.(updated);
     } catch (err) {
       setError(friendlyShippingError(err.message));
+      setErrorDetail(err.message);
     } finally {
       setLoading(false);
     }
@@ -90,6 +94,7 @@ export default function ShipOrderModal({ open, order, bankComplete, pickupComple
       onShipped?.(updated);
     } catch (err) {
       setError(friendlyShippingError(err.message));
+      setErrorDetail(err.message);
     } finally {
       setLabelLoading(false);
     }
@@ -139,7 +144,14 @@ export default function ShipOrderModal({ open, order, bankComplete, pickupComple
           </div>
         )}
 
-        {error && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-4">{error}</p>}
+        {error && (
+          <div className="bg-orange-tint rounded-lg px-3.5 py-2.5 mb-4">
+            <p className="text-sm text-orange-text">{error}</p>
+            {errorDetail && errorDetail !== error && (
+              <p className="text-[11px] text-orange-text/75 mt-1.5 font-mono break-words leading-snug">{errorDetail}</p>
+            )}
+          </div>
+        )}
 
         {!done && (
           <>

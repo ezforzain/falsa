@@ -261,6 +261,17 @@ export async function createShipment({
   if (!Number.isFinite(Number(pieces)) || Number(pieces) < 1) {
     throw new TcsValidationError('Pieces must be at least 1.');
   }
+  // declaredvalue (below) is clamped to the 100–199999 range TCS accepts. A COD amount far beyond
+  // that isn't a formatting mismatch to paper over — it's asking TCS to collect cash for a parcel
+  // "declared" worth a fraction of that. Reject up front, before any TCS API call, with a clear,
+  // actionable message rather than either an opaque TCS rejection or, worse, TCS actually booking
+  // a shipment where the seller only ever collects a fraction of what they're owed.
+  const normalizedCod = Math.max(0, Math.round(Number(codamount) || 0));
+  if (normalizedCod > 199999) {
+    throw new TcsValidationError(
+      `This order's total (Rs ${normalizedCod.toLocaleString('en-US')}) is above the Rs 199,999 TCS can collect on delivery for one shipment. Use "Ship Myself" for this order instead.`
+    );
+  }
 
   const accesstoken = await getEcomAccessToken();
   const { tcsaccount, shippername } = getShipperAccount();
@@ -269,16 +280,14 @@ export async function createShipment({
   const { firstname, middlename, lastname } = splitFullName(order.shippingAddress.fullName);
 
   // TCS's Booking-Create rejects a null/missing declaredvalue outright ("Insert value in
-  // number.") — not just for a 0-COD shipment as first assumed here; every shipment needs a real
-  // number in this field, clamped to the 100–199999 range TCS accepts. Defaults to the order's
-  // own value so callers don't need to know this TCS-specific rule.
-  // Unlike weightinkg/skus[].weight above, declaredvalue/insuredvalue are integer fields on
-  // TCS's side, not decimal — running them through formatTcsDecimal ("199999.00") gets a "Could
-  // not convert string to integer" deserialization error back; a bare JS number is what they
-  // actually want. insuredvalue is set to match declaredvalue rather than left null, on the same
-  // "TCS rejects null here" reasoning (untested against a real insured shipment — if TCS needs a
-  // genuinely distinct insurance amount, split this back into its own value).
-  const normalizedCod = Math.max(0, Math.round(Number(codamount) || 0));
+  // number.") — every shipment needs a real number in this field, clamped to the 100–199999
+  // range TCS accepts. Defaults to the order's own value so callers don't need to know this
+  // TCS-specific rule. Unlike weightinkg/skus[].weight above, declaredvalue/insuredvalue are
+  // integer fields on TCS's side, not decimal — running them through formatTcsDecimal
+  // ("199999.00") gets a "Could not convert string to integer" deserialization error back; a
+  // bare JS number is what they actually want. insuredvalue is set to match declaredvalue rather
+  // than left null, on the same "TCS rejects null here" reasoning (untested against a real
+  // insured shipment — if TCS needs a genuinely distinct insurance amount, split this back out).
   const orderValue = Math.round(Number(order.unitPrice || 0) * Number(order.qty || 1));
   const resolvedDeclaredValue = Math.min(199999, Math.max(100, orderValue || 100));
 
