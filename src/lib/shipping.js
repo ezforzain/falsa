@@ -26,10 +26,16 @@ export function getTrackingSummary(tracking) {
 // Falsafah shipping flow (and validate the Settings phone field) before a booking attempt ever
 // reaches the server, instead of only surfacing this as a failure after the seller clicks Ready.
 export function isValidPkMobile(raw) {
-  const digits = String(raw || '').replace(/\D/g, '');
-  let normalized = digits;
-  if (normalized.startsWith('92') && normalized.length === 12) normalized = `0${normalized.slice(2)}`;
-  if (normalized.startsWith('0092')) normalized = `0${normalized.slice(4)}`;
+  let normalized = String(raw || '').replace(/\D/g, '');
+  // "0092..." is the intl-dialing prefix for "92..." — collapse it first so the next check
+  // only has to handle one country-code form, not two.
+  if (normalized.startsWith('0092')) normalized = normalized.slice(2);
+  // Country code can be followed by either the 10-digit local number ("923001234567") or, just
+  // as commonly typed/pasted, the local number with its leading 0 kept ("9203001234567") — both
+  // need the "92" stripped; a leftover leading 0 (from the second form) is left in place and a
+  // missing one is added below, so either form ends up as a plain 11-digit local number.
+  if (normalized.startsWith('92') && normalized.length >= 12) normalized = normalized.slice(2);
+  if (!normalized.startsWith('0')) normalized = `0${normalized}`;
   return /^03\d{9}$/.test(normalized);
 }
 

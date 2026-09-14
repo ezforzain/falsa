@@ -91,11 +91,15 @@ export function assertConfigured() {
 //   { code, message, status }
 //   { result: null, status: false, code }
 //   { MESSAGE, status, traceid }   (Get CN Update's failure shape is 200 + this body)
+//   { errorList: [{ key, errormessage }], traceid }   (undocumented — seen on Booking-Create
+//   field validation failures, e.g. a bad weight/declaredvalue, confirmed against the sandbox)
 function buildTcsApiError(status, body) {
   let message = `TCS request failed (${status}).`;
   if (body) {
     if (Array.isArray(body.error) && body.error.length) {
       message = body.error.map((e) => e?.errorname).filter(Boolean).join('; ') || body.message || message;
+    } else if (Array.isArray(body.errorList) && body.errorList.length) {
+      message = body.errorList.map((e) => e?.errormessage).filter(Boolean).join('; ') || message;
     } else if (body.message) {
       message = body.message;
     } else if (body.MESSAGE) {
@@ -182,10 +186,16 @@ const PK_MOBILE_RE = /^03\d{9}$/;
 // this normalizes common variants (+92/0092 prefix, spaces/dashes) and otherwise fails loudly
 // rather than sending TCS something it will reject or silently mis-book.
 export function normalizePkMobile(raw, label) {
-  const digits = String(raw || '').replace(/\D/g, '');
-  let normalized = digits;
-  if (normalized.startsWith('92') && normalized.length === 12) normalized = `0${normalized.slice(2)}`;
-  if (normalized.startsWith('0092')) normalized = `0${normalized.slice(4)}`;
+  let normalized = String(raw || '').replace(/\D/g, '');
+  // "0092..." is the intl-dialing prefix for "92..." — collapse it first so the next check
+  // only has to handle one country-code form, not two.
+  if (normalized.startsWith('0092')) normalized = normalized.slice(2);
+  // Country code can be followed by either the 10-digit local number ("923001234567") or, just
+  // as commonly typed/pasted, the local number with its leading 0 kept ("9203001234567") — both
+  // need the "92" stripped; a leftover leading 0 (from the second form) is left in place and a
+  // missing one is added below, so either form ends up as a plain 11-digit local number.
+  if (normalized.startsWith('92') && normalized.length >= 12) normalized = normalized.slice(2);
+  if (!normalized.startsWith('0')) normalized = `0${normalized}`;
   if (!PK_MOBILE_RE.test(normalized)) {
     throw new TcsValidationError(`${label} must be an 11-digit mobile number like 03001234567.`);
   }
@@ -210,6 +220,14 @@ function formatTcsDate(date) {
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   return `${dd}-${mm}-${date.getFullYear()}`;
+}
+
+// TCS's "decimal" fields (weightinkg, skus[].weight) reject a bare whole-number JSON value —
+// `2` comes back "Insert valid Decimal number" — but accept the same value as a string with an
+// explicit decimal point (`"2.0"`); confirmed directly against the sandbox. So every weight this
+// module sends is formatted through here rather than passed as a raw JS number.
+function formatTcsDecimal(value) {
+  return Number(value).toFixed(2);
 }
 
 // ---------- Booking – Create ----------
@@ -249,6 +267,14 @@ export async function createShipment({
   const shipperMobile = normalizePkMobile(sellerMobile, 'Seller pickup mobile');
   const consigneeMobile = normalizePkMobile(order.shippingAddress.phone, 'Buyer mobile number');
   const { firstname, middlename, lastname } = splitFullName(order.shippingAddress.fullName);
+
+  // TCS rejects a 0-COD shipment ("Declared value is mandatory for 0 COD shipments. Please
+  // enter a value from 100 to 199999") unless declaredvalue is set — confirmed against the
+  // sandbox. Default it to the order's own value so callers don't need to know this TCS-specific
+  // rule; only applies when there's no COD amount collecting the value instead.
+  const normalizedCod = Math.max(0, Math.round(Number(codamount) || 0));
+  const orderValue = Math.round(Number(order.unitPrice || 0) * Number(order.qty || 1));
+  const resolvedDeclaredValue = normalizedCod === 0 ? Math.min(199999, Math.max(100, orderValue || 100)) : null;
 
   const body = {
     accesstoken,
@@ -307,13 +333,13 @@ export async function createShipment({
       shipmentdate: formatTcsDate(new Date()),
       shippingtype: '',
       currency,
-      codamount: Math.max(0, Math.round(Number(codamount) || 0)),
-      declaredvalue: null,
+      codamount: normalizedCod,
+      declaredvalue: resolvedDeclaredValue,
       insuredvalue: null,
       transactiontype: '',
       dsflag: '',
       carrierslug: '',
-      weightinkg: Number(weightinkg),
+      weightinkg: formatTcsDecimal(weightinkg),
       pieces: Number(pieces),
       fragile: false,
       remarks: remarks || '',
@@ -321,10 +347,10 @@ export async function createShipment({
         {
           description: contentdesc || order.productName || '',
           quantity: order.qty,
-          weight: Number(weightinkg),
+          weight: formatTcsDecimal(weightinkg),
           uom: 'KG',
           unitprice: Math.round(order.unitPrice),
-          declaredvalue: null,
+          declaredvalue: resolvedDeclaredValue,
           insuredvalue: null,
         },
       ],
