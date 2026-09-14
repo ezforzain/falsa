@@ -2,16 +2,12 @@ import { useEffect, useState } from 'react';
 import { seller } from '../../lib/api';
 import { formatPKR } from '../../data/mockData';
 import { IconSparkle } from '../../components/icons';
+import SellerCard from '../../components/seller/SellerCard';
+import StatCard from '../../components/seller/StatCard';
+import StatusChipMenu from '../../components/seller/StatusChipMenu';
+import { PROMOTION_CHIP } from './statusChipPalette';
 
-const STATUS_STYLES = {
-  pending: 'bg-orange-tint text-orange-text',
-  approved: 'bg-green-tint text-green',
-  rejected: 'bg-surface-muted text-text-muted',
-};
-
-function statusBadgeClass(status) {
-  return STATUS_STYLES[status] || 'bg-surface-muted text-text-muted';
-}
+const PROMOTION_LABEL = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected' };
 
 // Quick-fill shortcuts, not a hard menu — the seller can still type any amount. These are
 // stated estimates shown to help the seller pick a reasonable budget, not a guarantee — there's
@@ -69,16 +65,14 @@ export default function SellerPromotions() {
   };
 
   const fieldClass =
-    'w-full px-[14px] py-[11px] border border-border rounded-lg text-[14px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
+    'w-full px-[14px] py-[11px] border border-border rounded-lg text-[14px] font-sans bg-surface-muted text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(59,111,224,0.12)] transition-shadow';
   const labelClass = 'block text-[12.5px] font-semibold text-ink-soft mb-1.5';
 
-  return (
-    <div className="animate-fade-up">
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Promotions</h1>
-        <p className="text-sm text-text mt-1">Request to boost one of your listings — an admin reviews every request.</p>
-      </div>
+  const pendingCount = requests.filter((r) => r.status === 'pending').length;
+  const approvedCount = requests.filter((r) => r.status === 'approved').length;
 
+  return (
+    <div className="animate-fade-up flex flex-col gap-4">
       {loading && <div className="animate-pulse bg-surface border border-border rounded-2xl h-[400px]" />}
 
       {!loading && error && (
@@ -87,9 +81,15 @@ export default function SellerPromotions() {
 
       {!loading && !error && (
         <>
-          <div className="bg-surface border border-border rounded-2xl p-6 mb-6 max-w-[520px]">
-            <h2 className="font-display text-base font-bold text-ink mb-4">Request a boost</h2>
+          {requests.length > 0 && (
+            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+              <StatCard label="Requests" value={requests.length} note="Lifetime" />
+              <StatCard label="Pending" value={pendingCount} note="Awaiting review" />
+              <StatCard label="Approved" value={approvedCount} note="Live boosts" />
+            </div>
+          )}
 
+          <SellerCard eyebrow="Request a boost" className="max-w-[560px]">
             {submitError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-4">{submitError}</p>}
 
             {products.length === 0 ? (
@@ -167,36 +167,37 @@ export default function SellerPromotions() {
                 </button>
               </div>
             )}
-          </div>
+          </SellerCard>
 
-          <h2 className="font-display text-base font-bold text-ink mb-4">Your requests</h2>
-          {requests.length === 0 ? (
-            <div className="bg-surface border border-dashed border-border-strong rounded-2xl p-10 text-center">
-              <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center mb-4">
-                <IconSparkle width="22" height="22" className="text-green" />
-              </span>
-              <p className="text-sm text-text">No promotion requests yet.</p>
-            </div>
-          ) : (
-            <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-              {requests.map((r, i) => (
-                <div key={r.id} className={`flex items-center justify-between gap-4 px-5 py-4 flex-wrap ${i !== requests.length - 1 ? 'border-b border-border' : ''}`}>
-                  <div className="min-w-0">
-                    <div className="font-semibold text-[14.5px] text-ink truncate">{r.productName}</div>
-                    <div className="text-xs text-text-muted capitalize">
-                      {r.spotlightType}
-                      {r.budgetPkr && <> · budget {formatPKR(r.budgetPkr)}</>}
-                      {' '}· requested {new Date(r.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+          <SellerCard eyebrow="Your requests">
+            {requests.length === 0 ? (
+              <div className="p-6 text-center flex flex-col items-center gap-4">
+                <span className="w-14 h-14 rounded-full bg-green-tint inline-flex items-center justify-center">
+                  <IconSparkle width="22" height="22" className="text-green" />
+                </span>
+                <p className="text-sm text-text">No promotion requests yet.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {requests.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between gap-4 flex-wrap px-3.5 py-3 rounded-2xl bg-surface-muted border border-border">
+                    <div className="min-w-0">
+                      <div className="font-bold text-[13.5px] text-ink truncate">{r.productName}</div>
+                      <div className="text-[11.5px] text-text-muted capitalize">
+                        {r.spotlightType}
+                        {r.budgetPkr && <> · budget {formatPKR(r.budgetPkr)}</>}
+                        {' '}· requested {new Date(r.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </div>
+                      {r.status === 'rejected' && r.rejectionReason && (
+                        <div className="text-[11.5px] text-orange-text mt-1">Reason: {r.rejectionReason}</div>
+                      )}
                     </div>
-                    {r.status === 'rejected' && r.rejectionReason && (
-                      <div className="text-xs text-orange-text mt-1">Reason: {r.rejectionReason}</div>
-                    )}
+                    <StatusChipMenu status={r.status} palette={PROMOTION_CHIP} labelFor={PROMOTION_LABEL} readOnly />
                   </div>
-                  <span className={`shrink-0 text-xs font-bold px-2.5 py-1 rounded-full capitalize ${statusBadgeClass(r.status)}`}>{r.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </SellerCard>
         </>
       )}
     </div>

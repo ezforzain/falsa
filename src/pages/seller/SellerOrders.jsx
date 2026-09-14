@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { seller } from '../../lib/api';
+import { friendlyShippingError } from '../../lib/shipping';
+import { useRefetchOnFocus } from '../../lib/useRefetchOnFocus';
+import { getSellerReadiness } from '../../lib/sellerReadiness';
 import { formatPKR } from '../../data/mockData';
 import { useAuth } from '../../context/AuthContext';
 import { IconBox, IconReceipt } from '../../components/icons';
+import TrackingWidget from '../../components/TrackingWidget';
 import ShipOrderModal from '../../components/seller/ShipOrderModal';
-import { ORDER_STATUSES, statusBadgeClass } from './statusStyles';
-
-const BANK_FIELDS = ['bankName', 'accountTitle', 'accountNumber', 'iban'];
+import StatusChipMenu from '../../components/seller/StatusChipMenu';
+import { ORDER_STATUSES } from './statusStyles';
+import { ORDER_CHIP } from './statusChipPalette';
 
 export default function SellerOrders() {
   const { user } = useAuth();
@@ -21,15 +25,18 @@ export default function SellerOrders() {
   const [trackingById, setTrackingById] = useState({});
   const [trackingLoadingId, setTrackingLoadingId] = useState(null);
 
-  const bankComplete = BANK_FIELDS.every((key) => Boolean(user?.[key]));
+  const { bankComplete, pickupComplete } = getSellerReadiness(user);
 
-  useEffect(() => {
+  const loadOrders = () => {
     seller
       .orders()
       .then((res) => setOrders(res.orders))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(loadOrders, []);
+  useRefetchOnFocus(loadOrders);
 
   const handleShipped = (updated) => {
     setOrders((current) => current.map((o) => (o.id === updated.id ? updated : o)));
@@ -41,7 +48,7 @@ export default function SellerOrders() {
       const { tracking } = await seller.trackOrder(order.id);
       setTrackingById((current) => ({ ...current, [order.id]: { tracking, error: null } }));
     } catch (err) {
-      setTrackingById((current) => ({ ...current, [order.id]: { tracking: null, error: err.message } }));
+      setTrackingById((current) => ({ ...current, [order.id]: { tracking: null, error: friendlyShippingError(err.message) } }));
     } finally {
       setTrackingLoadingId(null);
     }
@@ -61,12 +68,61 @@ export default function SellerOrders() {
     }
   };
 
+  // Shared between the desktop table cell and the mobile card below — same shipping state,
+  // same actions, just different surrounding markup — so the two layouts can't drift apart.
+  const ShippingInfo = ({ o }) => (
+    <>
+      {o.shippingMethod ? (
+        <div className="text-xs">
+          <div className="font-semibold text-ink">{o.courierName}</div>
+          <div className="text-text-muted">{o.trackingId}</div>
+          {o.labelUrl && (
+            <a href={o.labelUrl} download className="text-green font-semibold hover:underline block mt-0.5">
+              Download label
+            </a>
+          )}
+          {o.shippingMethod === 'falsafah' && (
+            <div className="mt-1">
+              <TrackingWidget
+                tracking={trackingById[o.id]?.tracking}
+                loading={trackingLoadingId === o.id}
+                error={trackingById[o.id]?.error}
+                onRefresh={() => handleTrack(o)}
+                size="compact"
+              />
+            </div>
+          )}
+        </div>
+      ) : o.status === 'Cancelled' ? (
+        <span className="text-xs text-text-muted">Cancelled</span>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShippingOrder(o)}
+          className="cursor-pointer bg-green hover:bg-green-hover text-white text-xs font-semibold px-3.5 py-2 rounded-full transition-colors"
+        >
+          Ship Now
+        </button>
+      )}
+    </>
+  );
+
+  const StatusSelect = ({ o }) => (
+    <>
+      <StatusChipMenu
+        status={o.status}
+        cycleOptions={ORDER_STATUSES}
+        palette={ORDER_CHIP}
+        disabled={updatingId === o.id}
+        onChange={(status) => handleStatusChange(o, status)}
+      />
+      {rowError?.id === o.id && <div className="text-[11px] text-orange-text mt-1.5 max-w-[180px]">{rowError.message}</div>}
+    </>
+  );
+
   return (
-    <div className="animate-fade-up">
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Orders</h1>
-        <p className="text-sm text-text mt-1">Orders placed for your listings, most recent first.</p>
-      </div>
+    <div className="animate-fade-up flex flex-col gap-4">
+      <div className="text-[11px] tracking-[1.6px] uppercase font-bold text-text">Orders placed for your listings, most recent first.</div>
 
       {loading && (
         <div className="flex flex-col gap-3">
@@ -90,7 +146,52 @@ export default function SellerOrders() {
       )}
 
       {!loading && !error && orders.length > 0 && (
-        <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+        <div className="flex flex-col gap-3 sm:hidden">
+          {orders.map((o) => (
+            <div key={o.id} className="bg-surface border border-border rounded-2xl p-4">
+              <div className="flex items-start gap-3">
+                <span className="w-12 h-12 rounded-lg overflow-hidden bg-surface-muted border border-border flex items-center justify-center shrink-0">
+                  {o.productImg ? (
+                    <img src={o.productImg} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <IconBox width="18" height="18" className="text-text-muted" />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm text-ink-soft truncate">{o.productName}</div>
+                  <div className="text-xs text-text-muted mt-0.5">
+                    Qty {o.qty.toLocaleString('en-US')} · {formatPKR(o.total)}
+                  </div>
+                </div>
+                <StatusSelect o={o} />
+              </div>
+
+              <div className="mt-3 pt-3 border-t border-border/70 text-xs">
+                <div className="font-semibold text-ink">{o.buyerCompany}</div>
+                {o.shippingAddress ? (
+                  <div className="text-text-muted leading-relaxed mt-0.5">
+                    {o.shippingAddress.phone}
+                    <br />
+                    {o.shippingAddress.address}, {o.shippingAddress.city}
+                  </div>
+                ) : (
+                  <div className="text-text-muted">{o.buyerCountry}</div>
+                )}
+                <div className="text-text-muted mt-0.5">
+                  {new Date(o.placedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </div>
+              </div>
+
+              <div className="mt-3 pt-3 border-t border-border/70">
+                <ShippingInfo o={o} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && !error && orders.length > 0 && (
+        <div className="hidden sm:block bg-surface border border-border rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[640px]">
               <thead>
@@ -149,58 +250,10 @@ export default function SellerOrders() {
                       {new Date(o.placedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="px-5 py-4">
-                      <select
-                        value={o.status}
-                        disabled={updatingId === o.id}
-                        onChange={(e) => handleStatusChange(o, e.target.value)}
-                        className={`text-xs font-semibold px-2.5 py-1.5 rounded-full border-none outline-none cursor-pointer disabled:cursor-wait disabled:opacity-60 ${statusBadgeClass(o.status)}`}
-                      >
-                        {ORDER_STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                      {rowError?.id === o.id && <div className="text-[11px] text-orange-text mt-1.5 max-w-[140px]">{rowError.message}</div>}
+                      <StatusSelect o={o} />
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      {o.shippingMethod ? (
-                        <div className="text-xs">
-                          <div className="font-semibold text-ink">{o.courierName}</div>
-                          <div className="text-text-muted">{o.trackingId}</div>
-                          {o.labelUrl && (
-                            <a href={o.labelUrl} download className="text-green font-semibold hover:underline block mt-0.5">
-                              Download label
-                            </a>
-                          )}
-                          {o.shippingMethod === 'falsafah' && (
-                            <button
-                              type="button"
-                              onClick={() => handleTrack(o)}
-                              disabled={trackingLoadingId === o.id}
-                              className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 text-ink-soft font-semibold hover:underline block mt-0.5"
-                            >
-                              {trackingLoadingId === o.id ? 'Checking…' : 'Track'}
-                            </button>
-                          )}
-                          {trackingById[o.id]?.error && <div className="text-orange-text mt-1">{trackingById[o.id].error}</div>}
-                          {trackingById[o.id]?.tracking && (
-                            <div className="text-text-muted mt-1">
-                              {trackingById[o.id].tracking.deliveryinfo?.[0]?.status || 'Status unavailable'}
-                            </div>
-                          )}
-                        </div>
-                      ) : o.status === 'Processing' ? (
-                        <button
-                          type="button"
-                          onClick={() => setShippingOrder(o)}
-                          className="cursor-pointer bg-green hover:bg-green-hover text-white text-xs font-semibold px-3.5 py-2 rounded-full transition-colors"
-                        >
-                          Ship Now
-                        </button>
-                      ) : (
-                        <span className="text-xs text-text-muted">Mark Processing first</span>
-                      )}
+                      <ShippingInfo o={o} />
                     </td>
                   </tr>
                 ))}
@@ -214,6 +267,7 @@ export default function SellerOrders() {
         open={Boolean(shippingOrder)}
         order={shippingOrder}
         bankComplete={bankComplete}
+        pickupComplete={pickupComplete}
         onClose={() => setShippingOrder(null)}
         onShipped={handleShipped}
       />

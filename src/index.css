@@ -86,6 +86,68 @@
   --color-hashtag-hover: #6CBDFF;
 }
 
+/* Seller Portal — its own permanent dark navy/blue accent theme, independent of the site's
+   light/dark toggle (same technique as the dark-theme block above: redeclare the same
+   custom-property names Tailwind's utilities already compile to, scoped to one subtree instead
+   of :root, so every existing component nested under it — ProductFormModal, ShipOrderModal,
+   CategoryPicker, uploaders, etc. — repaints with zero per-component changes). Applied once, at
+   SellerLayout's authenticated-seller root (see SellerLayout.jsx) — never on its pre-auth
+   loading/redirect/role-gate states, which stay on the site's normal theme. */
+.seller-portal {
+  --font-display: 'Manrope', sans-serif;
+  --font-sans: 'Manrope', sans-serif;
+
+  --color-cream: #080B16;
+  --color-cream-dark: #0B0F20;
+  --color-green-deep: #0B0F20;
+  --color-green: #3B6FE0;
+  --color-green-hover: #5686F0;
+  --color-green-tint: #152A4F;
+  --color-green-tint-border: #2B4784;
+  --color-teal-soft: #6FDFCE;
+  --color-teal-softer: #4FD1C5;
+  --color-teal-mist: #10332C;
+
+  --color-orange: #E7C46B;
+  --color-orange-hover: #d4b25e;
+  --color-orange-tint: #332A12;
+  --color-orange-text: #E7C46B;
+  --color-orange-text-dark: #c9a95c;
+  --color-gold: #E0B64B;
+
+  --color-ink: #E7EBF5;
+  --color-ink-soft: #BFD3FF;
+  --color-text: #8E9CBF;
+  --color-text-muted: #68769B;
+
+  --color-border: #1E2745;
+  --color-border-strong: #2E3C6E;
+  --color-surface: #101632;
+  --color-surface-muted: #0D1329;
+
+  --color-footer: #080B16;
+
+  --color-hashtag: #7AA7FF;
+  --color-hashtag-hover: #A8C4FF;
+
+  /* Chat-bubble colors (SellerMessages) — deliberately distinct from --color-green so a bubble
+     doesn't read as a clickable button. */
+  --color-chat-me-bg: #1E3A78;
+  --color-chat-them-bg: #0D1329;
+
+  color-scheme: dark;
+}
+
+/* TrackingWidget.jsx (shared with buyer OrdersPage and Admin — left unedited there) hardcodes one
+   light-blue "in transit" pill as an arbitrary-value literal rather than a theme token; only
+   repaint it inside the seller portal. */
+.seller-portal .bg-\[\#E8F0FB\] {
+  background-color: #152A4F;
+}
+.seller-portal .text-\[\#2D6FC9\] {
+  color: #9CC0FF;
+}
+
 /* Reduce motion (Settings > App Settings) — near-zero rather than `none` so animationend/
    transitionend listeners (e.g. the account-menu ripple, badge pop) still fire and clean up. */
 .reduce-motion,
