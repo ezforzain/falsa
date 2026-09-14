@@ -11,8 +11,6 @@ const emptyForm = {
   category: '',
   description: '',
   price: '',
-  unit: '',
-  moq: '',
   stock: '',
   badge: '',
   images: [],
@@ -43,8 +41,6 @@ export default function AdminProductFormModal({ open, product, sellersList, cate
             category: product.category,
             description: product.description || '',
             price: String(product.price || '').replace(/^rs\s*/i, ''),
-            unit: product.unit || '',
-            moq: product.moq || '',
             stock: product.stock === null || product.stock === undefined ? '' : String(product.stock),
             badge: product.badge || '',
             images: product.images && product.images.length > 0 ? product.images : product.img ? [product.img] : [],
@@ -76,8 +72,6 @@ export default function AdminProductFormModal({ open, product, sellersList, cate
       category: form.category,
       description: form.description.trim(),
       price: form.price.trim(),
-      unit: form.unit.trim(),
-      moq: form.moq.trim(),
       stock: form.stock.trim() === '' ? null : Number(form.stock),
       badge: form.badge.trim(),
       images: form.images,
@@ -159,17 +153,6 @@ export default function AdminProductFormModal({ open, product, sellersList, cate
           <div>
             <label className={adminLabelClass}>Price (Rs)</label>
             <input type="text" inputMode="numeric" value={form.price} onChange={set('price')} placeholder="670" className={adminFieldClass} />
-          </div>
-          <div>
-            <label className={adminLabelClass}>Unit</label>
-            <input type="text" value={form.unit} onChange={set('unit')} placeholder="metre" className={adminFieldClass} />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={adminLabelClass}>MOQ</label>
-            <input type="text" value={form.moq} onChange={set('moq')} placeholder="500m" className={adminFieldClass} />
           </div>
           <div>
             <label className={adminLabelClass}>Stock (optional)</label>
