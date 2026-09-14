@@ -14,7 +14,7 @@ const PAGE_SIZE = 12;
 // Featured uses the info/blue accent, Sponsored uses the primary/purple accent, matching how much
 // visibility each one actually buys the seller.
 const SPOTLIGHT_OPTS = [
-  { value: null, label: 'Off', activeClass: 'bg-[var(--admin-ink-soft)] text-white' },
+  { value: null, label: 'Off', activeClass: 'bg-[var(--admin-border-strong)] text-[var(--admin-ink)]' },
   { value: 'featured', label: 'Featured', activeClass: 'bg-[var(--admin-info)] text-white' },
   { value: 'sponsored', label: 'Sponsored', activeClass: 'bg-[var(--admin-primary)] text-white' },
 ];
