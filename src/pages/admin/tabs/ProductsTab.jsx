@@ -96,8 +96,6 @@ export default function ProductsTab({
   handleSetSpotlight,
   reachPendingId,
   handleSetReach,
-  stockPendingId,
-  handleSetStock,
 }) {
   // Client-side search/pagination over the already-fetched `products` array — no new API calls.
   const [search, setSearch] = useState('');
@@ -249,35 +247,6 @@ export default function ProductsTab({
                       </button>
                     </div>
                   </div>
-
-                  {p.stock !== null && p.stock !== undefined && (
-                    <div className="flex items-center gap-2 pt-3 mt-3 border-t border-[var(--admin-border)]">
-                      <span className="text-[10.5px] font-semibold text-[var(--admin-text-muted)] uppercase tracking-wide shrink-0">Stock</span>
-                      <div className="flex items-center gap-1.5 flex-1 justify-end">
-                        <button
-                          type="button"
-                          disabled={stockPendingId === p.id || p.stock <= 0}
-                          onClick={() => handleSetStock(p, p.stock - 1)}
-                          className="cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed w-6 h-6 rounded-md bg-[var(--admin-canvas)] text-[var(--admin-ink-soft)] font-bold text-sm flex items-center justify-center hover:bg-[var(--admin-border)] transition-colors"
-                          aria-label="Decrease stock"
-                        >
-                          −
-                        </button>
-                        <span className={`min-w-[34px] text-center text-xs font-bold ${p.stock === 0 ? 'text-[var(--admin-danger)]' : 'text-[var(--admin-ink)]'}`}>
-                          {stockPendingId === p.id ? '…' : p.stock}
-                        </span>
-                        <button
-                          type="button"
-                          disabled={stockPendingId === p.id}
-                          onClick={() => handleSetStock(p, p.stock + 1)}
-                          className="cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed w-6 h-6 rounded-md bg-[var(--admin-canvas)] text-[var(--admin-ink-soft)] font-bold text-sm flex items-center justify-center hover:bg-[var(--admin-border)] transition-colors"
-                          aria-label="Increase stock"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </Card>
             ))}
