@@ -93,7 +93,9 @@ export default function SellerOrders() {
             </div>
           )}
         </div>
-      ) : o.status === 'Processing' ? (
+      ) : o.status === 'Cancelled' ? (
+        <span className="text-xs text-text-muted">Cancelled</span>
+      ) : (
         <button
           type="button"
           onClick={() => setShippingOrder(o)}
@@ -101,10 +103,6 @@ export default function SellerOrders() {
         >
           Ship Now
         </button>
-      ) : (
-        <span className="text-xs text-text-muted" title="Set the order status to Processing above, then Ship Now will appear here.">
-          Mark Processing first
-        </span>
       )}
     </>
   );
