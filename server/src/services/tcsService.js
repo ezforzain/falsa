@@ -271,10 +271,14 @@ export async function createShipment({
   // TCS's Booking-Create rejects a null/missing declaredvalue outright ("Insert value in
   // number.") — not just for a 0-COD shipment as first assumed here; every shipment needs a real
   // number in this field, clamped to the 100–199999 range TCS accepts. Defaults to the order's
-  // own value so callers don't need to know this TCS-specific rule.
+  // own value so callers don't need to know this TCS-specific rule. Like weightinkg/skus[].weight
+  // above, this is one of TCS's "decimal" fields — sent as a "100.00"-style string via
+  // formatTcsDecimal, not a bare number, or it's rejected the same way weight was. insuredvalue
+  // is set to match rather than left null, on the same reasoning (untested against a real
+  // insured shipment — if TCS ever needs a distinct insurance amount, split this back out).
   const normalizedCod = Math.max(0, Math.round(Number(codamount) || 0));
   const orderValue = Math.round(Number(order.unitPrice || 0) * Number(order.qty || 1));
-  const resolvedDeclaredValue = Math.min(199999, Math.max(100, orderValue || 100));
+  const resolvedDeclaredValue = formatTcsDecimal(Math.min(199999, Math.max(100, orderValue || 100)));
 
   const body = {
     accesstoken,
@@ -335,7 +339,7 @@ export async function createShipment({
       currency,
       codamount: normalizedCod,
       declaredvalue: resolvedDeclaredValue,
-      insuredvalue: null,
+      insuredvalue: resolvedDeclaredValue,
       transactiontype: '',
       dsflag: '',
       carrierslug: '',
@@ -351,7 +355,7 @@ export async function createShipment({
           uom: 'KG',
           unitprice: Math.round(order.unitPrice),
           declaredvalue: resolvedDeclaredValue,
-          insuredvalue: null,
+          insuredvalue: resolvedDeclaredValue,
         },
       ],
     },
