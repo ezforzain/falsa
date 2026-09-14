@@ -708,10 +708,17 @@ export default function AdminPage() {
     }
   };
 
+  // Both guard screens below render before (or instead of) AdminLayout ever mounts, so they need
+  // their own `.admin-shell` wrapper to pick up the dark theme tokens — otherwise the admin route
+  // flashes the site's light `bg-cream` for a moment while auth resolves, or shows a jarring light
+  // card against what is otherwise an always-dark panel.
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-cream">
-        <span className="w-8 h-8 border-[3px] border-border rounded-full inline-block" style={{ borderTopColor: '#0E5A46', animation: 'spin 0.8s linear infinite' }} />
+      <div className="admin-shell min-h-screen flex items-center justify-center" style={{ background: 'var(--admin-canvas)' }}>
+        <span
+          className="w-8 h-8 border-[3px] rounded-full inline-block"
+          style={{ borderColor: 'var(--admin-border-strong)', borderTopColor: 'var(--admin-primary)', animation: 'spin 0.8s linear infinite' }}
+        />
       </div>
     );
   }
@@ -720,16 +727,28 @@ export default function AdminPage() {
 
   if (user.role !== 'admin') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-cream px-4">
-        <div className="max-w-[420px] text-center bg-surface border border-border rounded-2xl shadow-xl p-8">
-          <span className="w-14 h-14 rounded-full bg-orange-tint inline-flex items-center justify-center mb-5">
-            <IconAlertCircle width="26" height="26" className="text-orange-text" />
+      <div
+        className="admin-shell min-h-screen flex items-center justify-center px-4"
+        style={{ background: 'radial-gradient(ellipse 900px 500px at 50% 0%, var(--admin-primary-tint), var(--admin-canvas) 70%)' }}
+      >
+        <div
+          className="max-w-[420px] text-center rounded-2xl p-8"
+          style={{ background: 'var(--admin-surface)', border: '1px solid var(--admin-border)', boxShadow: 'var(--admin-shadow-lg)' }}
+        >
+          <span className="w-14 h-14 rounded-full inline-flex items-center justify-center mb-5" style={{ background: 'var(--admin-warning-tint)' }}>
+            <IconAlertCircle width="26" height="26" style={{ color: 'var(--admin-warning)' }} />
           </span>
-          <h1 className="font-display text-xl font-bold text-ink mb-2">Admin accounts only</h1>
-          <p className="text-sm text-text mb-6 leading-relaxed">
+          <h1 className="font-display text-xl font-bold mb-2" style={{ color: 'var(--admin-ink)' }}>Admin accounts only</h1>
+          <p className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--admin-text)' }}>
             The admin panel is only available to admin accounts. You're signed in as a {user.role}.
           </p>
-          <Link to="/" className="inline-block bg-green hover:bg-green-hover text-white font-semibold text-sm px-6 py-3 rounded-full no-underline transition-colors">
+          <Link
+            to="/"
+            className="inline-block font-semibold text-sm px-6 py-3 rounded-full no-underline transition-colors"
+            style={{ background: 'var(--admin-primary)', color: '#fff' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--admin-primary-hover)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--admin-primary)')}
+          >
             Back to marketplace
           </Link>
         </div>
