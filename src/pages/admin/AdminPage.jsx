@@ -153,8 +153,10 @@ export default function AdminPage() {
       .finally(() => setLoading(false));
   };
 
-  const loadProducts = () => {
-    setProductsLoading(true);
+  // `silent` skips the xLoading flip -- used when re-fetching after a mutation we've already
+  // reflected optimistically, so the list swaps in quietly instead of flashing back to skeletons.
+  const loadProducts = (silent = false) => {
+    if (!silent) setProductsLoading(true);
     setProductsError(null);
     admin
       .products()
@@ -163,8 +165,8 @@ export default function AdminPage() {
       .finally(() => setProductsLoading(false));
   };
 
-  const loadUsers = () => {
-    setUsersLoading(true);
+  const loadUsers = (silent = false) => {
+    if (!silent) setUsersLoading(true);
     setUsersError(null);
     adminUsers
       .list({ role: userRoleFilter || undefined, q: userSearch || undefined })
@@ -173,8 +175,8 @@ export default function AdminPage() {
       .finally(() => setUsersLoading(false));
   };
 
-  const loadPromotions = () => {
-    setPromotionsLoading(true);
+  const loadPromotions = (silent = false) => {
+    if (!silent) setPromotionsLoading(true);
     setPromotionsError(null);
     admin
       .promotions()
@@ -203,8 +205,8 @@ export default function AdminPage() {
       .finally(() => setReportsLoading(false));
   };
 
-  const loadOrders = () => {
-    setOrdersLoading(true);
+  const loadOrders = (silent = false) => {
+    if (!silent) setOrdersLoading(true);
     setOrdersError(null);
     adminOrders
       .list({ status: orderStatusFilter || undefined, q: orderSearch || undefined })
@@ -213,8 +215,8 @@ export default function AdminPage() {
       .finally(() => setOrdersLoading(false));
   };
 
-  const loadCategories = () => {
-    setCategoriesLoading(true);
+  const loadCategories = (silent = false) => {
+    if (!silent) setCategoriesLoading(true);
     setCategoriesError(null);
     adminCategories
       .list()
@@ -223,8 +225,8 @@ export default function AdminPage() {
       .finally(() => setCategoriesLoading(false));
   };
 
-  const loadFilters = () => {
-    setFiltersLoading(true);
+  const loadFilters = (silent = false) => {
+    if (!silent) setFiltersLoading(true);
     setFiltersError(null);
     adminFilters
       .list()
@@ -305,7 +307,7 @@ export default function AdminPage() {
       await adminOrders.create(payload);
       setOrderFormOpen(false);
       showToast('Order recorded');
-      loadOrders();
+      loadOrders(true);
       loadOverview();
     } catch (err) {
       setOrderFormError(err.message);
@@ -338,7 +340,7 @@ export default function AdminPage() {
         showToast('Category added');
       }
       setCategoryFormOpen(false);
-      loadCategories();
+      loadCategories(true);
     } catch (err) {
       setCategoryFormError(err.message);
     } finally {
@@ -353,7 +355,7 @@ export default function AdminPage() {
       await adminCategories.remove(deleteCategoryTarget.id);
       setDeleteCategoryTarget(null);
       showToast('Category deleted');
-      loadCategories();
+      loadCategories(true);
     } catch (err) {
       setCategoriesError(err.message);
     } finally {
@@ -387,7 +389,7 @@ export default function AdminPage() {
         showToast('Filter added');
       }
       setFilterFormOpen(false);
-      loadFilters();
+      loadFilters(true);
     } catch (err) {
       setFilterFormError(err.message);
     } finally {
@@ -399,7 +401,7 @@ export default function AdminPage() {
     setFilterRowPendingId(f.id);
     try {
       await adminFilters.update(f.id, { enabled: !f.enabled });
-      loadFilters();
+      loadFilters(true);
     } catch (err) {
       setFiltersError(err.message);
     } finally {
@@ -426,7 +428,7 @@ export default function AdminPage() {
       await adminFilters.remove(deleteFilterTarget.id);
       setDeleteFilterTarget(null);
       showToast('Filter removed');
-      loadFilters();
+      loadFilters(true);
     } catch (err) {
       setFiltersError(err.message);
     } finally {
@@ -507,7 +509,7 @@ export default function AdminPage() {
         showToast('Product added successfully');
       }
       setProductFormOpen(false);
-      loadProducts();
+      loadProducts(true);
     } catch (err) {
       setProductFormError(err.message);
     } finally {
@@ -522,7 +524,7 @@ export default function AdminPage() {
       await admin.deleteProduct(deleteProductTarget.id);
       setDeleteProductTarget(null);
       showToast('Product deleted');
-      loadProducts();
+      loadProducts(true);
     } catch (err) {
       setProductsError(err.message);
     } finally {
@@ -538,7 +540,7 @@ export default function AdminPage() {
     try {
       await admin.updateProduct(product.id, { spotlight, spotlightType });
       showToast(spotlight ? `Added to Spotlight (${spotlightType})` : 'Removed from Spotlight');
-      loadProducts();
+      loadProducts(true);
     } catch (err) {
       showToast(err.message || 'Could not update Spotlight status');
     } finally {
@@ -559,7 +561,7 @@ export default function AdminPage() {
       await adminUsers.update(editingUser.id, payload);
       showToast('User updated successfully');
       setUserFormOpen(false);
-      loadUsers();
+      loadUsers(true);
     } catch (err) {
       setUserFormError(err.message);
     } finally {
@@ -581,7 +583,7 @@ export default function AdminPage() {
     try {
       await adminUsers.setVerified(u.id, !u.verified);
       showToast(u.verified ? 'Blue tick removed' : 'Blue tick added');
-      loadUsers();
+      loadUsers(true);
     } catch (err) {
       showToast(err.message || 'Could not update verification');
     } finally {
@@ -596,7 +598,7 @@ export default function AdminPage() {
       showToast(label);
       setBanningUserId(null);
       setPermanentBanTarget(null);
-      loadUsers();
+      loadUsers(true);
     } catch (err) {
       showToast(err.message || 'Could not update the ban');
     } finally {
@@ -611,7 +613,7 @@ export default function AdminPage() {
       await adminUsers.remove(deleteUserTarget.id);
       setDeleteUserTarget(null);
       showToast('User deleted');
-      loadUsers();
+      loadUsers(true);
     } catch (err) {
       showToast(err.message || 'Could not delete user');
     } finally {
@@ -668,8 +670,8 @@ export default function AdminPage() {
     try {
       await admin.reviewPromotion(req.id, { status: 'approved' });
       showToast(`Boosted "${req.productName}"`);
-      loadPromotions();
-      loadProducts();
+      loadPromotions(true);
+      loadProducts(true);
     } catch (err) {
       showToast(err.message || 'Could not approve promotion request');
     } finally {
@@ -684,7 +686,7 @@ export default function AdminPage() {
       showToast('Promotion request rejected');
       setRejectingPromoId(null);
       setPromoRejectReason('');
-      loadPromotions();
+      loadPromotions(true);
     } catch (err) {
       showToast(err.message || 'Could not reject promotion request');
     } finally {
