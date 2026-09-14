@@ -50,7 +50,7 @@ export function friendlyShippingError(message) {
   if (/cost center/i.test(raw)) {
     return "TCS shipping isn't fully set up yet — ask an admin to finish setup in Admin Settings.";
   }
-  if (/declared value|insert valid decimal/i.test(raw)) {
+  if (/declared value|insert valid decimal|insert value in number/i.test(raw)) {
     return "This order couldn't be booked with TCS due to a courier configuration issue. Please contact support.";
   }
   if (/must be between \d+ and \d+ character/i.test(raw)) {

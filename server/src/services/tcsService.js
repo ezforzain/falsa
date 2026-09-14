@@ -268,13 +268,13 @@ export async function createShipment({
   const consigneeMobile = normalizePkMobile(order.shippingAddress.phone, 'Buyer mobile number');
   const { firstname, middlename, lastname } = splitFullName(order.shippingAddress.fullName);
 
-  // TCS rejects a 0-COD shipment ("Declared value is mandatory for 0 COD shipments. Please
-  // enter a value from 100 to 199999") unless declaredvalue is set — confirmed against the
-  // sandbox. Default it to the order's own value so callers don't need to know this TCS-specific
-  // rule; only applies when there's no COD amount collecting the value instead.
+  // TCS's Booking-Create rejects a null/missing declaredvalue outright ("Insert value in
+  // number.") — not just for a 0-COD shipment as first assumed here; every shipment needs a real
+  // number in this field, clamped to the 100–199999 range TCS accepts. Defaults to the order's
+  // own value so callers don't need to know this TCS-specific rule.
   const normalizedCod = Math.max(0, Math.round(Number(codamount) || 0));
   const orderValue = Math.round(Number(order.unitPrice || 0) * Number(order.qty || 1));
-  const resolvedDeclaredValue = normalizedCod === 0 ? Math.min(199999, Math.max(100, orderValue || 100)) : null;
+  const resolvedDeclaredValue = Math.min(199999, Math.max(100, orderValue || 100));
 
   const body = {
     accesstoken,
