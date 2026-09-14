@@ -620,6 +620,27 @@ export default function AdminPage() {
     }
   };
 
+  // Stock +/- on the Products grid: patches just this product in place instead of calling
+  // loadProducts(), which would flip productsLoading and flash the whole grid back to skeletons.
+  // Updates optimistically, then reconciles with the server response (or rolls back on failure).
+  const [stockPendingId, setStockPendingId] = useState(null);
+  const handleSetStock = async (product, value) => {
+    const next = Math.max(0, value);
+    const prevStock = product.stock;
+    if (next === (prevStock ?? 0)) return;
+    setStockPendingId(product.id);
+    setProducts((current) => current.map((p) => (p.id === product.id ? { ...p, stock: next } : p)));
+    try {
+      const { product: updated } = await admin.updateProduct(product.id, { stock: next });
+      setProducts((current) => current.map((p) => (p.id === product.id ? { ...p, ...updated } : p)));
+    } catch (err) {
+      setProducts((current) => current.map((p) => (p.id === product.id ? { ...p, stock: prevStock } : p)));
+      showToast(err.message || 'Could not update stock');
+    } finally {
+      setStockPendingId(null);
+    }
+  };
+
   const handleDeleteUser = async () => {
     if (!deleteUserTarget) return;
     setDeleteUserLoading(true);
@@ -825,6 +846,8 @@ export default function AdminPage() {
           handleSetSpotlight={handleSetSpotlight}
           reachPendingId={reachPendingId}
           handleSetReach={handleSetReach}
+          stockPendingId={stockPendingId}
+          handleSetStock={handleSetStock}
         />
       )}
 
