@@ -51,6 +51,7 @@ export async function syncSellerProductToCatalog(sellerProduct, ownerUser) {
       _id: id,
       name: sellerProduct.name,
       sellerId: sellerRef,
+      ownerUserId: ownerUser._id,
       seller: ownerUser.companyName,
       location: ownerUser.address || ownerUser.country || null,
       category: sellerProduct.category,
