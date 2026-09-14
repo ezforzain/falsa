@@ -94,8 +94,6 @@ export default function ProductsTab({
   setDeleteProductTarget,
   spotlightUpdatingId,
   handleSetSpotlight,
-  reachPendingId,
-  handleSetReach,
 }) {
   // Client-side search/pagination over the already-fetched `products` array — no new API calls.
   const [search, setSearch] = useState('');
@@ -218,33 +216,6 @@ export default function ProductsTab({
                           </button>
                         );
                       })}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-3 mt-3 border-t border-[var(--admin-border)]">
-                    <span className="text-[10.5px] font-semibold text-[var(--admin-text-muted)] uppercase tracking-wide shrink-0">Reach</span>
-                    <div className="flex items-center gap-1.5 flex-1 justify-end">
-                      <button
-                        type="button"
-                        disabled={reachPendingId === p.id || (p.reachBoost || 1) <= 1}
-                        onClick={() => handleSetReach(p, (p.reachBoost || 1) - 1)}
-                        className="cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed w-6 h-6 rounded-md bg-[var(--admin-canvas)] text-[var(--admin-ink-soft)] font-bold text-sm flex items-center justify-center hover:bg-[var(--admin-border)] transition-colors"
-                        aria-label="Lower reach"
-                      >
-                        −
-                      </button>
-                      <span className={`min-w-[34px] text-center text-xs font-bold ${(p.reachBoost || 1) > 1 ? 'text-[var(--admin-primary)]' : 'text-[var(--admin-text-muted)]'}`}>
-                        {reachPendingId === p.id ? '…' : `${p.reachBoost || 1}×`}
-                      </span>
-                      <button
-                        type="button"
-                        disabled={reachPendingId === p.id || (p.reachBoost || 1) >= 10}
-                        onClick={() => handleSetReach(p, (p.reachBoost || 1) + 1)}
-                        className="cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed w-6 h-6 rounded-md bg-[var(--admin-canvas)] text-[var(--admin-ink-soft)] font-bold text-sm flex items-center justify-center hover:bg-[var(--admin-border)] transition-colors"
-                        aria-label="Raise reach"
-                      >
-                        +
-                      </button>
                     </div>
                   </div>
                 </div>

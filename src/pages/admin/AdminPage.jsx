@@ -130,7 +130,6 @@ export default function AdminPage() {
   const [banDays, setBanDays] = useState('7');
   const [banPending, setBanPending] = useState(false);
   const [permanentBanTarget, setPermanentBanTarget] = useState(null);
-  const [reachPendingId, setReachPendingId] = useState(null);
 
   const [promotionRequests, setPromotionRequests] = useState([]);
   const [promotionsLoading, setPromotionsLoading] = useState(true);
@@ -605,21 +604,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleSetReach = async (product, value) => {
-    const next = Math.min(10, Math.max(1, value));
-    if (next === (product.reachBoost || 1)) return;
-    setReachPendingId(product.id);
-    try {
-      await admin.updateProduct(product.id, { reachBoost: next });
-      showToast(`Reach set to ${next}×`);
-      loadProducts();
-    } catch (err) {
-      showToast(err.message || 'Could not update reach');
-    } finally {
-      setReachPendingId(null);
-    }
-  };
-
   const handleDeleteUser = async () => {
     if (!deleteUserTarget) return;
     setDeleteUserLoading(true);
@@ -823,8 +807,6 @@ export default function AdminPage() {
           setDeleteProductTarget={setDeleteProductTarget}
           spotlightUpdatingId={spotlightUpdatingId}
           handleSetSpotlight={handleSetSpotlight}
-          reachPendingId={reachPendingId}
-          handleSetReach={handleSetReach}
         />
       )}
 
