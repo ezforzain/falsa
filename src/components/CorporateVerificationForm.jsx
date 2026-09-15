@@ -8,8 +8,8 @@ const isValidEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 function fieldClass(hasError) {
   return `w-full px-[16px] py-[12px] border rounded-xl text-[14.5px] font-sans bg-surface text-ink outline-none transition-shadow ${
     hasError
-      ? 'border-orange focus:border-orange focus:shadow-[0_0_0_3px_rgba(255,106,0,0.12)]'
-      : 'border-border focus:border-orange focus:shadow-[0_0_0_3px_rgba(255,106,0,0.12)]'
+      ? 'border-[#0b6bf2] focus:border-[#0b6bf2] focus:shadow-[0_0_0_3px_rgba(11,107,242,0.12)]'
+      : 'border-border focus:border-[#0b6bf2] focus:shadow-[0_0_0_3px_rgba(11,107,242,0.12)]'
   }`;
 }
 
@@ -18,11 +18,11 @@ function Field({ label, required, error, show, children }) {
   return (
     <div>
       <label htmlFor={id} className="block text-[13px] font-semibold text-ink-soft mb-2">
-        {label} {required && <span className="text-orange">*</span>}
+        {label} {required && <span className="text-[#0b6bf2]">*</span>}
       </label>
       {typeof children === 'function' ? children(id) : children}
       {show && error && (
-        <p className="flex items-center gap-1.5 text-xs text-orange-text mt-2">
+        <p className="flex items-center gap-1.5 text-xs text-[#c0392b] mt-2">
           <IconAlertCircle width="13" height="13" className="shrink-0" />
           {error}
         </p>
@@ -91,7 +91,7 @@ export default function CorporateVerificationForm({ value, onChange, onSubmit, o
   return (
     <div className="animate-fade-up">
       {onBack && (
-        <a onClick={onBack} className="cursor-pointer text-[13px] text-text-muted hover:text-orange-text font-medium">
+        <a onClick={onBack} className="cursor-pointer text-[13px] text-text-muted hover:text-[#0b6bf2] font-medium">
           ← Change seller type
         </a>
       )}
@@ -107,26 +107,26 @@ export default function CorporateVerificationForm({ value, onChange, onSubmit, o
                   aria-current={step === n ? 'step' : undefined}
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${
                     step > n
-                      ? 'bg-orange border-orange text-white'
+                      ? 'bg-[#0b6bf2] border-[#0b6bf2] text-white'
                       : step === n
-                        ? 'border-orange text-orange bg-orange-tint'
+                        ? 'border-[#0b6bf2] text-[#0b6bf2] bg-[#e4edfd]'
                         : 'border-border text-text-muted bg-surface'
                   }`}
                 >
                   {step > n ? <IconCheck width="14" height="14" strokeWidth="3" /> : n}
                 </span>
-                <span className={`text-[10.5px] font-semibold whitespace-nowrap ${step >= n ? 'text-orange-text' : 'text-text-muted'}`}>
+                <span className={`text-[10.5px] font-semibold whitespace-nowrap ${step >= n ? 'text-[#0a56c2]' : 'text-text-muted'}`}>
                   {label}
                 </span>
               </div>
-              {n < STEPS.length && <div className={`flex-1 h-[2px] mx-2 rounded-full transition-colors ${step > n ? 'bg-orange' : 'bg-border'}`} />}
+              {n < STEPS.length && <div className={`flex-1 h-[2px] mx-2 rounded-full transition-colors ${step > n ? 'bg-[#0b6bf2]' : 'bg-border'}`} />}
             </div>
           );
         })}
       </div>
 
       {error && (
-        <p className="flex items-center gap-1.5 text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-5">
+        <p className="flex items-center gap-1.5 text-sm text-[#c0392b] bg-[#fdecea] rounded-lg px-3.5 py-2.5 mb-5">
           <IconAlertCircle width="14" height="14" className="shrink-0" />
           {error}
         </p>
@@ -264,7 +264,7 @@ export default function CorporateVerificationForm({ value, onChange, onSubmit, o
           <button
             type="button"
             onClick={goNext}
-            className="hidden sm:flex items-center justify-center gap-2 cursor-pointer bg-orange hover:bg-orange-hover text-white font-semibold text-[15px] py-[14px] rounded-xl shadow-[0_8px_20px_rgba(255,106,0,0.3)] transition-all hover:-translate-y-0.5 mt-2"
+            className="hidden sm:flex items-center justify-center gap-2 cursor-pointer bg-[#0b6bf2] hover:bg-[#0a5fd8] text-white font-semibold text-[15px] py-[14px] rounded-xl shadow-[0_8px_20px_rgba(11,107,242,0.3)] transition-all hover:-translate-y-0.5 mt-2"
           >
             Next: Bank Information
           </button>
@@ -274,7 +274,7 @@ export default function CorporateVerificationForm({ value, onChange, onSubmit, o
             <button
               type="button"
               onClick={goNext}
-              className="w-full flex items-center justify-center gap-2 cursor-pointer bg-orange hover:bg-orange-hover text-white font-semibold text-[15px] py-[14px] rounded-xl shadow-[0_8px_20px_rgba(255,106,0,0.3)] transition-all"
+              className="w-full flex items-center justify-center gap-2 cursor-pointer bg-[#0b6bf2] hover:bg-[#0a5fd8] text-white font-semibold text-[15px] py-[14px] rounded-xl shadow-[0_8px_20px_rgba(11,107,242,0.3)] transition-all"
             >
               Next: Bank Information
             </button>
@@ -361,7 +361,7 @@ export default function CorporateVerificationForm({ value, onChange, onSubmit, o
               type="button"
               onClick={submit}
               disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-orange hover:bg-orange-hover text-white font-semibold text-[15px] py-[14px] rounded-xl shadow-[0_8px_20px_rgba(255,106,0,0.3)] transition-all hover:-translate-y-0.5"
+              className="flex-1 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-[#0b6bf2] hover:bg-[#0a5fd8] text-white font-semibold text-[15px] py-[14px] rounded-xl shadow-[0_8px_20px_rgba(11,107,242,0.3)] transition-all hover:-translate-y-0.5"
             >
               {loading && (
                 <span className="w-4 h-4 border-[2.5px] border-white/35 rounded-full inline-block" style={{ borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
@@ -382,7 +382,7 @@ export default function CorporateVerificationForm({ value, onChange, onSubmit, o
               type="button"
               onClick={submit}
               disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-orange hover:bg-orange-hover text-white font-semibold text-sm py-[14px] rounded-xl shadow-[0_8px_20px_rgba(255,106,0,0.3)] transition-all"
+              className="flex-1 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-[#0b6bf2] hover:bg-[#0a5fd8] text-white font-semibold text-sm py-[14px] rounded-xl shadow-[0_8px_20px_rgba(11,107,242,0.3)] transition-all"
             >
               {loading && (
                 <span className="w-3.5 h-3.5 border-2 border-white/35 rounded-full inline-block" style={{ borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
