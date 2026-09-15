@@ -196,21 +196,27 @@ export default function AuthPage() {
 
   // Deep links (e.g. the "Become a Partner" / "Customer Sign Up" rows in the account menu) can
   // jump straight to the seller or buyer sign-up form via /auth?screen=signup&role=seller (or
-  // role=buyer), instead of always landing on the plain sign-in screen.
+  // role=buyer), instead of always landing on the plain sign-in screen. Keyed off `searchParams`
+  // (not just run-once-on-mount) so that landing back on plain /auth — e.g. a redirect from
+  // CartPage while this page is already mounted on a signup deep link — reliably falls back to
+  // the sign-in screen instead of leaving a stale sign-up screen showing: React Router doesn't
+  // remount this component for a query-only change on the same route path.
   const [searchParams] = useSearchParams();
   useEffect(() => {
     const wantsSignup = searchParams.get('screen') === 'signup';
     const wantsSeller = searchParams.get('role') === 'seller';
     const wantsBuyer = searchParams.get('role') === 'buyer';
+    if (!wantsSignup) {
+      setScreen('signin');
+      setSigninError(null);
+      return;
+    }
     if (wantsSeller) setRole(ROLE_SELLER);
     if (wantsBuyer) setRole(ROLE_BUYER);
-    if (wantsSignup) {
-      setScreen('signup');
-      setSignupStep(wantsSeller || wantsBuyer ? 2 : 1);
-    }
-    // Only ever applies on the initial load of this page.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setScreen('signup');
+    setSignupStep(wantsSeller || wantsBuyer ? 2 : 1);
+    setSignupError(null);
+  }, [searchParams]);
 
   const goSignin = () => {
     setScreen('signin');
