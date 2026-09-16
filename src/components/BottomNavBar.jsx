@@ -4,9 +4,11 @@ import { useLanguage } from '../context/LanguageContext';
 import { IconHome, IconGrid, IconMessageCircle, IconCart, IconUser } from './icons';
 
 const ACTIVE_COLOR = '#FF6A00';
-// Messages gets the brand green instead of the usual orange active color — matches the green
-// chat accent used throughout MessengerPage (icon badge, "Start a Chat" button, bubbles).
-const ACTIVE_COLOR_BY_KEY = { messenger: '#0E5A46' };
+// Messages and Account get the brand green instead of the usual orange active color — Messages
+// matches the green chat accent used throughout MessengerPage (icon badge, "Start a Chat"
+// button, bubbles); Account matches the green used across the profile page itself (avatar ring,
+// buttons, badges).
+const ACTIVE_COLOR_BY_KEY = { messenger: '#0E5A46', account: '#0E5A46' };
 
 // "account" just navigates to /account like every other tab — the account menu itself only
 // opens from that page (see the trigger inside AccountPage), matching desktop exactly, where

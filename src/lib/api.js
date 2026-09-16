@@ -126,6 +126,7 @@ export const auth = {
   updatePreferences: (payload) => request('/api/auth/preferences', { method: 'PATCH', body: payload, auth: true }),
   updateAvatar: (avatarUrl) => request('/api/auth/avatar', { method: 'PATCH', body: { avatarUrl }, auth: true }),
   updateBanner: (bannerUrl) => request('/api/auth/banner', { method: 'PATCH', body: { bannerUrl }, auth: true }),
+  updateAddress: (address) => request('/api/auth/address', { method: 'PATCH', body: { address }, auth: true }),
   verifyEmail: (token) => request('/api/auth/verify-email', { method: 'POST', body: { token } }),
   resendVerificationEmail: () => request('/api/auth/verify-email/resend', { method: 'POST', auth: true }),
   forgotPassword: (email) => request('/api/auth/forgot-password', { method: 'POST', body: { email } }),

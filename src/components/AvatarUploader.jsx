@@ -13,7 +13,7 @@ const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.hei
 // screen just displays whatever context/user.avatarUrl already says via <Avatar>; updating it
 // here through AuthContext's updateAvatar propagates everywhere automatically because they all
 // read from the same user object.
-export default function AvatarUploader({ size = 96, avatarClassName = '' }) {
+export default function AvatarUploader({ size = 96, avatarClassName = '', showActions = true }) {
   const { user, updateAvatar } = useAuth();
   const inputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -89,27 +89,29 @@ export default function AvatarUploader({ size = 96, avatarClassName = '' }) {
         </button>
       </div>
 
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={pickFile}
-          disabled={uploading}
-          className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 text-[13px] font-semibold text-green hover:underline"
-        >
-          Edit Profile Picture
-        </button>
-        {user?.avatarUrl && (
+      {showActions && (
+        <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={handleRemove}
+            onClick={pickFile}
             disabled={uploading}
-            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 flex items-center gap-1 text-[13px] font-semibold text-orange-text hover:underline"
+            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 text-[13px] font-semibold text-green hover:underline"
           >
-            <IconTrash width="12" height="12" />
-            Remove
+            Edit Profile Picture
           </button>
-        )}
-      </div>
+          {user?.avatarUrl && (
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={uploading}
+              className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 flex items-center gap-1 text-[13px] font-semibold text-orange-text hover:underline"
+            >
+              <IconTrash width="12" height="12" />
+              Remove
+            </button>
+          )}
+        </div>
+      )}
 
       <input
         ref={inputRef}
