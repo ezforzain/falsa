@@ -14,6 +14,7 @@ import CartPage from './pages/CartPage';
 import OrdersPage from './pages/OrdersPage';
 import CategoriesPage from './pages/CategoriesPage';
 import MessengerPage from './pages/MessengerPage';
+import ConversationPage from './pages/ConversationPage';
 import AccountPage from './pages/AccountPage';
 import AddressesPage from './pages/AddressesPage';
 import WishlistPage from './pages/WishlistPage';
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/messenger" element={<MessengerPage />} />
+          <Route path="/messenger/:id" element={<ConversationPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/addresses" element={<AddressesPage />} />
           <Route path="/wishlist" element={<WishlistPage />} />

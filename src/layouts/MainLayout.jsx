@@ -9,10 +9,10 @@ export default function MainLayout() {
   const { pathname } = useLocation();
   // On mobile, these routes get their own full-screen presentation — Home and Spotlight are
   // meant to read as endless product feeds (no footer/info block breaking up the scroll), and
-  // Account already has BottomNavBar as its only navigation chrome. The desktop-style
-  // Header/Footer would just be clutter above the bottom tab bar.
+  // Account/Messenger's list already have BottomNavBar as their only navigation chrome. The
+  // desktop-style Header/Footer would just be clutter above the bottom tab bar.
   // Desktop still gets full chrome everywhere since it has no bottom nav to fall back on.
-  const BARE_MOBILE_ROUTES = ['/', '/spotlight', '/account'];
+  const BARE_MOBILE_ROUTES = ['/', '/spotlight', '/account', '/messenger'];
   const isMobileBare = isMobile && BARE_MOBILE_ROUTES.includes(pathname);
 
   // Product detail owns its own chrome on mobile: a compact sticky header (see
@@ -20,7 +20,12 @@ export default function MainLayout() {
   // the generic Header, and the page's existing StickyActionBar replaces BottomNavBar — showing
   // both bottom bars at once would be redundant.
   const isMobileProductDetail = isMobile && pathname.startsWith('/product/');
-  if (isMobileProductDetail) {
+  // An open conversation (/messenger/:id) is a full-screen chat, not just another bare page: it
+  // drops BottomNavBar too (not only Header/Footer), so the on-screen keyboard never has to
+  // fight a second fixed-position bar for space — see ConversationPage's own h-[100dvh] flex
+  // column, whose last child (the composer) is what actually stays above the keyboard.
+  const isMobileConversation = isMobile && pathname.startsWith('/messenger/');
+  if (isMobileProductDetail || isMobileConversation) {
     return (
       <div className="font-sans text-ink bg-surface min-h-screen">
         <Outlet />

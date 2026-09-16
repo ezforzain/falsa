@@ -17,21 +17,49 @@ function buyerIdFor(req) {
   return req.user ? String(req.user._id) : req.guestId;
 }
 
-function serialize(conv) {
+// sellerLogoUrl lets the chat list/header show the seller's real store logo (via the shared
+// <Avatar> component, same as everywhere else a seller's identity is shown) instead of always
+// falling back to an initial letter.
+function serialize(conv, sellerLogoUrl = null) {
   return {
     id: conv._id,
     sellerId: conv.sellerId,
     sellerName: conv.sellerName,
-    messages: conv.messages,
+    sellerLogoUrl,
+    messages: conv.messages.map((m, i) => ({ index: i, from: m.from, text: m.text, at: m.at })),
     unread: conv.buyerUnread || 0,
   };
+}
+
+// One Seller query for the whole list instead of one per conversation.
+async function serializeList(conversations) {
+  const sellerIds = [...new Set(conversations.map((c) => String(c.sellerId)))];
+  const sellers = sellerIds.length ? await Seller.find({ _id: { $in: sellerIds } }).select('logoUrl') : [];
+  const logoById = new Map(sellers.map((s) => [String(s._id), s.logoUrl]));
+  return conversations.map((c) => serialize(c, logoById.get(String(c.sellerId)) || null));
+}
+
+async function serializeOne(conv) {
+  const seller = await Seller.findById(conv.sellerId).select('logoUrl').catch(() => null);
+  return serialize(conv, seller?.logoUrl || null);
 }
 
 router.get(
   '/conversations',
   asyncHandler(async (req, res) => {
     const conversations = await Conversation.find({ buyerId: buyerIdFor(req) }).sort({ updatedAt: -1 });
-    res.json({ conversations: conversations.map(serialize) });
+    res.json({ conversations: await serializeList(conversations) });
+  })
+);
+
+// Single-thread fetch for the full-screen conversation view (ConversationPage) — avoids
+// re-fetching the whole list just to open/poll one chat.
+router.get(
+  '/conversations/:id',
+  asyncHandler(async (req, res) => {
+    const conv = await Conversation.findOne({ _id: req.params.id, buyerId: buyerIdFor(req) });
+    if (!conv) return res.status(404).json({ message: 'Conversation not found.' });
+    res.json({ conversation: await serializeOne(conv) });
   })
 );
 
@@ -54,7 +82,7 @@ router.post(
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
-    res.json({ conversation: serialize(conv) });
+    res.json({ conversation: serialize(conv, sellerDoc.logoUrl || null) });
   })
 );
 
@@ -70,7 +98,7 @@ router.post(
     conv.messages.push({ from: 'buyer', text, at: new Date() });
     conv.sellerUnread = (conv.sellerUnread || 0) + 1;
     await conv.save();
-    res.json({ conversation: serialize(conv) });
+    res.json({ conversation: await serializeOne(conv) });
   })
 );
 
@@ -83,7 +111,41 @@ router.patch(
       conv.buyerUnread = 0;
       await conv.save();
     }
-    res.json({ conversation: serialize(conv) });
+    res.json({ conversation: await serializeOne(conv) });
+  })
+);
+
+// Deletes the whole thread from the buyer's side only — the seller's own copy of the
+// conversation is untouched, same as a one-sided "delete chat" in most messengers. Buyer-scoped
+// by construction (the query itself is buyerId-filtered), so this can't touch anyone else's data.
+router.delete(
+  '/conversations/:id',
+  asyncHandler(async (req, res) => {
+    const result = await Conversation.deleteOne({ _id: req.params.id, buyerId: buyerIdFor(req) });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Conversation not found.' });
+    res.json({ ok: true });
+  })
+);
+
+// Deletes one message the buyer sent. Messages are plain subdocuments with no _id of their own
+// (see models/Conversation.js), so the position in the array — which the client already has,
+// having rendered it — is the address; re-checking `from === 'buyer'` server-side means this can
+// never be used to delete the seller's side of the conversation, only re-derived from trusted
+// state, not from client-supplied text/from values.
+router.delete(
+  '/conversations/:id/messages/:index',
+  asyncHandler(async (req, res) => {
+    const conv = await Conversation.findOne({ _id: req.params.id, buyerId: buyerIdFor(req) });
+    if (!conv) return res.status(404).json({ message: 'Conversation not found.' });
+
+    const index = Number(req.params.index);
+    const target = Number.isInteger(index) ? conv.messages[index] : null;
+    if (!target || target.from !== 'buyer') {
+      return res.status(404).json({ message: 'Message not found.' });
+    }
+    conv.messages.splice(index, 1);
+    await conv.save();
+    res.json({ conversation: await serializeOne(conv) });
   })
 );
 

@@ -8,6 +8,11 @@ export async function loadConversations() {
   return conversations;
 }
 
+export async function loadConversation(conversationId) {
+  const { conversation } = await messagesApi.conversation(conversationId);
+  return conversation;
+}
+
 // Used when a buyer arrives via "Chat" on a product/seller page so that seller's conversation is
 // ready to type into immediately, without them having to find it in a list first.
 export async function getOrCreateConversation(seller, buyerName) {
@@ -26,5 +31,17 @@ export async function sendBuyerMessage(conversationId, text) {
 
 export async function markBuyerRead(conversationId) {
   const { conversation } = await messagesApi.markRead(conversationId);
+  return conversation;
+}
+
+// One-sided delete — removes the thread from this buyer's list only, see the route's own comment.
+export async function deleteConversation(conversationId) {
+  await messagesApi.deleteConversation(conversationId);
+}
+
+// index is the message's position in `messages` as last rendered — the server re-checks
+// from === 'buyer' itself, so a stale/wrong index just 404s instead of deleting anything unsafe.
+export async function deleteBuyerMessage(conversationId, index) {
+  const { conversation } = await messagesApi.deleteMessage(conversationId, index);
   return conversation;
 }
