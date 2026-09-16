@@ -25,7 +25,7 @@ export const translations = {
     nav: {
       home: 'Home',
       categories: 'Categories',
-      messenger: 'Messenger',
+      messenger: 'Messages',
       cart: 'Cart',
       account: 'Account',
       spotlight: 'Spotlight',
