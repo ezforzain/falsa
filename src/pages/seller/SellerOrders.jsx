@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { IconBox, IconReceipt } from '../../components/icons';
 import TrackingWidget from '../../components/TrackingWidget';
 import ShipOrderModal from '../../components/seller/ShipOrderModal';
+import StatCard from '../../components/seller/StatCard';
 import StatusChipMenu from '../../components/seller/StatusChipMenu';
 import { ORDER_STATUSES } from './statusStyles';
 import { ORDER_CHIP } from './statusChipPalette';
@@ -120,9 +121,32 @@ export default function SellerOrders() {
     </>
   );
 
+  const totalCount = orders.length;
+  const pendingCount = orders.filter((o) => o.status === 'Pending').length;
+  const shippedCount = orders.filter((o) => o.status === 'Shipped').length;
+  const deliveredCount = orders.filter((o) => o.status === 'Delivered').length;
+
   return (
     <div className="animate-fade-up flex flex-col gap-4">
       <div className="text-[11px] tracking-[1.6px] uppercase font-bold text-text">Orders placed for your listings, most recent first.</div>
+
+      {loading ? (
+        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="animate-pulse bg-surface border border-border rounded-[20px] h-[110px]" />
+          ))}
+        </div>
+      ) : (
+        !error &&
+        orders.length > 0 && (
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+            <StatCard label="Total orders" value={totalCount} note="Lifetime" />
+            <StatCard label="Pending" value={pendingCount} note="Needs action" />
+            <StatCard label="Shipped" value={shippedCount} note="In transit" />
+            <StatCard label="Delivered" value={deliveredCount} note="Completed" />
+          </div>
+        )
+      )}
 
       {loading && (
         <div className="flex flex-col gap-3">
