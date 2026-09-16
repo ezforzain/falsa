@@ -5,6 +5,7 @@ import StoreLogoUploader from '../../components/StoreLogoUploader';
 import StoreBannerUploader from '../../components/StoreBannerUploader';
 import PromoBannerManager from '../../components/PromoBannerManager';
 import StoreSectionsManager from '../../components/StoreSectionsManager';
+import SellerCard from '../../components/seller/SellerCard';
 import { IconStore } from '../../components/icons';
 
 export default function SellerStoreProfile() {
@@ -17,12 +18,14 @@ export default function SellerStoreProfile() {
   const [saveError, setSaveError] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
 
+  const fromStore = (s) => ({ logoUrl: s.logoUrl || null, bannerUrl: s.bannerUrl || null, description: s.description || '', hours: s.hours || '' });
+
   useEffect(() => {
     seller
       .getStoreProfile()
       .then(({ store: s }) => {
         setStore(s);
-        setForm({ logoUrl: s.logoUrl || null, bannerUrl: s.bannerUrl || null, description: s.description || '', hours: s.hours || '' });
+        setForm(fromStore(s));
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -48,17 +51,17 @@ export default function SellerStoreProfile() {
     }
   };
 
+  const reset = () => {
+    if (store) setForm(fromStore(store));
+    setSaveError(null);
+  };
+
   const fieldClass =
-    'w-full px-[16px] py-[12px] border border-border rounded-xl text-[14.5px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
+    'w-full px-[16px] py-[12px] border border-border rounded-xl text-[14.5px] font-sans bg-surface-muted text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(59,111,224,0.12)] transition-shadow';
   const labelClass = 'block text-[13px] font-semibold text-ink-soft mb-2';
 
   return (
-    <div className="animate-fade-up max-w-[560px]">
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Store profile</h1>
-        <p className="text-sm text-text mt-1">This is what buyers see on your public store page.</p>
-      </div>
-
+    <div className="animate-fade-up max-w-[640px] flex flex-col gap-4">
       {loading && <div className="animate-pulse bg-surface border border-border rounded-2xl h-[320px]" />}
 
       {!loading && error && (
@@ -66,7 +69,7 @@ export default function SellerStoreProfile() {
       )}
 
       {!loading && !error && store && (
-        <div className="bg-surface border border-border rounded-2xl p-6">
+        <SellerCard eyebrow="Store profile">
           {saveError && <p className="text-sm text-orange-text bg-orange-tint rounded-lg px-3.5 py-2.5 mb-5">{saveError}</p>}
 
           <div className="flex flex-col gap-4">
@@ -106,36 +109,44 @@ export default function SellerStoreProfile() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={submit}
-            disabled={saving}
-            className="mt-6 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-sm py-3 px-7 rounded-full shadow-[0_6px_16px_rgba(14,90,70,0.25)] transition-colors"
-          >
-            {saving && (
-              <span className="w-3.5 h-3.5 border-2 border-white/35 rounded-full inline-block" style={{ borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
-            )}
-            {saving ? 'Saving…' : 'Save changes'}
-          </button>
-        </div>
+          <div className="flex items-center gap-3 justify-end mt-6">
+            <button
+              type="button"
+              onClick={reset}
+              disabled={saving}
+              className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-transparent border border-border text-text hover:border-border-strong font-semibold text-sm py-2.5 px-5 rounded-full transition-colors"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={saving}
+              className="flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-sm py-3 px-7 rounded-full shadow-[0_6px_16px_rgba(59,111,224,0.25)] transition-colors"
+            >
+              {saving && (
+                <span className="w-3.5 h-3.5 border-2 border-white/35 rounded-full inline-block" style={{ borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
+              )}
+              {saving ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
+        </SellerCard>
       )}
 
       {!loading && !error && store && (
         <>
-          <div className="bg-surface border border-border rounded-2xl p-6 mt-4">
-            <h2 className="font-display text-lg font-bold text-ink mb-1">Promo banners</h2>
-            <p className="text-sm text-text mb-5">Extra sale/announcement banners, shown as a carousel above your products. GIFs supported.</p>
+          <SellerCard eyebrow="Promo banners">
+            <p className="text-sm text-text mb-5 -mt-2">Extra sale/announcement banners, shown as a carousel above your products. GIFs supported.</p>
             <PromoBannerManager banners={store.promoBanners} onChange={(promoBanners) => setStore((s) => ({ ...s, promoBanners }))} />
-          </div>
+          </SellerCard>
 
-          <div className="bg-surface border border-border rounded-2xl p-6 mt-4">
-            <h2 className="font-display text-lg font-bold text-ink mb-1">Custom sections</h2>
-            <p className="text-sm text-text mb-5">
+          <SellerCard eyebrow="Custom sections">
+            <p className="text-sm text-text mb-5 -mt-2">
               Group your own products into named sections — e.g. "New Arrivals" — shown on your public store page. Only affects your
               store, not the platform-wide catalog.
             </p>
             <StoreSectionsManager sections={store.sections} products={products} onChange={(sections) => setStore((s) => ({ ...s, sections }))} />
-          </div>
+          </SellerCard>
         </>
       )}
 

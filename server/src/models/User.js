@@ -45,6 +45,20 @@ const userSchema = new mongoose.Schema(
     // Cooldown for the resend button — see /api/auth/verify-email/resend.
     emailVerificationSentAt: { type: Date, default: null },
 
+    // Forgot-password OTP (see POST /api/auth/forgot-password + /forgot-password/verify). The
+    // 6-digit code itself is never stored, only its hash — same reasoning as email verification.
+    // attempts locks the code out after repeated wrong guesses instead of allowing unlimited
+    // brute-force of a 6-digit space; sentAt drives the resend cooldown.
+    passwordResetOtpHash: { type: String, default: null },
+    passwordResetOtpExpires: { type: Date, default: null },
+    passwordResetOtpAttempts: { type: Number, default: 0 },
+    passwordResetSentAt: { type: Date, default: null },
+    // Short-lived credential issued once the OTP above is verified, so POST /reset-password can
+    // trust "this request already proved it owns the email" without re-sending/re-checking the
+    // OTP — same hashed-token shape as email verification, just much shorter-lived.
+    passwordResetTokenHash: { type: String, default: null },
+    passwordResetTokenExpires: { type: Date, default: null },
+
     sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller', default: null },
     sellerType: { type: String, enum: ['individual', 'corporate', null], default: null },
 
@@ -104,6 +118,8 @@ userSchema.methods.toPublicJSON = function toPublicJSON() {
   delete obj.passwordHash;
   delete obj.businessDocument;
   delete obj.emailVerificationTokenHash;
+  delete obj.passwordResetOtpHash;
+  delete obj.passwordResetTokenHash;
   delete obj.__v;
   return obj;
 };

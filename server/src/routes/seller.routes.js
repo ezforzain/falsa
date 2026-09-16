@@ -320,6 +320,13 @@ router.patch(
           .status(400)
           .json({ message: 'Please add your pickup address and city in Settings before shipping with Falsafah.' });
       }
+      try {
+        tcsService.normalizePkMobile(req.user.phone, 'Seller pickup mobile');
+      } catch (err) {
+        return res
+          .status(400)
+          .json({ message: `${err.message} Please update your phone number in Settings.` });
+      }
 
       const settings = await MarketplaceSettings.findOne();
       if (!settings?.tcsCostCenterCode || !settings?.tcsServiceCode) {

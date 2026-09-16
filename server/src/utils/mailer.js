@@ -48,3 +48,31 @@ export async function sendVerificationEmail(user, token) {
     `,
   });
 }
+
+export async function sendPasswordResetOtpEmail(user, code) {
+  const resend = getClient();
+  if (!resend) {
+    throw new Error('Email delivery is not configured (RESEND_API_KEY missing).');
+  }
+  const from = process.env.EMAIL_FROM || 'Falsafah <onboarding@resend.dev>';
+
+  await resend.emails.send({
+    from,
+    to: user.email,
+    subject: `${code} is your Falsafah password reset code`,
+    html: `
+      <div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #1a1a1a;">
+        <h1 style="font-size: 20px; margin: 0 0 16px;">Reset your password</h1>
+        <p style="font-size: 15px; line-height: 1.5; margin: 0 0 24px;">
+          Hi ${user.companyName || 'there'}, use this code to reset your Falsafah account password:
+        </p>
+        <div style="font-size: 32px; font-weight: 700; letter-spacing: 8px; text-align: center; background: #f1f3f7; border-radius: 12px; padding: 20px; margin: 0 0 24px;">
+          ${code}
+        </div>
+        <p style="font-size: 13px; line-height: 1.5; color: #666; margin: 0;">
+          This code expires in 10 minutes. If you didn't request a password reset, you can ignore this email — your password won't change.
+        </p>
+      </div>
+    `,
+  });
+}

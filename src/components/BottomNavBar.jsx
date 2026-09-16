@@ -4,6 +4,9 @@ import { useLanguage } from '../context/LanguageContext';
 import { IconHome, IconGrid, IconMessageCircle, IconCart, IconUser } from './icons';
 
 const ACTIVE_COLOR = '#FF6A00';
+// Messages gets the brand green instead of the usual orange active color — matches the green
+// chat accent used throughout MessengerPage (icon badge, "Start a Chat" button, bubbles).
+const ACTIVE_COLOR_BY_KEY = { messenger: '#0E5A46' };
 
 // "account" just navigates to /account like every other tab — the account menu itself only
 // opens from that page (see the trigger inside AccountPage), matching desktop exactly, where
@@ -40,18 +43,19 @@ export default function BottomNavBar() {
         {TABS.map(({ key, label, to, icon: Icon, match }) => {
           const active = match(pathname);
           const badge = key === 'messenger' && unreadMessageCount > 0 ? unreadMessageCount : null;
+          const activeColor = ACTIVE_COLOR_BY_KEY[key] || ACTIVE_COLOR;
           return (
             <Link
               key={key}
               to={to}
               aria-current={active ? 'page' : undefined}
-              className="group flex flex-col items-center justify-center gap-1 min-w-0 mx-0.5 my-1.5 rounded-2xl outline-none transition-transform duration-150 active:scale-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#FF6A00]"
+              className="relative group flex flex-col items-center justify-center gap-1 min-w-0 mx-0.5 my-1.5 rounded-2xl outline-none transition-transform duration-150 active:scale-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#FF6A00]"
             >
               <span className="relative flex items-center justify-center">
                 <Icon
                   className="transition-all duration-200 ease-out"
                   style={{
-                    color: active ? ACTIVE_COLOR : 'var(--color-text-muted)',
+                    color: active ? activeColor : 'var(--color-text-muted)',
                     transform: active ? 'scale(1.12)' : 'scale(1)',
                   }}
                   strokeWidth={active ? 2.25 : 2}
@@ -64,10 +68,17 @@ export default function BottomNavBar() {
               </span>
               <span
                 className="text-[11px] font-medium leading-none whitespace-nowrap transition-colors duration-200 ease-out"
-                style={{ color: active ? ACTIVE_COLOR : 'var(--color-text-muted)' }}
+                style={{ color: active ? activeColor : 'var(--color-text-muted)' }}
               >
                 {label}
               </span>
+              {active && (
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-0.5 w-5 h-[3px] rounded-full"
+                  style={{ backgroundColor: activeColor }}
+                />
+              )}
             </Link>
           );
         })}

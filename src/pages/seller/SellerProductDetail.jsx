@@ -7,6 +7,8 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import Toast from '../../components/Toast';
 import ImageGallery from '../../components/ImageGallery';
 import { IconArrowRight, IconBox, IconEdit, IconEye, IconTrash } from '../../components/icons';
+import StatusChipMenu from '../../components/seller/StatusChipMenu';
+import { PRODUCT_CHIP, PRODUCT_LABEL } from './statusChipPalette';
 
 export default function SellerProductDetail() {
   const { id } = useParams();
@@ -158,13 +160,7 @@ export default function SellerProductDetail() {
         {/* Info */}
         <div>
           <div className="flex items-center gap-2 flex-wrap mb-3">
-            <span
-              className={`text-xs font-bold px-3 py-1 rounded-full ${
-                product.status === 'active' ? 'bg-green-tint text-green' : 'bg-surface-muted text-text-muted'
-              }`}
-            >
-              {product.status === 'active' ? 'Active' : 'Draft'}
-            </span>
+            <StatusChipMenu status={product.status} palette={PRODUCT_CHIP} labelFor={PRODUCT_LABEL} readOnly />
             <span className="text-xs font-semibold px-3 py-1 rounded-full bg-orange-tint text-orange-text">{product.category}</span>
           </div>
 
@@ -209,7 +205,7 @@ export default function SellerProductDetail() {
                 setFormError(null);
                 setFormOpen(true);
               }}
-              className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-green hover:bg-green-hover text-white font-semibold text-sm py-3 rounded-full shadow-[0_6px_16px_rgba(14,90,70,0.25)] transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 cursor-pointer bg-green hover:bg-green-hover text-white font-semibold text-sm py-3 rounded-full shadow-[0_6px_16px_rgba(59,111,224,0.25)] transition-colors"
             >
               <IconEdit width="15" height="15" />
               Edit product

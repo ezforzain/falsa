@@ -19,6 +19,42 @@ export function hashEmailVerificationToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
+// Forgot-password OTP: a 6-digit code, short-lived (10 min — long enough to check an inbox,
+// short enough that a leaked/guessed code stops being useful quickly). Only its hash is stored,
+// same reasoning as the email verification token above.
+const PASSWORD_RESET_OTP_TTL_MS = 10 * 60 * 1000; // 10m
+
+export function createPasswordResetOtp() {
+  const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+  return {
+    code,
+    codeHash: hashPasswordResetOtp(code),
+    expires: new Date(Date.now() + PASSWORD_RESET_OTP_TTL_MS),
+  };
+}
+
+export function hashPasswordResetOtp(code) {
+  return crypto.createHash('sha256').update(code).digest('hex');
+}
+
+// Issued once the OTP above is verified — proves "this request already confirmed the email" to
+// the final reset-password call without needing to re-send/re-check the OTP. Short-lived (15 min)
+// since it only needs to bridge the OTP screen to the "set a new password" screen.
+const PASSWORD_RESET_TOKEN_TTL_MS = 15 * 60 * 1000; // 15m
+
+export function createPasswordResetToken() {
+  const token = crypto.randomBytes(32).toString('hex');
+  return {
+    token,
+    tokenHash: hashPasswordResetToken(token),
+    expires: new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS),
+  };
+}
+
+export function hashPasswordResetToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 // sessionId, when passed, ties this token to a Session document (see models/Session.js) so it
 // can be individually revoked later — see middleware/auth.js. Omitted only for tokens minted
 // before sessions existed; there is no other caller that should skip it.

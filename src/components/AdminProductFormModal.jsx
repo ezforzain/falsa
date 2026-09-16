@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ProductImagesUploader from './ProductImagesUploader';
 import ModalShell, { ModalError, adminFieldClass, adminLabelClass } from './admin/ui/ModalShell';
 import Button from './admin/ui/Button';
+import { IconChevronDown, IconSearch, IconCheck, IconStore } from './icons';
 
 const MAX_IMAGES = 6;
 
@@ -29,6 +30,9 @@ const emptyForm = {
 // needs to always match something a buyer-facing filter actually recognizes.
 export default function AdminProductFormModal({ open, product, sellersList, categoriesList, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
+  const [storeOpen, setStoreOpen] = useState(false);
+  const [storeQuery, setStoreQuery] = useState('');
+  const storeRef = useRef(null);
   const isEdit = Boolean(product);
 
   useEffect(() => {
@@ -54,16 +58,49 @@ export default function AdminProductFormModal({ open, product, sellersList, cate
 
   useEffect(() => {
     if (!open) return;
-    const onKeyDown = (e) => e.key === 'Escape' && onClose();
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape') return;
+      if (storeOpen) {
+        setStoreOpen(false);
+        return;
+      }
+      onClose();
+    };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+  }, [open, onClose, storeOpen]);
+
+  useEffect(() => {
+    if (!storeOpen) return;
+    const onPointerDown = (e) => {
+      if (storeRef.current && !storeRef.current.contains(e.target)) setStoreOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [storeOpen]);
+
+  useEffect(() => {
+    if (!open) {
+      setStoreOpen(false);
+      setStoreQuery('');
+    }
+  }, [open]);
 
   if (!open) return null;
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const toggle = (key) => () => setForm((f) => ({ ...f, [key]: !f[key], ...(key === 'freeShipping' && f.freeShipping ? { worldwideFreeShipping: false } : {}) }));
   const setImages = (images) => setForm((f) => ({ ...f, images }));
+
+  const selectedStore = sellersList.find((s) => s.id === form.sellerId) || null;
+  const filteredStores = storeQuery.trim()
+    ? sellersList.filter((s) => s.name.toLowerCase().includes(storeQuery.trim().toLowerCase()))
+    : sellersList;
+  const pickStore = (id) => {
+    setForm((f) => ({ ...f, sellerId: id }));
+    setStoreOpen(false);
+    setStoreQuery('');
+  };
 
   const submit = () => {
     onSubmit({
@@ -104,18 +141,55 @@ export default function AdminProductFormModal({ open, product, sellersList, cate
           <input type="text" value={form.name} onChange={set('name')} placeholder="e.g. Cotton Twill Fabric 280 GSM" className={adminFieldClass} />
         </div>
 
-        <div>
+        <div ref={storeRef} className="relative">
           <label className={adminLabelClass}>Store</label>
-          <select value={form.sellerId} onChange={set('sellerId')} className={adminFieldClass}>
-            <option value="" disabled>
-              Select the store this product belongs to…
-            </option>
-            {sellersList.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+          <button
+            type="button"
+            onClick={() => setStoreOpen((v) => !v)}
+            className={`${adminFieldClass} flex items-center justify-between gap-2 text-left cursor-pointer ${storeOpen ? 'border-[var(--admin-primary)] shadow-[0_0_0_3px_var(--admin-primary-tint)]' : ''}`}
+          >
+            <span className={`flex items-center gap-2 min-w-0 truncate ${selectedStore ? 'text-[var(--admin-ink)]' : 'text-[var(--admin-text-muted)]'}`}>
+              <IconStore width="15" height="15" className="shrink-0 text-[var(--admin-text-muted)]" />
+              <span className="truncate">{selectedStore ? selectedStore.name : 'Select the store this product belongs to…'}</span>
+            </span>
+            <IconChevronDown width="16" height="16" className={`shrink-0 text-[var(--admin-text-muted)] transition-transform ${storeOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {storeOpen && (
+            <div className="absolute z-20 top-full left-0 right-0 mt-1.5 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg shadow-[var(--admin-shadow-lg)] overflow-hidden">
+              <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--admin-border)]">
+                <IconSearch width="14" height="14" className="shrink-0 text-[var(--admin-text-muted)]" />
+                <input
+                  autoFocus
+                  type="text"
+                  value={storeQuery}
+                  onChange={(e) => setStoreQuery(e.target.value)}
+                  placeholder="Search stores…"
+                  className="w-full bg-transparent text-[13.5px] text-[var(--admin-ink)] outline-none placeholder:text-[var(--admin-text-muted)]"
+                />
+              </div>
+              <ul className="max-h-56 overflow-y-auto py-1">
+                {filteredStores.length === 0 && <li className="px-3.5 py-3 text-[13px] text-[var(--admin-text-muted)]">No stores match "{storeQuery}"</li>}
+                {filteredStores.map((s) => {
+                  const isSelected = s.id === form.sellerId;
+                  return (
+                    <li key={s.id}>
+                      <button
+                        type="button"
+                        onClick={() => pickStore(s.id)}
+                        className={`w-full flex items-center justify-between gap-2 px-3.5 py-2 text-[13.5px] text-left cursor-pointer transition-colors ${
+                          isSelected ? 'bg-[var(--admin-primary-tint)] text-[var(--admin-primary)] font-medium' : 'text-[var(--admin-ink)] hover:bg-[var(--admin-surface-hover)]'
+                        }`}
+                      >
+                        <span className="truncate">{s.name}</span>
+                        {isSelected && <IconCheck width="14" height="14" className="shrink-0" />}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div>
