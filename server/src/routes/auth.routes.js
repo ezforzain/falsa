@@ -551,6 +551,46 @@ router.patch(
   })
 );
 
+const ADDRESS_FIELDS = ['fullName', 'phone', 'city', 'address'];
+
+// ---------- PATCH /api/auth/address ----------
+// Standalone counterpart to the auto-save that already happens inside POST /api/checkout —
+// lets a signed-in buyer view/edit/remove their saved delivery address (User.savedAddress) from
+// the Addresses page without having to place an order first. Same validation as checkout's own
+// address handling, and null clears it (mirrors avatar/banner's null-to-remove convention).
+router.patch(
+  '/address',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    // Wrapped in { address } rather than sent as a bare body, same reason every other nullable
+    // field here is — express.json()'s default strict mode rejects a top-level `null` payload
+    // outright (only object/array root values are valid JSON to it), so `null` has to travel
+    // inside an object key instead of as the whole body.
+    const { address } = req.body;
+    if (address === null) {
+      req.user.set({ savedAddress: null });
+      await req.user.save();
+      return res.json({ user: await serializeUser(req.user) });
+    }
+    const missing = ADDRESS_FIELDS.find((key) => !String(address?.[key] || '').trim());
+    if (missing) {
+      return res.status(400).json({ message: 'Please fill in full name, phone, city, and address.' });
+    }
+    const label = address.label === 'Office' ? 'Office' : 'Home';
+    req.user.set({
+      savedAddress: {
+        fullName: String(address.fullName).trim(),
+        phone: String(address.phone).trim(),
+        city: String(address.city).trim(),
+        address: String(address.address).trim(),
+        label,
+      },
+    });
+    await req.user.save();
+    res.json({ user: await serializeUser(req.user) });
+  })
+);
+
 // ---------- PATCH /api/auth/password ----------
 // Changing the password revokes every other session as a security measure (standard practice —
 // a compromised/shared device losing its saved password shouldn't keep a live session), keeping

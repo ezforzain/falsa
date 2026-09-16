@@ -75,6 +75,15 @@ export function AuthProvider({ children }) {
     return updated;
   };
 
+  // address is either a full { fullName, phone, city, address, label } object, or null to
+  // remove it — see PATCH /api/auth/address. Same account-wide single-address model checkout
+  // already auto-saves to (User.savedAddress), just editable on its own from the Addresses page.
+  const updateAddress = async (address) => {
+    const { user: updated } = await auth.updateAddress(address);
+    setUser(updated);
+    return updated;
+  };
+
   const resendVerificationEmail = () => auth.resendVerificationEmail();
 
   const changePassword = (payload) => auth.changePassword(payload);
@@ -109,6 +118,7 @@ export function AuthProvider({ children }) {
     updateProfile,
     updateAvatar,
     updateBanner,
+    updateAddress,
     resendVerificationEmail,
     markEmailVerified,
     applyUserUpdate,

@@ -2,23 +2,29 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProfileDrawer } from '../context/ProfileDrawerContext';
-import { myOrders } from '../lib/api';
-import { computeLoyaltyTier } from '../lib/loyalty';
+import { myOrders, messages } from '../lib/api';
 import {
   IconUser,
-  IconMenu,
+  IconSettings,
   IconMail,
   IconClock,
   IconShield,
   IconEdit,
+  IconBox,
+  IconMessageCircle,
+  IconPin,
+  IconKey,
+  IconHelpCircle,
+  IconChevronRight,
+  IconReceipt,
+  IconGift,
+  IconStore,
 } from '../components/icons';
 import VerifiedBadge from '../components/VerifiedBadge';
-import Avatar from '../components/Avatar';
+import AvatarUploader from '../components/AvatarUploader';
 import EditProfileSheet from '../components/EditProfileSheet';
-import LoyaltyBadge from '../components/LoyaltyBadge';
-import OrderStatusQuickLinks from '../components/OrderStatusQuickLinks';
-import ProfileViewHistoryRail from '../components/ProfileViewHistoryRail';
 import Toast from '../components/Toast';
+import logoMark from '../assets/logo-mark.png';
 
 const ROLE_LABEL = { buyer: 'Buyer', seller: 'Seller', admin: 'Admin' };
 
@@ -80,22 +86,67 @@ function EmailVerifyNotice({ email, resend }) {
   );
 }
 
-// "My Profile" — a TikTok-style hero (banner, centered avatar, name, @handle, a loyalty badge
-// driven by real order history) plus a Daraz-style order-status shortcut row and a YouTube-style
-// "Recently Viewed" history rail. Orders, seller tools, settings, support, and sign-out all live
-// in the Facebook-style account menu — see AccountMenuContent. The trigger for it only ever
-// appears here: Header's hamburger only renders while viewing this page (desktop), and this page
-// renders bare on mobile (no Header at all — see MainLayout's bare-route list), so it needs its
-// own trigger too, rather than relying on the bottom nav.
+function StatCard({ icon: Icon, value, label }) {
+  return (
+    <div className="flex-1 flex items-center gap-2.5 bg-surface border border-border rounded-2xl px-3.5 py-3 min-w-0">
+      <span className="w-9 h-9 rounded-xl bg-green-tint text-green flex items-center justify-center shrink-0">
+        <Icon width="16" height="16" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-display text-[19px] font-bold text-ink m-0 leading-none">{value}</p>
+        <p className="text-[11.5px] text-text-muted mt-1 mb-0 leading-tight whitespace-nowrap">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+// One row of the inline account menu (Personal Information / Addresses / Security / Help &
+// Support) — either a real route (`to`) or an in-page action (`onClick`, e.g. opening
+// EditProfileSheet), same MenuRow shape/behavior as AccountMenuContent's drawer version so
+// nothing here duplicates a second, drifting implementation of "what these items do".
+function MenuLinkRow({ icon: Icon, label, subtitle, to, onClick }) {
+  const className =
+    'flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-surface border border-border no-underline text-inherit cursor-pointer hover:border-green/40 hover:bg-surface-muted active:scale-[0.99] transition-all w-full text-left';
+  const content = (
+    <>
+      <span className="w-10 h-10 rounded-xl bg-green-tint text-green flex items-center justify-center shrink-0">
+        <Icon width="17" height="17" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14.5px] font-semibold text-ink truncate">{label}</span>
+        {subtitle && <span className="block text-[12px] text-text-muted mt-0.5 truncate">{subtitle}</span>}
+      </span>
+      <IconChevronRight width="16" height="16" className="text-text-muted shrink-0" />
+    </>
+  );
+  if (to) {
+    return (
+      <Link to={to} className={className}>
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {content}
+    </button>
+  );
+}
+
+// The buyer/seller/admin Account page — profile header, real order/chat stats, quick actions,
+// an inline account menu, and a My Orders shortcut, all built from the actual signed-in user's
+// data (AuthContext) and real endpoints (myOrders, messages) rather than anything hardcoded.
+// Settings, seller/admin tools, notifications, and sign-out still live one level deeper in the
+// account menu (AccountMenuContent) — the gear button below opens the same drawer/dropdown used
+// everywhere else, so that logic isn't duplicated here.
 export default function AccountPage() {
   const { user, isAuthenticated, resendVerificationEmail } = useAuth();
   const { open: openAccountMenu } = useProfileDrawer();
   const [editOpen, setEditOpen] = useState(false);
   const [savedToastVisible, setSavedToastVisible] = useState(false);
   const [orders, setOrders] = useState([]);
+  const [chatCount, setChatCount] = useState(0);
 
-  // Powers both the loyalty badge (delivered-order count/spend, see lib/loyalty.js) and the
-  // order-status quick links below it — one fetch for both.
   useEffect(() => {
     if (!isAuthenticated) return;
     let cancelled = false;
@@ -105,7 +156,15 @@ export default function AccountPage() {
         if (!cancelled) setOrders(res.orders);
       })
       .catch(() => {
-        // Non-critical — the loyalty badge and quick links just show as empty/new.
+        // Non-critical — the Total Orders stat just shows 0.
+      });
+    messages
+      .conversations()
+      .then(({ conversations }) => {
+        if (!cancelled) setChatCount(conversations.length);
+      })
+      .catch(() => {
+        // Non-critical — the Active Chats stat just shows 0.
       });
     return () => {
       cancelled = true;
@@ -113,23 +172,34 @@ export default function AccountPage() {
   }, [isAuthenticated]);
 
   const TopBar = (
-    <div className="flex items-center justify-between gap-3 mb-1.5">
-      <h1 className="font-display text-[26px] sm:text-[28px] font-bold m-0 tracking-tight">My Profile</h1>
-      <button
-        type="button"
-        onClick={openAccountMenu}
-        aria-label="Account menu"
-        aria-haspopup="dialog"
-        className="md:hidden cursor-pointer w-10 h-10 rounded-lg flex items-center justify-center text-text hover:bg-surface-muted active:scale-95 transition-all shrink-0"
-      >
-        <IconMenu />
-      </button>
-    </div>
+    <>
+      {/* Mobile: this page renders bare (no Header — see MainLayout's bare-route list), so it
+          carries its own logo + a settings trigger opening the same account menu Header's
+          desktop dropdown uses. */}
+      <div className="md:hidden flex items-center justify-between gap-3 mb-5">
+        <Link to="/" className="flex items-center gap-2 no-underline shrink-0">
+          <img src={logoMark} alt="" className="w-9 h-9 object-contain" />
+          <span className="font-display text-[21px] font-bold text-green tracking-tight">Falsafah</span>
+        </Link>
+        <button
+          type="button"
+          onClick={openAccountMenu}
+          aria-label="Account menu"
+          aria-haspopup="dialog"
+          className="cursor-pointer w-10 h-10 rounded-full flex items-center justify-center text-ink-soft bg-surface border border-border hover:bg-surface-muted active:scale-95 transition-all shrink-0"
+        >
+          <IconSettings width="18" height="18" />
+        </button>
+      </div>
+      <h1 className="hidden md:block font-display text-[28px] font-bold m-0 mb-6 tracking-tight text-ink">
+        My Profile
+      </h1>
+    </>
   );
 
   if (!isAuthenticated) {
     return (
-      <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20 animate-fade-up">
+      <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 sm:pt-9 pb-20 animate-fade-up">
         <div className="max-w-[640px] mx-auto">
           {TopBar}
           <div className="text-center py-14 sm:py-[60px] px-6 bg-surface border border-border rounded-3xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_10px_28px_-8px_rgba(0,0,0,0.08)]">
@@ -153,75 +223,109 @@ export default function AccountPage() {
   }
 
   const isSeller = user.role === 'seller';
-  const tier = computeLoyaltyTier(orders);
+  const isAdmin = user.role === 'admin';
+
+  // Same "give sellers/admins their real portal instead of an upsell" logic as
+  // AccountMenuContent's growthItems — kept in sync deliberately rather than importing from
+  // there, since this button's copy/icon differ slightly from that drawer's row.
+  const growthAction = isAdmin
+    ? { label: 'Admin Panel', to: '/admin', icon: IconShield }
+    : isSeller
+      ? { label: 'Seller Portal', to: '/seller', icon: IconStore }
+      : { label: 'Become a Seller', to: '/auth?screen=signup&role=seller', icon: IconGift };
 
   return (
-    <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-9 pb-20 animate-fade-up">
+    <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 sm:pt-9 pb-20 animate-fade-up">
       <div className="max-w-[640px] mx-auto">
         {TopBar}
-        <p className="text-sm text-text-muted mb-6 flex items-center gap-1.5 flex-wrap">
-          Settings, support, and sign-out live in the account menu
-          <IconMenu width="14" height="14" className="text-text-muted" />
-          — tap it above.
-        </p>
 
-        <div className="bg-surface border border-border rounded-3xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_36px_-12px_rgba(0,0,0,0.12)] overflow-hidden">
-          {/* Brand banner — the avatar overlaps its bottom edge, TikTok-style, instead of sitting
-              flush in a flat box. Shows the account's own uploaded banner once set (see
-              BannerUploader inside EditProfileSheet), otherwise a plain light backdrop — the
-              earlier dark green gradient (even lightened with a white wash) still read as a solid
-              green block sitting right behind/under the avatar, fighting it for attention instead
-              of just being a backdrop. */}
-          <div className="relative h-28 sm:h-36 bg-surface-muted overflow-hidden">
-            {user.bannerUrl ? (
-              <img src={user.bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
-            ) : (
-              <>
-                <div className="absolute -top-10 -right-6 w-40 h-40 rounded-full bg-green/10 blur-2xl" />
-                <div className="absolute -bottom-16 left-10 w-32 h-32 rounded-full bg-green/10 blur-2xl" />
-              </>
-            )}
-          </div>
-
-          <div className="px-5 sm:px-8 pb-6 sm:pb-8 flex flex-col items-center text-center -mt-11 sm:-mt-12">
-            <Avatar src={user.avatarUrl} name={user.companyName} size={92} iconSize={40} className="ring-[5px] ring-surface" />
-
-            <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
-              <p className="font-display text-[20px] sm:text-[22px] font-bold text-ink truncate m-0 tracking-tight max-w-full">
-                {user.companyName}
-              </p>
-              {isSeller && user.verified && <VerifiedBadge size={17} />}
+        {/* Profile card */}
+        <div className="bg-surface border border-border rounded-3xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_36px_-12px_rgba(0,0,0,0.12)] p-5 sm:p-6">
+          <div className="flex items-center gap-4">
+            <AvatarUploader size={80} showActions={false} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-display text-[19px] sm:text-[21px] font-bold text-ink truncate m-0 tracking-tight">
+                  {user.companyName}
+                </p>
+                {isSeller && user.verified && <VerifiedBadge size={16} />}
+              </div>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wide text-green bg-green-tint px-2.5 py-1 rounded-full">
+                  {isSeller && <IconShield width="10" height="10" />}
+                  {ROLE_LABEL[user.role] || user.role}
+                </span>
+              </div>
+              <div className="mt-1.5">
+                <MemberSince date={user.createdAt} />
+              </div>
             </div>
-            {user.handle && <p className="text-[13px] text-text-muted mt-0.5">@{user.handle}</p>}
-
-            <div className="flex items-center justify-center gap-2 mt-2.5 flex-wrap">
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-green bg-green-tint px-2.5 py-1 rounded-full">
-                {isSeller && <IconShield width="11" height="11" />}
-                {ROLE_LABEL[user.role] || user.role}
-              </span>
-              <MemberSince date={user.createdAt} />
-            </div>
-
             <button
               type="button"
               onClick={() => setEditOpen(true)}
-              className="mt-4 cursor-pointer inline-flex items-center gap-1.5 bg-surface-muted hover:bg-border/60 active:scale-[0.97] text-ink font-semibold text-[13px] px-5 py-2.5 rounded-full border border-border transition-all"
+              aria-label="Edit profile"
+              className="shrink-0 cursor-pointer w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-green hover:bg-surface-muted transition-colors"
+            >
+              <IconChevronRight width="18" height="18" />
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-3 mt-5">
+            <StatCard icon={IconBox} value={orders.length} label="Total Orders" />
+            <StatCard icon={IconMessageCircle} value={chatCount} label="Active Chats" />
+          </div>
+
+          {/* Actions */}
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <button
+              type="button"
+              onClick={() => setEditOpen(true)}
+              className="cursor-pointer inline-flex items-center justify-center gap-1.5 bg-green hover:bg-green-hover active:translate-y-0 text-white font-semibold text-[13.5px] py-2.5 px-4 rounded-full shadow-[0_6px_16px_rgba(14,90,70,0.25)] hover:-translate-y-0.5 transition-all"
             >
               <IconEdit width="13" height="13" />
               Edit Profile
             </button>
-
-            <div className="mt-4">
-              <LoyaltyBadge tier={tier} />
-            </div>
+            <Link
+              to={growthAction.to}
+              className="cursor-pointer inline-flex items-center justify-center gap-1.5 bg-green-tint hover:brightness-95 text-green font-semibold text-[13.5px] py-2.5 px-4 rounded-full border border-green-tint-border no-underline transition-all"
+            >
+              <growthAction.icon width="13" height="13" />
+              {growthAction.label}
+            </Link>
           </div>
         </div>
 
-        <div className="mt-4">
-          <OrderStatusQuickLinks orders={orders} />
+        {/* Account menu */}
+        <div className="mt-5 flex flex-col gap-2.5">
+          <MenuLinkRow
+            icon={IconUser}
+            label="Personal Information"
+            subtitle="Name, email, phone number"
+            onClick={() => setEditOpen(true)}
+          />
+          <MenuLinkRow icon={IconPin} label="Addresses" subtitle="Manage your shipping addresses" to="/addresses" />
+          <MenuLinkRow icon={IconKey} label="Security" subtitle="Password and login settings" to="/account-center" />
+          <MenuLinkRow icon={IconHelpCircle} label="Help & Support" subtitle="Get help or contact us" to="/help" />
         </div>
 
-        <ProfileViewHistoryRail />
+        {/* My Orders */}
+        <Link
+          to="/orders"
+          className="mt-5 flex items-center gap-3.5 bg-surface border border-border rounded-2xl px-4 py-4 no-underline text-inherit hover:border-green/40 hover:bg-surface-muted transition-all"
+        >
+          <span className="w-10 h-10 rounded-xl bg-green-tint text-green flex items-center justify-center shrink-0">
+            <IconReceipt width="17" height="17" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14.5px] font-semibold text-ink">My Orders</span>
+            <span className="block text-[12px] text-text-muted mt-0.5">View and track your orders</span>
+          </span>
+          <span className="shrink-0 inline-flex items-center gap-1 text-[12.5px] font-semibold text-green">
+            View All
+            <IconChevronRight width="14" height="14" />
+          </span>
+        </Link>
 
         {!user.emailVerified && <EmailVerifyNotice email={user.email} resend={resendVerificationEmail} />}
       </div>
