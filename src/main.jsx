@@ -1,6 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { Capacitor } from '@capacitor/core'
+import { StatusBar, Style } from '@capacitor/status-bar'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
@@ -15,7 +17,9 @@ import { NotificationsProvider } from './context/NotificationsContext.jsx'
 // builds registered, back when the app talked to a mocked backend in-browser instead of the
 // real one — see vite.config.js) before registering the current one, so a stale worker from an
 // old visit never keeps serving outdated responses or blocks the real one from taking over.
-if ('serviceWorker' in navigator) {
+// Skipped on native (Capacitor already bundles the app locally) — a service worker adds no
+// offline benefit there and iOS's WKWebView has historically been flaky about registering one.
+if (!Capacitor.isNativePlatform() && 'serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then((registrations) => {
     const stale = registrations.filter((r) => !r.active?.scriptURL.endsWith('/sw.js'));
     if (stale.length === 0) return;
@@ -37,6 +41,13 @@ if ('serviceWorker' in navigator) {
       });
     });
   }
+}
+
+// Matches the status bar to the brand cream background used across splash/launcher icon (see
+// capacitor.config.json) instead of the platform default black-on-transparent.
+if (Capacitor.isNativePlatform()) {
+  StatusBar.setBackgroundColor({ color: '#F7F5F0' }).catch(() => {});
+  StatusBar.setStyle({ style: Style.Light }).catch(() => {});
 }
 
 createRoot(document.getElementById('root')).render(

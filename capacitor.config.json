@@ -1,0 +1,24 @@
+{
+  "appId": "com.example.falsafahtot",
+  "appName": "Falsafah",
+  "webDir": "dist",
+  "backgroundColor": "#F7F5F0",
+  "android": {
+    "backgroundColor": "#F7F5F0"
+  },
+  "ios": {
+    "backgroundColor": "#F7F5F0"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 300,
+      "backgroundColor": "#F7F5F0",
+      "androidScaleType": "CENTER_INSIDE",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#F7F5F0"
+    }
+  }
+}
