@@ -282,11 +282,16 @@ export const seller = {
 
 export const messages = {
   conversations: () => request('/api/messages/conversations', { auth: true }),
+  conversation: (conversationId) => request(`/api/messages/conversations/${encodeURIComponent(conversationId)}`, { auth: true }),
   startConversation: (payload) => request('/api/messages/conversations', { method: 'POST', body: payload, auth: true }),
   send: (conversationId, text) =>
     request(`/api/messages/conversations/${encodeURIComponent(conversationId)}/messages`, { method: 'POST', body: { text }, auth: true }),
   markRead: (conversationId) =>
     request(`/api/messages/conversations/${encodeURIComponent(conversationId)}/read`, { method: 'PATCH', auth: true }),
+  deleteConversation: (conversationId) =>
+    request(`/api/messages/conversations/${encodeURIComponent(conversationId)}`, { method: 'DELETE', auth: true }),
+  deleteMessage: (conversationId, index) =>
+    request(`/api/messages/conversations/${encodeURIComponent(conversationId)}/messages/${index}`, { method: 'DELETE', auth: true }),
 };
 
 // ---------- Buyer "My Orders" ----------
