@@ -1,0 +1,48 @@
+name: Debug + provision admin demo account
+
+on:
+  workflow_dispatch:
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Diagnose + create admin over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            set -euo pipefail
+            APP_DIR=/var/www/falsa
+
+            echo "--- .env MONGODB_URI (masked) ---"
+            grep MONGODB_URI "$APP_DIR/server/.env" | sed -E 's#(:)[^:@/]+(@)#\1***\2#'
+
+            echo "--- pm2 falsa-api actual runtime MONGODB_URI (masked) ---"
+            pm2 jlist | node -e "
+              const d = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+              const p = d.find((x) => x.name === 'falsa-api');
+              if (!p) { console.log('falsa-api process not found in pm2 jlist'); process.exit(0); }
+              const uri = (p.pm2_env && p.pm2_env.env && p.pm2_env.env.MONGODB_URI) || '(not set in pm2 env)';
+              console.log(uri.replace(/(:)[^:@/]+(@)/, '\$1***\$2'));
+            "
+
+            echo "--- pm2 process cwd / status ---"
+            pm2 jlist | node -e "
+              const d = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+              const p = d.find((x) => x.name === 'falsa-api');
+              console.log(p ? { cwd: p.pm2_env.pm_cwd, status: p.pm2_env.status } : 'not found');
+            "
+
+            echo "--- running create-admin (writes with the script's own .env-loaded URI) ---"
+            cd "$APP_DIR/server"
+            npm run create-admin -- --email qatest.admin@falsafah.test --password 'TestAdmin123!' --company "QA Test Admin"
+
+            echo "--- verifying login against the LIVE running API (localhost, bypasses any CDN) ---"
+            curl -s -X POST http://localhost:5081/api/auth/signin \
+              -H "Content-Type: application/json" \
+              -d '{"identifier":"qatest.admin@falsafah.test","password":"TestAdmin123!"}'
+            echo ""
