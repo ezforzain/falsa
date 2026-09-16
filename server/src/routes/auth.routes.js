@@ -7,10 +7,18 @@ import { User } from '../models/User.js';
 import { Seller } from '../models/Seller.js';
 import { Session } from '../models/Session.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { signAuthToken, createEmailVerificationToken, hashEmailVerificationToken } from '../utils/token.js';
+import {
+  signAuthToken,
+  createEmailVerificationToken,
+  hashEmailVerificationToken,
+  createPasswordResetOtp,
+  hashPasswordResetOtp,
+  createPasswordResetToken,
+  hashPasswordResetToken,
+} from '../utils/token.js';
 import { requireAuth } from '../middleware/auth.js';
 import { serializeUser } from '../utils/serializeUser.js';
-import { sendVerificationEmail } from '../utils/mailer.js';
+import { sendVerificationEmail, sendPasswordResetOtpEmail } from '../utils/mailer.js';
 import { describeBan, liftExpiredBan } from '../utils/ban.js';
 
 const router = Router();
@@ -130,6 +138,12 @@ router.post(
 
     if (!role || !companyName || !email || !password) {
       return res.status(400).json({ message: 'Missing required fields.' });
+    }
+    // The User schema requires phone too (see models/User.js) — without this check, a signup
+    // that skips it fails deep inside User.create() as a raw Mongoose ValidationError, which the
+    // global error handler turns into an unhelpful generic 500 instead of a clear 400.
+    if (!phone || !String(phone).trim()) {
+      return res.status(400).json({ message: 'Phone number is required.' });
     }
     // Admin accounts are provisioned directly (not self-service) — without this, anyone could
     // hit this endpoint with role:"admin" and get a full admin JWT.
@@ -265,12 +279,114 @@ router.post(
 );
 
 // ---------- POST /api/auth/forgot-password ----------
-// Self-service password reset needs a real delivery channel (email/SMS) to verify identity
-// before letting someone set a new password — not wired up yet, so this intentionally stays a
-// clear "not available" response rather than a fake/bypassable verification step.
-router.post('/forgot-password', (_req, res) => {
-  res.status(503).json({ message: "Password reset isn't available yet. Please contact support to reset your password." });
-});
+// Always resolves { ok: true } whether or not the email is registered, so this can't be used to
+// enumerate accounts — the OTP is only ever actually sent when a matching user exists. Also
+// doubles as the "resend" action from the OTP screen (same cooldown as email verification).
+router.post(
+  '/forgot-password',
+  asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    if (!email || !String(email).trim()) {
+      return res.status(400).json({ message: 'Email is required.' });
+    }
+    const user = await User.findOne({ email: String(email).trim().toLowerCase() });
+    if (user) {
+      if (user.passwordResetSentAt && Date.now() - user.passwordResetSentAt.getTime() < RESEND_COOLDOWN_MS) {
+        const waitSec = Math.ceil((RESEND_COOLDOWN_MS - (Date.now() - user.passwordResetSentAt.getTime())) / 1000);
+        return res.status(429).json({ message: `Please wait ${waitSec}s before requesting another code.` });
+      }
+      const { code, codeHash, expires } = createPasswordResetOtp();
+      user.set({
+        passwordResetOtpHash: codeHash,
+        passwordResetOtpExpires: expires,
+        passwordResetOtpAttempts: 0,
+        passwordResetSentAt: new Date(),
+        passwordResetTokenHash: null,
+        passwordResetTokenExpires: null,
+      });
+      await user.save();
+      try {
+        await sendPasswordResetOtpEmail(user, code);
+      } catch (err) {
+        console.error('Failed to send password reset OTP:', err.message);
+        return res.status(502).json({ message: "Couldn't send the reset code right now. Please try again shortly." });
+      }
+    }
+    res.json({ ok: true });
+  })
+);
+
+// ---------- POST /api/auth/forgot-password/verify ----------
+// Trades a correct OTP for a short-lived reset token (see createPasswordResetToken) so the final
+// POST /reset-password doesn't need to re-send/re-check the code. Wrong-code attempts are capped
+// per OTP so a 6-digit code can't just be brute-forced within its 10-minute window.
+router.post(
+  '/forgot-password/verify',
+  asyncHandler(async (req, res) => {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ message: 'Email and code are required.' });
+    }
+    const invalid = () => res.status(400).json({ message: 'Invalid or expired code.' });
+    const user = await User.findOne({ email: String(email).trim().toLowerCase() });
+    if (!user || !user.passwordResetOtpHash || !user.passwordResetOtpExpires || user.passwordResetOtpExpires < new Date()) {
+      return invalid();
+    }
+    if (user.passwordResetOtpAttempts >= 5) {
+      return invalid();
+    }
+    if (hashPasswordResetOtp(String(code).trim()) !== user.passwordResetOtpHash) {
+      user.passwordResetOtpAttempts += 1;
+      await user.save();
+      return invalid();
+    }
+
+    const { token, tokenHash, expires } = createPasswordResetToken();
+    user.set({
+      passwordResetOtpHash: null,
+      passwordResetOtpExpires: null,
+      passwordResetOtpAttempts: 0,
+      passwordResetTokenHash: tokenHash,
+      passwordResetTokenExpires: expires,
+    });
+    await user.save();
+    res.json({ resetToken: token });
+  })
+);
+
+// ---------- POST /api/auth/reset-password ----------
+// Public, like /verify-email — the reset token from /forgot-password/verify is the credential
+// here, proving this request already confirmed ownership of the email via the OTP.
+router.post(
+  '/reset-password',
+  asyncHandler(async (req, res) => {
+    const { email, resetToken, newPassword } = req.body;
+    if (!email || !resetToken || !newPassword) {
+      return res.status(400).json({ message: 'Missing required fields.' });
+    }
+    if (String(newPassword).length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+    }
+    const user = await User.findOne({ email: String(email).trim().toLowerCase() });
+    if (
+      !user ||
+      !user.passwordResetTokenHash ||
+      !user.passwordResetTokenExpires ||
+      user.passwordResetTokenExpires < new Date() ||
+      hashPasswordResetToken(resetToken) !== user.passwordResetTokenHash
+    ) {
+      return res.status(400).json({ message: 'This reset session has expired. Please start over.' });
+    }
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    user.set({ passwordResetTokenHash: null, passwordResetTokenExpires: null });
+    await user.save();
+    // Same reasoning as PATCH /password: a password reset should kill every existing session,
+    // not just be a no-op for whoever's still signed in elsewhere on this account.
+    await Session.deleteMany({ userId: user._id });
+    res.json({ ok: true });
+  })
+);
 
 // ---------- POST /api/auth/logout ----------
 // Deletes the Session this token is bound to, so the token stops working immediately (not just
@@ -300,6 +416,9 @@ router.patch(
   asyncHandler(async (req, res) => {
     const { companyName, phone, country, category, handle, address, city } = req.body;
     if (!companyName) return res.status(400).json({ message: 'Company name is required.' });
+    // phone is required on the User schema itself — sending it empty would otherwise fail deep
+    // inside req.user.save() as a raw ValidationError (generic 500) instead of a clear 400.
+    if (!phone || !String(phone).trim()) return res.status(400).json({ message: 'Phone number is required.' });
 
     const update = { companyName, phone, country, category };
     // address/city are optional on this route (undefined = "leave it alone") — only sellers'
