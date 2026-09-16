@@ -9,6 +9,7 @@ import Select from '../../../components/admin/ui/Select';
 import EmptyState from '../../../components/admin/ui/EmptyState';
 import StatusMenu from '../../../components/admin/ui/StatusMenu';
 import Pagination from '../../../components/admin/ui/Pagination';
+import TrackingWidget from '../../../components/TrackingWidget';
 import { IconPlus, IconReceipt } from '../../../components/icons';
 
 const PAGE_SIZE = 10;
@@ -19,24 +20,21 @@ function ShippingCell({ order, tracking, trackingLoading, onTrack }) {
     return (
       <div className="text-xs">
         <div className="font-semibold text-[var(--admin-ink)]">{order.courierName}</div>
-        <div className="text-[var(--admin-text-muted)]">CN: {order.trackingId}</div>
+        <div className="text-[var(--admin-text-muted)]">Tracking #: {order.trackingId}</div>
         {order.labelUrl && (
           <a href={order.labelUrl} download className="text-[var(--admin-primary)] font-semibold hover:underline block mt-0.5">
             Download label
           </a>
         )}
-        <button
-          type="button"
-          onClick={onTrack}
-          disabled={trackingLoading}
-          className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 text-[var(--admin-ink-soft)] font-semibold hover:underline mt-1"
-        >
-          {trackingLoading ? 'Checking…' : 'Track shipment'}
-        </button>
-        {tracking?.error && <div className="text-[var(--admin-danger)] mt-1">{tracking.error}</div>}
-        {tracking?.tracking && (
-          <div className="mt-1 text-[var(--admin-text-muted)]">{tracking.tracking.deliveryinfo?.[0]?.status || 'Status unavailable'}</div>
-        )}
+        <div className="mt-1">
+          <TrackingWidget
+            tracking={tracking?.tracking}
+            loading={trackingLoading}
+            error={tracking?.error}
+            onRefresh={onTrack}
+            size="compact"
+          />
+        </div>
       </div>
     );
   }
