@@ -309,7 +309,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
   };
 
   const fieldClass =
-    'w-full px-[14px] py-[11px] border border-border rounded-lg text-[14px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(14,90,70,0.12)] transition-shadow';
+    'w-full px-[14px] py-[11px] border border-border rounded-lg text-[14px] font-sans bg-surface text-ink outline-none focus:border-green focus:shadow-[0_0_0_3px_rgba(59,111,224,0.12)] transition-shadow';
   const labelClass = 'block text-[12.5px] font-semibold text-ink-soft mb-1.5';
   const sectionTitleClass = 'text-[13px] font-bold text-ink mb-2.5';
 
@@ -904,7 +904,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             type="button"
             onClick={submit}
             disabled={loading}
-            className="flex-1 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-sm py-3 rounded-full shadow-[0_6px_16px_rgba(14,90,70,0.25)] transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-green hover:bg-green-hover text-white font-semibold text-sm py-3 rounded-full shadow-[0_6px_16px_rgba(59,111,224,0.25)] transition-colors"
           >
             {loading && (
               <span className="w-3.5 h-3.5 border-2 border-white/35 rounded-full inline-block" style={{ borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />

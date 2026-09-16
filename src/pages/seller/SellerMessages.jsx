@@ -147,7 +147,9 @@ export default function SellerMessages() {
                     <div key={i} className={`max-w-[75%] ${m.from === 'seller' ? 'self-end items-end' : 'self-start items-start'} flex flex-col`}>
                       <div
                         className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                          m.from === 'seller' ? 'bg-green text-white rounded-br-sm' : 'bg-surface-muted text-ink rounded-bl-sm'
+                          m.from === 'seller'
+                            ? 'bg-[var(--color-chat-me-bg,var(--color-green))] text-white rounded-br-sm'
+                            : 'bg-surface-muted text-ink rounded-bl-sm'
                         }`}
                       >
                         {m.text}

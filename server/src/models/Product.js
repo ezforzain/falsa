@@ -46,6 +46,13 @@ const productSchema = new mongoose.Schema(
     _id: { type: String },
     name: { type: String, required: true },
     sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller', required: true },
+    // Direct FK to the seller's actual login account (see publicCatalogSync.js) — `sellerId`
+    // above points at the shared Seller directory record, which two different seller accounts
+    // can point at too (same companyName, see auth.routes.js findOrCreateSellerByName), so it
+    // alone can't reliably resolve back to one owning account. Checkout uses this field, not
+    // sellerId, to attribute an order to its seller unambiguously. Null on legacy/seeded catalog
+    // rows that predate this field and have no real seller account behind them.
+    ownerUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     seller: { type: String, required: true }, // denormalized seller name, mirrors seed data
     location: String,
     category: { type: String, required: true },

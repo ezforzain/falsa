@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { seller } from '../../lib/api';
 import { formatPKR } from '../../data/mockData';
+import SellerCard from '../../components/seller/SellerCard';
+import StatCard from '../../components/seller/StatCard';
 
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -39,12 +41,7 @@ export default function SellerAnalytics() {
   }));
 
   return (
-    <div className="animate-fade-up">
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-ink tracking-tight">Analytics</h1>
-        <p className="text-sm text-text mt-1">Revenue and order trends over the last 30 days.</p>
-      </div>
-
+    <div className="animate-fade-up flex flex-col gap-4">
       {loading && (
         <div className="flex flex-col gap-4">
           <div className="animate-pulse bg-surface border border-border rounded-2xl h-[280px]" />
@@ -58,64 +55,56 @@ export default function SellerAnalytics() {
 
       {!loading && !error && data && (
         <>
-          <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-            <div className="bg-surface border border-border rounded-2xl p-5">
-              <div className="font-display text-xl font-bold text-ink">{formatPKR(totalRevenue)}</div>
-              <div className="text-xs text-text-muted mt-0.5">Revenue (last 30 days)</div>
-            </div>
-            <div className="bg-surface border border-border rounded-2xl p-5">
-              <div className="font-display text-xl font-bold text-ink">{totalOrders}</div>
-              <div className="text-xs text-text-muted mt-0.5">Orders (last 30 days)</div>
-            </div>
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+            <StatCard label="Revenue" value={formatPKR(totalRevenue)} note="Last 30 days" />
+            <StatCard label="Orders" value={totalOrders} note="Last 30 days" />
           </div>
 
-          <div className="bg-surface border border-border rounded-2xl p-5 mb-6">
-            <h2 className="font-display text-base font-bold text-ink mb-4">Revenue trend</h2>
+          <SellerCard eyebrow="Revenue trend — last 30 days">
             <div className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartDaily} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#0E5A46" stopOpacity={0.25} />
-                      <stop offset="100%" stopColor="#0E5A46" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#3B6FE0" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#3B6FE0" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E4E0D6" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#5A564C' }} axisLine={{ stroke: '#E4E0D6' }} tickLine={false} interval="preserveStartEnd" />
-                  <YAxis tick={{ fontSize: 11, fill: '#5A564C' }} axisLine={false} tickLine={false} width={40} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1E2745" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#68769B' }} axisLine={{ stroke: '#1E2745' }} tickLine={false} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 11, fill: '#68769B' }} axisLine={false} tickLine={false} width={40} />
                   <Tooltip content={<ChartTooltip />} />
-                  <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#0E5A46" strokeWidth={2} fill="url(#revenueFill)" />
+                  <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#5B8DEF" strokeWidth={2} fill="url(#revenueFill)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </SellerCard>
 
-          <div className="bg-surface border border-border rounded-2xl p-5">
-            <h2 className="font-display text-base font-bold text-ink mb-4">Top products by revenue</h2>
+          <SellerCard eyebrow="Top products by revenue">
             {data.topProducts.length === 0 ? (
               <p className="text-sm text-text-muted py-6 text-center">No sales yet.</p>
             ) : (
               <div className="h-[240px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data.topProducts} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E4E0D6" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: '#5A564C' }} axisLine={false} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1E2745" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: '#68769B' }} axisLine={false} tickLine={false} />
                     <YAxis
                       type="category"
                       dataKey="name"
-                      tick={{ fontSize: 11, fill: '#5A564C' }}
+                      tick={{ fontSize: 11, fill: '#68769B' }}
                       axisLine={false}
                       tickLine={false}
                       width={140}
                       tickFormatter={(v) => (v.length > 20 ? `${v.slice(0, 20)}…` : v)}
                     />
                     <Tooltip content={<ChartTooltip />} />
-                    <Bar dataKey="revenue" name="Revenue" fill="#C97B2D" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="revenue" name="Revenue" fill="#6FDFCE" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             )}
-          </div>
+          </SellerCard>
         </>
       )}
     </div>
