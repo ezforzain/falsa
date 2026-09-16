@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { sellers, admin, adminUsers, adminOrders, adminCategories, adminFilters } from '../../lib/api';
+import { friendlyShippingError } from '../../lib/shipping';
+import { useRefetchOnFocus } from '../../lib/useRefetchOnFocus';
 import AdminProductFormModal from '../../components/AdminProductFormModal';
 import AdminUserFormModal from '../../components/AdminUserFormModal';
 import AdminCategoryFormModal from '../../components/AdminCategoryFormModal';
@@ -273,6 +275,13 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderStatusFilter]);
 
+  // Orders are often shipped from a seller's own session elsewhere — refetch when this tab
+  // regains focus (rather than only on the filters above) so the admin doesn't need a hard
+  // reload to see it, but only while actually looking at the Orders tab.
+  useRefetchOnFocus(() => {
+    if (isAuthenticated && user?.role === 'admin' && activeTab === 'orders') loadOrders();
+  });
+
   const handleUpdateOrderStatus = async (order, status) => {
     if (status === order.status) return;
     setOrderStatusPendingId(order.id);
@@ -294,7 +303,7 @@ export default function AdminPage() {
       const { tracking } = await adminOrders.trackTcs(order.id);
       setTcsTrackingById((current) => ({ ...current, [order.id]: { tracking, error: null } }));
     } catch (err) {
-      setTcsTrackingById((current) => ({ ...current, [order.id]: { tracking: null, error: err.message } }));
+      setTcsTrackingById((current) => ({ ...current, [order.id]: { tracking: null, error: friendlyShippingError(err.message) } }));
     } finally {
       setTcsTrackingLoadingId(null);
     }
@@ -466,7 +475,7 @@ export default function AdminPage() {
       const { costCenters } = await admin.tcsCostCenters();
       setTcsCostCenters(costCenters);
     } catch (err) {
-      setTcsCostCentersError(err.message);
+      setTcsCostCentersError(friendlyShippingError(err.message));
     } finally {
       setTcsCostCentersLoading(false);
     }
