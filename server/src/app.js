@@ -39,6 +39,15 @@ function isPrivateLanOrigin(origin) {
   }
 }
 
+// The Capacitor Android/iOS app is a WebView loading the built frontend from its own virtual
+// origin, not from CLIENT_ORIGIN — "https://localhost" is Capacitor's default (`androidScheme` /
+// `iosScheme` config, unset here so it's the default "https"); "capacitor://localhost" is what
+// older Capacitor versions and some iOS configs use instead. Neither is spoofable-with-impact
+// (CORS's Origin check is a browser-enforced convention, not an auth boundary — a non-browser
+// client can already send any Origin it likes, same as the missing-Origin case below), so these
+// are always allowed rather than needing an env var per platform.
+const CAPACITOR_APP_ORIGINS = ['https://localhost', 'capacitor://localhost'];
+
 // CLIENT_ORIGIN may be a single origin or a comma-separated list (e.g. a production domain plus
 // its www. variant, or multiple environments) — this is the only allow-list used in production,
 // where the LAN-wildcard bypass below is disabled.
@@ -59,6 +68,7 @@ export function createApp() {
         // No Origin header (same-origin requests, curl, server-to-server) — always fine.
         if (!origin) return callback(null, true);
         if (getConfiguredOrigins().includes(origin)) return callback(null, true);
+        if (CAPACITOR_APP_ORIGINS.includes(origin)) return callback(null, true);
         // Outside production, also accept any localhost/private-LAN origin regardless of port,
         // so requests keep working no matter which port Vite happens to bind (5173, 5174, ...)
         // or which device on the LAN is making them. Production keeps the strict allow-list above.
