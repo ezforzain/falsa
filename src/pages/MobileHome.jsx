@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { normalizeQuery, searchHints, unsplash, mobileTabs as fallbackTabs } from '../data/mockData';
 import { catalog, marketplace } from '../lib/api';
@@ -44,6 +44,29 @@ const MARKETPLACE_FETCHERS = {
   freeshipping: marketplace.freeShipping,
 };
 
+// Second, presentational tab row from the reference design (Recommended/Trending/Offers) — a
+// client-side re-sort/filter of whatever the real B2B/Spotlight/Worldwide/Free Shipping tab
+// above already fetched, not a separate backend section. Keeps both tab rows real: the top one
+// still drives which marketplace results load, this one just changes how that same list is
+// ordered/narrowed.
+const SORT_TABS = [
+  { key: 'recommended', labelKey: 'home.sortRecommended' },
+  { key: 'trending', labelKey: 'home.sortTrending' },
+  { key: 'offers', labelKey: 'home.sortOffers' },
+];
+
+function sortProducts(products, sortMode) {
+  if (sortMode === 'trending') {
+    return [...products].sort((a, b) => (b.sold || 0) - (a.sold || 0) || (b.rating || 0) - (a.rating || 0));
+  }
+  if (sortMode === 'offers') {
+    return products
+      .filter((p) => (p.discountPercent || 0) > 0)
+      .sort((a, b) => (b.discountPercent || 0) - (a.discountPercent || 0));
+  }
+  return products;
+}
+
 function CategoryCircleImg({ img, alt, FallbackIcon }) {
   return (
     <span className="relative w-full h-full block bg-surface-muted">
@@ -69,6 +92,7 @@ export default function MobileHome() {
   const [tabs, setTabs] = useState([]);
   const [tabsLoading, setTabsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('spotlight');
+  const [sortMode, setSortMode] = useState('recommended');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -156,9 +180,13 @@ export default function MobileHome() {
 
   const label = debouncedQuery ? `Results for "${debouncedQuery}"` : t('home.allCategories');
 
+  // Recommended/Trending/Offers only ever re-order or narrow the same fetched list — see
+  // sortProducts() — so switching tabs never triggers another network request.
+  const sortedProducts = useMemo(() => sortProducts(products, sortMode), [products, sortMode]);
+
   // The mock catalog is small and finite — this loops it endlessly (reshuffled each lap) so the
   // feed behaves like an infinite/YouTube-style feed instead of stopping after ~9 products.
-  const { items: feedProducts, loadingMore, sentinelRef } = useInfiniteFeed(products, { batchSize: 6 });
+  const { items: feedProducts, loadingMore, sentinelRef } = useInfiniteFeed(sortedProducts, { batchSize: 6 });
 
   // Paused the moment the user focuses the search field or has typed anything, and only
   // resumes — with a fresh full dwell time — once it's empty and unfocused again.
@@ -307,6 +335,7 @@ export default function MobileHome() {
                     // sent to the new section's query even though its panel doesn't show that
                     // control anymore.
                     setMarketplaceFilters(EMPTY_MARKETPLACE_FILTERS);
+                    setSortMode('recommended');
                   }}
                   className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-[12px] font-semibold cursor-pointer transition-colors ${
                     isActive ? 'text-white shadow-sm' : 'text-ink-soft hover:text-ink'
@@ -325,6 +354,31 @@ export default function MobileHome() {
           {activeTabDef.banner}
         </div>
       )}
+
+      {/* Recommended / Trending / Offers — reference design's second row. Purely a client-side
+          re-sort/filter of the same list the tabs above already fetched (see sortProducts). */}
+      <div className="flex items-center mx-[18px] mb-2 rounded-full" style={{ background: 'rgba(108,99,255,0.08)' }}>
+        {SORT_TABS.map((sort, i) => {
+          const isActive = sort.key === sortMode;
+          const prevIsActive = i > 0 && SORT_TABS[i - 1].key === sortMode;
+          return (
+            <button
+              key={sort.key}
+              type="button"
+              onClick={() => setSortMode(sort.key)}
+              className={`flex-1 flex items-center justify-center whitespace-nowrap rounded-full px-3 py-2.5 text-[12.5px] font-semibold cursor-pointer transition-colors relative ${
+                isActive ? 'text-white shadow-sm' : 'text-ink-soft hover:text-ink'
+              }`}
+              style={isActive ? { background: ACCENT } : undefined}
+            >
+              {i > 0 && !isActive && !prevIsActive && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-3.5 w-px bg-border-strong/60" aria-hidden />
+              )}
+              {t(sort.labelKey)}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Active label + filters toggle — merged onto one row so the space between the tab row
           and the grid stays tight. The expanded filters panel still narrows fetchProducts exactly
@@ -369,7 +423,7 @@ export default function MobileHome() {
         </div>
       )}
 
-      {!productsLoading && !productsError && products.length > 0 && (
+      {!productsLoading && !productsError && sortedProducts.length > 0 && (
         <>
           <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-2">
             {feedProducts.map((p) => (
@@ -387,6 +441,19 @@ export default function MobileHome() {
             )}
           </div>
         </>
+      )}
+
+      {!productsLoading && !productsError && products.length > 0 && sortedProducts.length === 0 && (
+        <div className="mx-[18px] mb-[110px] text-center py-8 px-5 bg-cream rounded-[14px] border border-dashed border-border-strong">
+          <div className="text-[13.5px] text-text mb-2.5">{t('home.noOffers')}</div>
+          <button
+            type="button"
+            onClick={() => setSortMode('recommended')}
+            className="cursor-pointer inline-block bg-green text-white text-[12.5px] font-semibold px-[18px] py-2 rounded-full"
+          >
+            {t('home.sortRecommended')}
+          </button>
+        </div>
       )}
 
       {!productsLoading && !productsError && products.length === 0 && (
