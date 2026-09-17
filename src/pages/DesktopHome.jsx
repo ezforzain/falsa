@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { catalog, marketplace } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { getBuyerCountry } from '../lib/buyerCountry';
+import { unsplash } from '../data/mockData';
 import ProductCard from '../components/ProductCard';
 import MarketplaceTabs, { MARKETPLACE_TABS } from '../components/marketplace/MarketplaceTabs';
 import MarketplaceFilters, { EMPTY_MARKETPLACE_FILTERS } from '../components/marketplace/MarketplaceFilters';
@@ -158,7 +159,7 @@ export default function DesktopHome() {
       {/* Marketplace tabs — B2B / Spotlight / Worldwide / Free Shipping. Selecting one swaps the
           Trending/category section below for that tab's real results; nothing else on this page
           changes, and clicking the active tab again returns to today's default view. */}
-      <div className="pt-5 border-b border-border">
+      <div className="pt-5 pb-1">
         <MarketplaceTabs
           activeTab={activeMarketplaceTab}
           onChange={(tab) => {
@@ -201,31 +202,37 @@ export default function DesktopHome() {
             })}
       </div>
 
-      {/* Hero banner */}
-      <section className="bg-green-deep rounded-[22px] overflow-hidden relative grid min-h-[400px]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))' }}>
+      {/* Hero banner — soft gradient promo card matching the new home look, replacing the old
+          dark-navy B2B shipping hero. Accent (#6C63FF) is scoped to this page only, deliberately
+          distinct from the admin panel's own violet accent (#7C3AED). */}
+      <section
+        className="rounded-[22px] overflow-hidden relative grid min-h-[400px]"
+        style={{ background: 'linear-gradient(135deg, #F5ECF8 0%, #FBEDE9 100%)', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))' }}
+      >
         <div className="p-7 sm:p-10 lg:p-[60px] flex flex-col justify-center relative z-10">
-          <div className="inline-flex items-center gap-2 font-mono text-[11.5px] tracking-[0.16em] uppercase text-gold mb-[18px]">
-            <span className="w-6 h-px bg-gold inline-block" />
-            First-order offer
+          <div className="inline-flex items-center gap-2 font-mono text-[11.5px] tracking-[0.16em] uppercase mb-[18px]" style={{ color: '#6C63FF' }}>
+            <span className="w-6 h-px inline-block" style={{ background: '#6C63FF' }} />
+            New arrivals
           </div>
-          <h1 className="font-display text-[32px] sm:text-[40px] lg:text-[50px] leading-[1.05] font-bold text-white mb-[18px] tracking-tight text-balance">
-            Free shipping on your first order.
+          <h1 className="font-display text-[32px] sm:text-[40px] lg:text-[50px] leading-[1.05] font-bold text-ink mb-[18px] tracking-tight text-balance">
+            Fresh picks, just for you.
           </h1>
-          <p className="text-base leading-relaxed text-teal-softer mb-7 max-w-[420px] text-balance">
-            Source wholesale from verified sellers worldwide — zero shipping cost on your first B2B order.
+          <p className="text-base leading-relaxed text-text mb-7 max-w-[420px] text-balance">
+            Great products from verified sellers, at better prices — every day.
           </p>
           <div className="flex gap-3.5 items-center flex-wrap">
             <a
               href="#trending"
               onClick={scrollToTrending}
-              className="relative z-10 pointer-events-auto cursor-pointer bg-orange hover:bg-orange-hover active:bg-orange-hover text-white font-semibold text-[15px] px-8 py-[15px] rounded-full no-underline flex items-center gap-2 shadow-[0_8px_24px_rgba(201,123,45,0.35)] transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              className="relative z-10 pointer-events-auto cursor-pointer text-white font-semibold text-[15px] px-8 py-[15px] rounded-full no-underline flex items-center gap-2 shadow-[0_8px_24px_rgba(108,99,255,0.35)] transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              style={{ background: '#6C63FF' }}
             >
-              Order Now
+              Explore Now
               <IconArrowRight width="15" height="15" strokeWidth="2.4" />
             </a>
             <Link
               to="/spotlight"
-              className="cursor-pointer text-teal-mist font-medium text-[15px] px-3 py-[15px] no-underline underline decoration-white/40 underline-offset-[5px] hover:decoration-teal-mist"
+              className="cursor-pointer text-ink-soft font-medium text-[15px] px-3 py-[15px] no-underline underline decoration-ink-soft/40 underline-offset-[5px] hover:decoration-ink-soft"
             >
               See your Spotlight →
             </Link>
@@ -233,16 +240,9 @@ export default function DesktopHome() {
         </div>
         <div className="relative min-h-[300px]">
           <img
-            src="https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&w=1200&q=80"
-            alt="Shipping containers"
+            src={unsplash('photo-1473188588951-666fce8e7c68', 1200)}
+            alt=""
             className="absolute inset-0 w-full h-full object-cover"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                'linear-gradient(90deg, var(--color-green-deep) 0%, color-mix(in srgb, var(--color-green-deep) 25%, transparent) 40%, transparent 100%)',
-            }}
           />
           <div className="absolute bottom-6 right-6 bg-white/92 backdrop-blur-sm rounded-2xl px-[18px] py-3.5 flex items-center gap-3">
             <IconTruck width="22" height="22" className="text-green" />
