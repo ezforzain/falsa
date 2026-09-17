@@ -1,22 +1,24 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
 
-// Email verification tokens: the raw token goes out in the email link and is never stored —
-// only its SHA-256 hash sits in the DB (same idea as a password), so a database leak alone
-// can't be used to verify/hijack an account.
-const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+// Signup email verification: a 6-digit code emailed to the address just signed up with, typed
+// back into the app (same UX as the forgot-password OTP below, and as WhatsApp/Facebook-style
+// signup verification) rather than a clicked link. Only the hash is stored, same reasoning as a
+// password. Tracked separately from the password-reset OTP (own hash/attempts field on User) even
+// though the shape is identical, since the two verify completely different things.
+const EMAIL_VERIFICATION_OTP_TTL_MS = 10 * 60 * 1000; // 10m
 
-export function createEmailVerificationToken() {
-  const token = crypto.randomBytes(32).toString('hex');
+export function createEmailVerificationOtp() {
+  const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
   return {
-    token,
-    tokenHash: hashEmailVerificationToken(token),
-    expires: new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS),
+    code,
+    codeHash: hashEmailVerificationOtp(code),
+    expires: new Date(Date.now() + EMAIL_VERIFICATION_OTP_TTL_MS),
   };
 }
 
-export function hashEmailVerificationToken(token) {
-  return crypto.createHash('sha256').update(token).digest('hex');
+export function hashEmailVerificationOtp(code) {
+  return crypto.createHash('sha256').update(code).digest('hex');
 }
 
 // Forgot-password OTP: a 6-digit code, short-lived (10 min — long enough to check an inbox,

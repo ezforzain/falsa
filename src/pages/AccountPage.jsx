@@ -39,22 +39,39 @@ function MemberSince({ date }) {
   );
 }
 
-// Sits under the profile card whenever the signed-in account hasn't clicked the link from its
-// verification email yet — see VerifyEmailPage / server's /api/auth/verify-email.
-function EmailVerifyNotice({ email, resend }) {
-  const [state, setState] = useState('idle'); // idle | sending | sent | error
-  const [error, setError] = useState(null);
+// Sits under the profile card whenever the signed-in account hasn't entered the code from its
+// verification email yet — see server's PATCH /api/auth/verify-email/otp. A 6-digit code typed
+// right here (WhatsApp/Facebook-style) rather than a link to click elsewhere.
+function EmailVerifyNotice({ email, resend, verify }) {
+  const [code, setCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState(null);
+  const [resendState, setResendState] = useState('idle'); // idle | sending | sent | error
+  const [resendError, setResendError] = useState(null);
+
+  const handleVerify = async () => {
+    if (verifying || code.trim().length !== 6) return;
+    setVerifying(true);
+    setVerifyError(null);
+    try {
+      await verify(code.trim());
+    } catch (err) {
+      setVerifyError(err.message);
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const handleResend = async () => {
-    if (state === 'sending') return;
-    setState('sending');
-    setError(null);
+    if (resendState === 'sending') return;
+    setResendState('sending');
+    setResendError(null);
     try {
       await resend();
-      setState('sent');
+      setResendState('sent');
     } catch (err) {
-      setError(err.message);
-      setState('error');
+      setResendError(err.message);
+      setResendState('error');
     }
   };
 
@@ -66,21 +83,44 @@ function EmailVerifyNotice({ email, resend }) {
       <div className="min-w-0 flex-1">
         <p className="text-[13.5px] font-semibold text-ink m-0">Verify your email</p>
         <p className="text-[12.5px] text-text-muted mt-1 mb-2.5 leading-snug break-words">
-          We sent a link to <span className="font-medium text-ink">{email}</span>. Open it to verify your account.
+          Enter the 6-digit code we sent to <span className="font-medium text-ink">{email}</span>.
         </p>
-        {state === 'sent' ? (
-          <p className="text-[12.5px] font-semibold text-green m-0 flex items-center gap-1.5">
-            Email sent — check your inbox.
-          </p>
-        ) : (
-          <a
-            onClick={handleResend}
-            className={`text-[12.5px] font-semibold text-orange-text cursor-pointer hover:underline underline-offset-2 ${state === 'sending' ? 'opacity-60 pointer-events-none' : ''}`}
+
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+            onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
+            placeholder="000000"
+            className="w-[104px] px-3.5 py-2 border border-border rounded-xl text-[15px] font-semibold tracking-[3px] text-center outline-none focus:border-green bg-surface-muted"
+          />
+          <button
+            type="button"
+            onClick={handleVerify}
+            disabled={verifying || code.trim().length !== 6}
+            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 bg-green hover:bg-green-hover text-white font-semibold text-[12.5px] px-4 py-2 rounded-xl transition-colors"
           >
-            {state === 'sending' ? 'Sending…' : 'Resend verification email'}
-          </a>
-        )}
-        {state === 'error' && <p className="text-[12px] text-orange-text mt-1.5 mb-0">{error}</p>}
+            {verifying ? 'Verifying…' : 'Verify'}
+          </button>
+        </div>
+        {verifyError && <p className="text-[12px] text-orange-text mt-1.5 mb-0">{verifyError}</p>}
+
+        <div className="mt-2">
+          {resendState === 'sent' ? (
+            <p className="text-[12.5px] font-semibold text-green m-0">Code sent — check your inbox.</p>
+          ) : (
+            <a
+              onClick={handleResend}
+              className={`text-[12.5px] font-semibold text-orange-text cursor-pointer hover:underline underline-offset-2 ${resendState === 'sending' ? 'opacity-60 pointer-events-none' : ''}`}
+            >
+              {resendState === 'sending' ? 'Sending…' : "Didn't get a code? Resend"}
+            </a>
+          )}
+          {resendState === 'error' && <p className="text-[12px] text-orange-text mt-1.5 mb-0">{resendError}</p>}
+        </div>
       </div>
     </div>
   );
@@ -140,7 +180,7 @@ function MenuLinkRow({ icon: Icon, label, subtitle, to, onClick }) {
 // account menu (AccountMenuContent) — the gear button below opens the same drawer/dropdown used
 // everywhere else, so that logic isn't duplicated here.
 export default function AccountPage() {
-  const { user, isAuthenticated, resendVerificationEmail } = useAuth();
+  const { user, isAuthenticated, resendVerificationEmail, verifyEmailOtp } = useAuth();
   const { open: openAccountMenu } = useProfileDrawer();
   const [editOpen, setEditOpen] = useState(false);
   const [savedToastVisible, setSavedToastVisible] = useState(false);
@@ -327,7 +367,9 @@ export default function AccountPage() {
           </span>
         </Link>
 
-        {!user.emailVerified && <EmailVerifyNotice email={user.email} resend={resendVerificationEmail} />}
+        {!user.emailVerified && (
+          <EmailVerifyNotice email={user.email} resend={resendVerificationEmail} verify={verifyEmailOtp} />
+        )}
       </div>
 
       <EditProfileSheet

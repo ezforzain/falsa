@@ -1290,9 +1290,12 @@ function Reset({ loading, error, onSubmit }) {
 }
 
 function Success({ mode, isSeller, email, sendFailed, goSignin }) {
-  const { resendVerificationEmail } = useAuth();
+  const { user, resendVerificationEmail, verifyEmailOtp } = useAuth();
   const [resendState, setResendState] = useState('idle'); // idle | sending | sent | error
   const [resendError, setResendError] = useState(null);
+  const [code, setCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState(null);
 
   const handleResend = async () => {
     if (resendState === 'sending') return;
@@ -1304,6 +1307,19 @@ function Success({ mode, isSeller, email, sendFailed, goSignin }) {
     } catch (err) {
       setResendError(err.message);
       setResendState('error');
+    }
+  };
+
+  const handleVerify = async () => {
+    if (verifying || code.trim().length !== 6) return;
+    setVerifying(true);
+    setVerifyError(null);
+    try {
+      await verifyEmailOtp(code.trim());
+    } catch (err) {
+      setVerifyError(err.message);
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -1334,36 +1350,73 @@ function Success({ mode, isSeller, email, sendFailed, goSignin }) {
           : 'You are signed in. Enjoy free shipping on your first order.'}
       </p>
 
-      {/* Email verification status — the account stays unverified until the link in this email is opened. */}
+      {/* Email verification — a 6-digit code emailed at signup, typed in right here rather than
+          a link to click elsewhere (WhatsApp/Facebook-style). The account stays unverified until
+          it's entered, but is already fully usable in the meantime — see the comment on
+          issueEmailVerification. */}
       <div className="text-left bg-[#f1f5fd] rounded-2xl p-4 mb-6 flex gap-3">
         <span className="w-9 h-9 rounded-full bg-white inline-flex items-center justify-center shrink-0">
           <IconMail width="16" height="16" className="text-[#0b6bf2]" />
         </span>
-        <div className="min-w-0">
-          {sendFailed ? (
+        <div className="min-w-0 flex-1">
+          {user?.emailVerified ? (
             <>
-              <p className="text-[13.5px] font-semibold text-[#14161c] m-0">Couldn't send your verification email</p>
-              <p className="text-[12.5px] text-[#8b9099] mt-1 mb-2 leading-snug">We'll retry when you tap resend.</p>
+              <p className="text-[13.5px] font-semibold text-[#14161c] m-0">Email verified</p>
+              <p className="text-[12.5px] text-[#8b9099] mt-1 mb-0 leading-snug">You're all set.</p>
             </>
           ) : (
             <>
-              <p className="text-[13.5px] font-semibold text-[#14161c] m-0">Verify your email</p>
-              <p className="text-[12.5px] text-[#8b9099] mt-1 mb-2 leading-snug break-words">
-                We sent a verification link to <span className="font-medium text-[#14161c]">{email}</span>. Open it to confirm your account.
-              </p>
+              {sendFailed ? (
+                <>
+                  <p className="text-[13.5px] font-semibold text-[#14161c] m-0">Couldn't send your verification code</p>
+                  <p className="text-[12.5px] text-[#8b9099] mt-1 mb-2 leading-snug">We'll retry when you tap resend.</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-[13.5px] font-semibold text-[#14161c] m-0">Verify your email</p>
+                  <p className="text-[12.5px] text-[#8b9099] mt-1 mb-2 leading-snug break-words">
+                    Enter the 6-digit code we sent to <span className="font-medium text-[#14161c]">{email}</span>.
+                  </p>
+                </>
+              )}
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                  onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
+                  placeholder="000000"
+                  className="w-[104px] px-3.5 py-2 rounded-xl border-0 outline-none text-[15px] font-bold tracking-[3px] text-center text-[#14161c] bg-white transition-shadow"
+                  style={{ boxShadow: verifyError ? '0 0 0 1.5px #e0403a inset' : code ? '0 0 0 1.5px #0b6bf2 inset' : 'none' }}
+                />
+                <a
+                  onClick={handleVerify}
+                  className="cursor-pointer bg-[#0b6bf2] hover:bg-[#0a5fd8] text-white font-semibold text-[12.5px] px-4 py-2.5 rounded-xl transition-colors"
+                  style={{ opacity: verifying || code.trim().length !== 6 ? 0.55 : 1, pointerEvents: verifying ? 'none' : 'auto' }}
+                >
+                  {verifying ? 'Verifying…' : 'Verify'}
+                </a>
+              </div>
+              {verifyError && <p className="text-[12px] text-[#c0392b] mt-1.5 mb-0">{verifyError}</p>}
+
+              <div className="mt-2">
+                {resendState === 'sent' ? (
+                  <p className="text-[12.5px] font-semibold text-[#12b76a] m-0">Code sent — check your inbox.</p>
+                ) : (
+                  <a
+                    onClick={handleResend}
+                    className={`text-[12.5px] font-semibold text-[#0b6bf2] cursor-pointer hover:underline ${resendState === 'sending' ? 'opacity-60 pointer-events-none' : ''}`}
+                  >
+                    {resendState === 'sending' ? 'Sending…' : "Didn't get a code? Resend"}
+                  </a>
+                )}
+                {resendState === 'error' && <p className="text-[12px] text-[#c0392b] mt-1.5 mb-0">{resendError}</p>}
+              </div>
             </>
           )}
-          {resendState === 'sent' ? (
-            <p className="text-[12.5px] font-semibold text-[#12b76a] m-0">Email sent — check your inbox.</p>
-          ) : (
-            <a
-              onClick={handleResend}
-              className={`text-[12.5px] font-semibold text-[#0b6bf2] cursor-pointer hover:underline ${resendState === 'sending' ? 'opacity-60 pointer-events-none' : ''}`}
-            >
-              {resendState === 'sending' ? 'Sending…' : 'Resend email'}
-            </a>
-          )}
-          {resendState === 'error' && <p className="text-[12px] text-[#c0392b] mt-1.5 mb-0">{resendError}</p>}
         </div>
       </div>
 

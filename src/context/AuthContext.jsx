@@ -86,13 +86,16 @@ export function AuthProvider({ children }) {
 
   const resendVerificationEmail = () => auth.resendVerificationEmail();
 
-  const changePassword = (payload) => auth.changePassword(payload);
-
-  // Called by VerifyEmailPage after a successful /verify-email so the signed-in session (if any)
-  // reflects the new status immediately, without waiting for the next session refresh.
-  const markEmailVerified = () => {
-    setUser((prev) => (prev ? { ...prev, emailVerified: true } : prev));
+  // code is the 6-digit code just emailed to the signed-in user (see PATCH /api/auth/verify-email/otp)
+  // — updates context state immediately so the "Verify your email" reminder disappears everywhere
+  // (AccountPage, the post-signup screen) without waiting for the next session refresh.
+  const verifyEmailOtp = async (code) => {
+    const { user: updated } = await auth.verifyEmailOtp(code);
+    setUser(updated);
+    return updated;
   };
+
+  const changePassword = (payload) => auth.changePassword(payload);
 
   // For endpoints outside auth.routes.js (e.g. seller.updateBankDetails) that return a fresh
   // user object of their own — lets the caller sync context state without a dedicated method here.
@@ -120,7 +123,7 @@ export function AuthProvider({ children }) {
     updateBanner,
     updateAddress,
     resendVerificationEmail,
-    markEmailVerified,
+    verifyEmailOtp,
     applyUserUpdate,
     changePassword,
     logout,
