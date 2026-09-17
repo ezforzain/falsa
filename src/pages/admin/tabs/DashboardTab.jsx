@@ -99,16 +99,23 @@ export default function DashboardTab({
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5 mb-8">
-            <StatCard label="Total sellers" value={overview.totals.sellers.toLocaleString('en-US')} icon={IconStore} tone="primary" />
-            <StatCard label="Total products" value={overview.totals.products.toLocaleString('en-US')} icon={IconBox} tone="info" />
-            <StatCard label="Total orders" value={overview.totals.orders.toLocaleString('en-US')} icon={IconReceipt} tone="primary" />
-            <StatCard label="Total users" value={usersList.length.toLocaleString('en-US')} icon={IconUser} tone="info" />
-            <StatCard label="Pending orders" value={overview.totals.pendingOrders.toLocaleString('en-US')} icon={IconClock} tone="warning" />
+            <StatCard label="Total sellers" value={overview.totals.sellers.toLocaleString('en-US')} icon={IconStore} tone="primary" onClick={() => onNavigate('stores')} />
+            <StatCard label="Total products" value={overview.totals.products.toLocaleString('en-US')} icon={IconBox} tone="info" onClick={() => onNavigate('products')} />
+            <StatCard label="Total orders" value={overview.totals.orders.toLocaleString('en-US')} icon={IconReceipt} tone="primary" onClick={() => onNavigate('orders', '')} />
+            <StatCard label="Total users" value={usersList.length.toLocaleString('en-US')} icon={IconUser} tone="info" onClick={() => onNavigate('users')} />
+            <StatCard
+              label="Pending orders"
+              value={overview.totals.pendingOrders.toLocaleString('en-US')}
+              icon={IconClock}
+              tone="warning"
+              onClick={() => onNavigate('orders', 'Pending')}
+            />
             <StatCard
               label="Delivered orders"
               value={!reportsLoading && reports ? (reports.statusBreakdown.Delivered || 0).toLocaleString('en-US') : '—'}
               icon={IconCheck}
               tone="success"
+              onClick={() => onNavigate('orders', 'Delivered')}
             />
           </div>
 

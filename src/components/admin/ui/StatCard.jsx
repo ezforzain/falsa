@@ -9,10 +9,15 @@ const TINTS = {
 // `emphasis` is reserved for the single most important metric on a stat row (Revenue) — a
 // slightly larger number and a tinted wash/border, not a different grid size, so cards still
 // align perfectly in the row instead of breaking the grid.
-export default function StatCard({ label, value, icon: Icon, tone = 'primary', trend, emphasis = false }) {
+export default function StatCard({ label, value, icon: Icon, tone = 'primary', trend, emphasis = false, onClick }) {
+  const Tag = onClick ? 'button' : 'div';
   return (
-    <div
-      className={`rounded-2xl p-6 transition-all hover:shadow-[var(--admin-shadow-md)] hover:-translate-y-0.5 shadow-[var(--admin-shadow-sm)] ${
+    <Tag
+      type={onClick ? 'button' : undefined}
+      onClick={onClick}
+      className={`text-left w-full rounded-2xl p-6 transition-all hover:shadow-[var(--admin-shadow-md)] hover:-translate-y-0.5 shadow-[var(--admin-shadow-sm)] ${
+        onClick ? 'cursor-pointer' : ''
+      } ${
         emphasis
           ? 'bg-[var(--admin-primary-tint)] border border-[var(--admin-primary-border)]'
           : 'bg-[var(--admin-surface)] border border-[var(--admin-border)]'
@@ -32,6 +37,6 @@ export default function StatCard({ label, value, icon: Icon, tone = 'primary', t
       </div>
       <div className={`font-display font-bold text-[var(--admin-ink)] leading-tight ${emphasis ? 'text-3xl' : 'text-2xl'}`}>{value}</div>
       <div className="text-[13px] text-[var(--admin-text-muted)] mt-1 font-medium">{label}</div>
-    </div>
+    </Tag>
   );
 }
