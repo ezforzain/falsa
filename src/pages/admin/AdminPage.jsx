@@ -289,6 +289,9 @@ export default function AdminPage() {
     try {
       const { order: updated } = await adminOrders.updateStatus(order.id, status);
       setOrdersList((current) => current.map((o) => (o.id === updated.id ? updated : o)));
+      setOverview((current) =>
+        current ? { ...current, recentOrders: current.recentOrders.map((o) => (o.id === updated.id ? updated : o)) } : current
+      );
       showToast('Order status updated');
     } catch (err) {
       setOrderRowError({ id: order.id, message: err.message });
@@ -795,6 +798,8 @@ export default function AdminPage() {
           reportsLoading={reportsLoading}
           products={products}
           onNavigate={setActiveTab}
+          orderStatusPendingId={orderStatusPendingId}
+          handleUpdateOrderStatus={handleUpdateOrderStatus}
         />
       )}
 
