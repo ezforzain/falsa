@@ -19,6 +19,14 @@ export async function markSellerRead(conversationId) {
   return conversation;
 }
 
+// index is the message's position in `messages` as last rendered. `scope` is 'me' (hide from my
+// own view only) or 'everyone' (tombstone for both sides — server rejects this unless the
+// message is actually mine, re-checked against `from`, never trusted from the client).
+export async function deleteSellerMessage(conversationId, index, scope) {
+  const { conversation } = await sellerApi.deleteMessage(conversationId, index, scope);
+  return conversation;
+}
+
 export function totalUnread(conversations) {
   return conversations.reduce((sum, c) => sum + (c.unread || 0), 0);
 }

@@ -77,7 +77,8 @@ function HeaderMenu({ onMarkAllRead, hasUnread }) {
 
 function ConversationRow({ conversation, onDeleteRequest }) {
   const last = conversation.messages[conversation.messages.length - 1];
-  const preview = last ? (last.from === 'buyer' ? `You: ${last.text}` : last.text) : 'No messages yet';
+  const lastText = last?.deleted ? 'This message was deleted' : last?.text;
+  const preview = last ? (last.from === 'buyer' ? `You: ${lastText}` : lastText) : 'No messages yet';
 
   return (
     <div className="relative">

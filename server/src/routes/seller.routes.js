@@ -16,6 +16,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { syncSellerProductToCatalog, removeSellerProductFromCatalog } from '../utils/publicCatalogSync.js';
 import { normalizeHashtagList } from '../utils/hashtags.js';
+import { applyMessageDelete, serializeMessages } from '../utils/conversationMessages.js';
 
 const BANK_FIELDS = ['bankName', 'accountTitle', 'accountNumber', 'iban'];
 
@@ -483,7 +484,7 @@ function serializeSellerConversation(conv) {
     id: conv._id,
     buyerCompany: conv.buyerName || 'Guest buyer',
     unread: conv.sellerUnread || 0,
-    messages: conv.messages,
+    messages: serializeMessages(conv.messages, 'seller'),
   };
 }
 
@@ -523,6 +524,24 @@ router.patch(
       conv.sellerUnread = 0;
       await conv.save();
     }
+    res.json({ conversation: serializeSellerConversation(conv) });
+  })
+);
+
+// WhatsApp-style per-message delete — mirrors POST /api/messages/conversations/:id/messages/:index
+// (the buyer side) exactly, just scoped to 'seller' instead — see utils/conversationMessages.js.
+router.patch(
+  '/messages/:id/messages/:index',
+  asyncHandler(async (req, res) => {
+    if (!req.user.sellerId) return res.status(404).json({ message: 'No storefront found for this account.' });
+    const conv = await Conversation.findOne({ _id: req.params.id, sellerId: req.user.sellerId });
+    if (!conv) return res.status(404).json({ message: 'Conversation not found.' });
+
+    const index = Number(req.params.index);
+    const error = applyMessageDelete(conv, index, 'seller', req.body?.scope);
+    if (error) return res.status(error.status).json({ message: error.message });
+
+    await conv.save();
     res.json({ conversation: serializeSellerConversation(conv) });
   })
 );

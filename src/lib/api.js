@@ -274,6 +274,8 @@ export const seller = {
     request(`/api/seller/messages/${encodeURIComponent(conversationId)}`, { method: 'POST', body: { text }, auth: true }),
   markMessageRead: (conversationId) =>
     request(`/api/seller/messages/${encodeURIComponent(conversationId)}/read`, { method: 'PATCH', auth: true }),
+  deleteMessage: (conversationId, index, scope) =>
+    request(`/api/seller/messages/${encodeURIComponent(conversationId)}/messages/${index}`, { method: 'PATCH', body: { scope }, auth: true }),
 };
 
 // ---------- Messages (buyer <-> seller chat) ----------
@@ -290,8 +292,8 @@ export const messages = {
     request(`/api/messages/conversations/${encodeURIComponent(conversationId)}/read`, { method: 'PATCH', auth: true }),
   deleteConversation: (conversationId) =>
     request(`/api/messages/conversations/${encodeURIComponent(conversationId)}`, { method: 'DELETE', auth: true }),
-  deleteMessage: (conversationId, index) =>
-    request(`/api/messages/conversations/${encodeURIComponent(conversationId)}/messages/${index}`, { method: 'DELETE', auth: true }),
+  deleteMessage: (conversationId, index, scope) =>
+    request(`/api/messages/conversations/${encodeURIComponent(conversationId)}/messages/${index}`, { method: 'PATCH', body: { scope }, auth: true }),
 };
 
 // ---------- Buyer "My Orders" ----------
