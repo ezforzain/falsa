@@ -3,6 +3,7 @@ import { Conversation } from '../models/Conversation.js';
 import { Seller } from '../models/Seller.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ensureGuestId } from '../middleware/guest.js';
+import { applyMessageDelete, serializeMessages } from '../utils/conversationMessages.js';
 
 // Buyer side of the buyer<->seller messenger (see server/src/models/Conversation.js). Mounted at
 // /api/messages; the seller side lives in seller.routes.js alongside the rest of the seller
@@ -26,7 +27,7 @@ function serialize(conv, sellerLogoUrl = null) {
     sellerId: conv.sellerId,
     sellerName: conv.sellerName,
     sellerLogoUrl,
-    messages: conv.messages.map((m, i) => ({ index: i, from: m.from, text: m.text, at: m.at })),
+    messages: serializeMessages(conv.messages, 'buyer'),
     unread: conv.buyerUnread || 0,
   };
 }
@@ -127,23 +128,21 @@ router.delete(
   })
 );
 
-// Deletes one message the buyer sent. Messages are plain subdocuments with no _id of their own
-// (see models/Conversation.js), so the position in the array — which the client already has,
-// having rendered it — is the address; re-checking `from === 'buyer'` server-side means this can
-// never be used to delete the seller's side of the conversation, only re-derived from trusted
-// state, not from client-supplied text/from values.
-router.delete(
+// WhatsApp-style per-message delete — `scope: 'me'` hides it from just this buyer's own view,
+// `scope: 'everyone'` tombstones it for both sides (only if this buyer sent it). Messages are
+// plain subdocuments with no _id of their own (see models/Conversation.js), so the position in
+// the array — which the client already has, having rendered it — is the address; the 'everyone'
+// ownership check happens server-side against the trusted `from` field, never client input.
+router.patch(
   '/conversations/:id/messages/:index',
   asyncHandler(async (req, res) => {
     const conv = await Conversation.findOne({ _id: req.params.id, buyerId: buyerIdFor(req) });
     if (!conv) return res.status(404).json({ message: 'Conversation not found.' });
 
     const index = Number(req.params.index);
-    const target = Number.isInteger(index) ? conv.messages[index] : null;
-    if (!target || target.from !== 'buyer') {
-      return res.status(404).json({ message: 'Message not found.' });
-    }
-    conv.messages.splice(index, 1);
+    const error = applyMessageDelete(conv, index, 'buyer', req.body?.scope);
+    if (error) return res.status(error.status).json({ message: error.message });
+
     await conv.save();
     res.json({ conversation: await serializeOne(conv) });
   })

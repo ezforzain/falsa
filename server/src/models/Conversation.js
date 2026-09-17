@@ -5,6 +5,15 @@ const messageSchema = new mongoose.Schema(
     from: { type: String, enum: ['buyer', 'seller'], required: true },
     text: { type: String, required: true },
     at: { type: Date, default: Date.now },
+    // WhatsApp-style delete: 'me' hides a message from just one side's own view (each side is
+    // '"buyer'/'seller', matching `from`) without touching the other party's copy — the original
+    // text is kept in the DB either way (never mutated/cleared) so a still-visible side always
+    // renders correctly; only serialization (messages.routes.js/seller.routes.js) decides what
+    // each side actually sees.
+    deletedFor: { type: [String], enum: ['buyer', 'seller'], default: [] },
+    // Sender-only tombstone — replaces the bubble with "This message was deleted" for BOTH
+    // sides. Only ever set true by whoever sent the message (`from`), enforced in the route.
+    deletedForEveryone: { type: Boolean, default: false },
   },
   { _id: false }
 );

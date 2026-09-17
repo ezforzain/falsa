@@ -9,13 +9,73 @@ import {
 } from '../lib/buyerMessagesStore';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Avatar from '../components/Avatar';
-import { IconChevronLeft, IconSend, IconTrash } from '../components/icons';
+import MessageActionMenu from '../components/MessageActionMenu';
+import { useLongPress } from '../hooks/useLongPress';
+import { IconChevronLeft, IconSend, IconTrash, IconMoreVertical } from '../components/icons';
 
 const POLL_MS = 6000;
 const MAX_COMPOSER_HEIGHT = 120; // px — beyond this the textarea scrolls internally instead of growing further
 
 function formatBubbleTime(at) {
   return new Date(at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+// A 0-size rect at the long-press point, so the action menu opens right under the finger
+// instead of always anchoring to the bubble's corner — MessageActionMenu only reads
+// top/bottom/left/right, so this is all it needs.
+function pointRect(x, y) {
+  return { top: y, bottom: y, left: x, right: x };
+}
+
+// One bubble's long-press/3-dot trigger — a plain function component (not inlined in the .map)
+// so useLongPress's hook rules stay happy across a variable number of messages.
+function MessageBubble({ m, isMine, onOpenMenu }) {
+  const bubbleRef = useRef(null);
+  const longPress = useLongPress((e) => {
+    const touch = e.touches?.[0] ?? e.changedTouches?.[0];
+    onOpenMenu(m, touch ? pointRect(touch.clientX, touch.clientY) : bubbleRef.current?.getBoundingClientRect());
+  });
+
+  if (m.deleted) {
+    return (
+      <div className={`max-w-[82%] sm:max-w-[70%] flex flex-col ${isMine ? 'self-end items-end' : 'self-start items-start'}`}>
+        <div className="px-3.5 py-2.5 rounded-[18px] text-sm italic text-text-muted bg-surface-muted border border-border/70">
+          This message was deleted
+        </div>
+        <span className="text-[10px] text-text-muted mt-1 px-1">{formatBubbleTime(m.at)}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`max-w-[82%] sm:max-w-[70%] flex flex-col ${isMine ? 'self-end items-end' : 'self-start items-start'}`}>
+      <div className={`group flex items-center gap-1 ${isMine ? 'flex-row' : 'flex-row-reverse'}`}>
+        <button
+          type="button"
+          onClick={(e) => onOpenMenu(m, e.currentTarget.getBoundingClientRect())}
+          aria-label="Message actions"
+          className="cursor-pointer shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-surface-muted hover:text-ink transition-opacity"
+        >
+          <IconMoreVertical width="15" height="15" />
+        </button>
+        <button
+          ref={bubbleRef}
+          type="button"
+          {...longPress}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            onOpenMenu(m, e.currentTarget.getBoundingClientRect());
+          }}
+          className={`select-none text-left cursor-pointer px-3.5 py-2.5 rounded-[18px] text-sm leading-relaxed shadow-[0_1px_2px_rgba(0,0,0,0.05)] ${
+            isMine ? 'bg-green text-white rounded-br-md' : 'bg-surface text-ink rounded-bl-md'
+          }`}
+        >
+          {m.text}
+        </button>
+      </div>
+      <span className="text-[10px] text-text-muted mt-1 px-1">{formatBubbleTime(m.at)}</span>
+    </div>
+  );
 }
 
 // Full-screen conversation view — its own route (/messenger/:id) rather than a panel inside
@@ -36,8 +96,8 @@ export default function ConversationPage() {
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState(null);
-  const [revealedIndex, setRevealedIndex] = useState(null); // which of MY OWN bubbles shows its delete affordance
-  const [messageDeleteTarget, setMessageDeleteTarget] = useState(null); // { index, text }
+  const [menuState, setMenuState] = useState(null); // { index, isMine, anchorRect, stage: 'root' | 'deleteChoice' }
+  const [pendingDelete, setPendingDelete] = useState(null); // { index, scope: 'me' | 'everyone' }
   const [confirmDeleteChat, setConfirmDeleteChat] = useState(false);
   const [deletingChat, setDeletingChat] = useState(false);
   const [deletingMessage, setDeletingMessage] = useState(false);
@@ -119,14 +179,42 @@ export default function ConversationPage() {
     }
   };
 
+  const openMessageMenu = (m, anchorRect) => {
+    if (!anchorRect) return;
+    setMenuState({ index: m.index, isMine: m.from === 'buyer', anchorRect, stage: 'root' });
+  };
+
+  const chooseDeleteScope = (scope) => {
+    if (!menuState) return;
+    setPendingDelete({ index: menuState.index, scope });
+  };
+
+  const menuItems = !menuState
+    ? []
+    : menuState.stage === 'root'
+    ? [
+        {
+          key: 'delete',
+          label: 'Delete',
+          danger: true,
+          keepOpen: true,
+          onSelect: () => setMenuState((s) => ({ ...s, stage: 'deleteChoice' })),
+        },
+      ]
+    : [
+        { key: 'me', label: 'Delete for me', onSelect: () => chooseDeleteScope('me') },
+        ...(menuState.isMine
+          ? [{ key: 'everyone', label: 'Delete for everyone', danger: true, onSelect: () => chooseDeleteScope('everyone') }]
+          : []),
+      ];
+
   const confirmDeleteMessage = async () => {
-    if (!messageDeleteTarget) return;
+    if (!pendingDelete) return;
     setDeletingMessage(true);
     try {
-      const conv = await deleteBuyerMessage(id, messageDeleteTarget.index);
+      const conv = await deleteBuyerMessage(id, pendingDelete.index, pendingDelete.scope);
       setConversation(conv);
-      setMessageDeleteTarget(null);
-      setRevealedIndex(null);
+      setPendingDelete(null);
     } catch (err) {
       setSendError(err.message || 'Could not delete that message.');
     } finally {
@@ -203,36 +291,9 @@ export default function ConversationPage() {
         {conversation.messages.length === 0 && (
           <p className="text-sm text-text-muted text-center my-auto px-6">Say hi to {conversation.sellerName} to start the conversation.</p>
         )}
-        {conversation.messages.map((m) => {
-          const isMine = m.from === 'buyer';
-          const revealed = isMine && revealedIndex === m.index;
-          return (
-            <div key={m.index} className={`max-w-[82%] sm:max-w-[70%] flex flex-col ${isMine ? 'self-end items-end' : 'self-start items-start'}`}>
-              <div className="flex items-center gap-1.5">
-                {isMine && revealed && (
-                  <button
-                    type="button"
-                    onClick={() => setMessageDeleteTarget({ index: m.index, text: m.text })}
-                    aria-label="Delete message"
-                    className="cursor-pointer shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-orange-text bg-orange-tint hover:bg-orange/20 transition-colors animate-fade-up"
-                  >
-                    <IconTrash width="13" height="13" />
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => isMine && setRevealedIndex((cur) => (cur === m.index ? null : m.index))}
-                  className={`text-left cursor-pointer px-3.5 py-2.5 rounded-[18px] text-sm leading-relaxed shadow-[0_1px_2px_rgba(0,0,0,0.05)] ${
-                    isMine ? 'bg-green text-white rounded-br-md' : 'bg-surface text-ink rounded-bl-md'
-                  }`}
-                >
-                  {m.text}
-                </button>
-              </div>
-              <span className="text-[10px] text-text-muted mt-1 px-1">{formatBubbleTime(m.at)}</span>
-            </div>
-          );
-        })}
+        {conversation.messages.map((m) => (
+          <MessageBubble key={m.index} m={m} isMine={m.from === 'buyer'} onOpenMenu={openMessageMenu} />
+        ))}
         <div ref={bottomRef} />
       </div>
 
@@ -273,13 +334,24 @@ export default function ConversationPage() {
         </button>
       </form>
 
+      <MessageActionMenu
+        open={!!menuState}
+        anchorRect={menuState?.anchorRect}
+        items={menuItems}
+        onClose={() => setMenuState(null)}
+      />
+
       <ConfirmDialog
-        open={!!messageDeleteTarget}
-        title="Delete this message?"
-        message="This will remove the message from the conversation."
+        open={!!pendingDelete}
+        title={pendingDelete?.scope === 'everyone' ? 'Delete for everyone?' : 'Delete this message?'}
+        message={
+          pendingDelete?.scope === 'everyone'
+            ? 'This message will be removed for you and the seller. This cannot be undone.'
+            : 'This removes the message from your side of the chat only.'
+        }
         confirmLabel="Delete"
         loading={deletingMessage}
-        onCancel={() => setMessageDeleteTarget(null)}
+        onCancel={() => setPendingDelete(null)}
         onConfirm={confirmDeleteMessage}
       />
       <ConfirmDialog

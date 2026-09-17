@@ -39,9 +39,10 @@ export async function deleteConversation(conversationId) {
   await messagesApi.deleteConversation(conversationId);
 }
 
-// index is the message's position in `messages` as last rendered — the server re-checks
-// from === 'buyer' itself, so a stale/wrong index just 404s instead of deleting anything unsafe.
-export async function deleteBuyerMessage(conversationId, index) {
-  const { conversation } = await messagesApi.deleteMessage(conversationId, index);
+// index is the message's position in `messages` as last rendered. `scope` is 'me' (hide from my
+// own view only) or 'everyone' (tombstone for both sides — server rejects this unless the
+// message is actually mine, re-checked against `from`, never trusted from the client).
+export async function deleteBuyerMessage(conversationId, index, scope) {
+  const { conversation } = await messagesApi.deleteMessage(conversationId, index, scope);
   return conversation;
 }
