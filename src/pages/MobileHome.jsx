@@ -194,13 +194,14 @@ export default function MobileHome() {
         className="mx-[18px] mb-3 rounded-[22px] overflow-hidden relative grid grid-cols-[1.3fr_1fr] min-h-[172px]"
         style={{ background: 'linear-gradient(135deg, #F5ECF8 0%, #FBEDE9 100%)' }}
       >
-        <div className="p-4 flex flex-col justify-center">
+        <div className="p-4 flex flex-col justify-center relative">
           <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: ACCENT }}>
             <span className="w-1.5 h-1.5 rounded-full inline-block shrink-0" style={{ background: ACCENT }} />
             {t('home.heroEyebrow')}
           </span>
-          <h1 className="font-display text-[19px] leading-[1.2] font-bold text-ink mb-1.5 tracking-tight text-balance">
-            {t('home.heroTitle')}
+          <h1 className="font-display text-[19px] leading-[1.2] font-bold mb-1.5 tracking-tight text-balance">
+            <span className="text-ink">{t('home.heroTitleLine1')} </span>
+            <span style={{ color: ACCENT }}>{t('home.heroTitleLine2')}</span>
           </h1>
           <p className="text-[11.5px] text-text leading-snug mb-3 text-balance">{t('home.heroSubtitle')}</p>
           <button
@@ -212,44 +213,74 @@ export default function MobileHome() {
             {t('home.heroCta')}
             <IconArrowRight width="13" height="13" strokeWidth="2.4" />
           </button>
+          {/* Small handwritten-style flourish, matching the reference design's script accent. */}
+          <span
+            className="absolute bottom-2 right-1.5 text-[11px] leading-tight text-right hidden xs:block"
+            style={{ fontFamily: 'cursive', color: ACCENT, opacity: 0.75, transform: 'rotate(-4deg)' }}
+          >
+            {t('home.heroFlourish')} ♥
+          </span>
         </div>
         <div className="relative min-h-[172px]">
           <img
-            src={unsplash('photo-1473188588951-666fce8e7c68', 400)}
+            src={unsplash('photo-1483985988355-763728e1935b', 400)}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.src = unsplash('photo-1473188588951-666fce8e7c68', 400);
+            }}
           />
         </div>
       </div>
 
-      {/* Trust strip — two tiles, same real actions the old hero exposed (free-shipping framing
-          + a verified-sellers shortcut into the filter panel), just restyled as light cards. */}
-      <div className="mx-[18px] mb-3 grid grid-cols-2 gap-2.5">
-        <div className="flex items-center gap-2.5 rounded-2xl border border-border bg-surface px-3 py-3">
-          <span className="w-8 h-8 rounded-full bg-green-tint flex items-center justify-center shrink-0">
-            <IconTruck width="16" height="16" className="text-green" strokeWidth="2.2" />
-          </span>
-          <span className="min-w-0">
-            <span className="font-display block text-[12px] font-bold text-ink leading-snug">{t('home.trustFreeShipping')}</span>
-            <span className="block text-[10.5px] text-text-muted leading-snug">{t('home.trustFreeShippingSub')}</span>
-          </span>
+      {/* Second promo banner — dark card with a fast-delivery badge, a 2-up trust row (the same
+          real free-shipping framing + verified-sellers shortcut the old hero exposed), and a CTA
+          into the grid below. Visually mirrors the reference design's second banner, content-wise
+          it stays truthful to what Falsafah actually offers rather than naming a fictitious
+          sub-brand. */}
+      <div className="mx-[18px] mb-3 rounded-[22px] bg-green-deep px-4 pt-4 pb-4">
+        <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 font-mono text-[10px] font-semibold tracking-[0.1em] uppercase text-gold mb-2.5">
+          <IconTruck width="12" height="12" strokeWidth="2.4" />
+          {t('home.bannerBadge')}
         </div>
+        <h2 className="font-display text-[16px] font-bold text-white mb-3 tracking-tight text-balance">{t('home.bannerTitle')}</h2>
+
+        <div className="grid grid-cols-2 gap-2.5 mb-3.5">
+          <div className="flex items-center gap-2 rounded-xl bg-white/[0.08] border border-white/10 px-2.5 py-2.5">
+            <span className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+              <IconTruck width="14" height="14" className="text-white" strokeWidth="2.2" />
+            </span>
+            <span className="min-w-0">
+              <span className="font-display block text-[11px] font-bold text-white leading-snug">{t('home.trustFreeShipping')}</span>
+              <span className="block text-[9.5px] text-teal-mist leading-snug">{t('home.trustFreeShippingSub')}</span>
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setMarketplaceFilters((f) => ({ ...f, verified: true }));
+              setFiltersOpen(true);
+              scrollToGrid();
+            }}
+            className="flex items-center gap-2 rounded-xl bg-white/[0.08] border border-white/10 px-2.5 py-2.5 text-left cursor-pointer transition-colors hover:bg-white/[0.12]"
+          >
+            <span className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+              <IconShield width="14" height="14" className="text-white" strokeWidth="2.2" />
+            </span>
+            <span className="min-w-0">
+              <span className="font-display block text-[11px] font-bold text-white leading-snug">{t('home.trustVerified')}</span>
+              <span className="block text-[9.5px] text-teal-mist leading-snug">{t('home.trustVerifiedSub')}</span>
+            </span>
+          </button>
+        </div>
+
         <button
           type="button"
-          onClick={() => {
-            setMarketplaceFilters((f) => ({ ...f, verified: true }));
-            setFiltersOpen(true);
-            scrollToGrid();
-          }}
-          className="flex items-center gap-2.5 rounded-2xl border border-border bg-surface px-3 py-3 text-left cursor-pointer transition-colors hover:border-border-strong"
+          onClick={scrollToGrid}
+          className="w-full flex items-center justify-center gap-1.5 rounded-full bg-orange hover:bg-orange-hover text-white font-semibold text-[12.5px] py-2.5 cursor-pointer transition-colors"
         >
-          <span className="w-8 h-8 rounded-full bg-orange-tint flex items-center justify-center shrink-0">
-            <IconShield width="16" height="16" className="text-orange-text" strokeWidth="2.2" />
-          </span>
-          <span className="min-w-0">
-            <span className="font-display block text-[12px] font-bold text-ink leading-snug">{t('home.trustVerified')}</span>
-            <span className="block text-[10.5px] text-text-muted leading-snug">{t('home.trustVerifiedSub')}</span>
-          </span>
+          {t('home.bannerCta')}
+          <IconArrowRight width="13" height="13" strokeWidth="2.4" />
         </button>
       </div>
 
