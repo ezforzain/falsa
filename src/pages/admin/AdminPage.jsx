@@ -786,6 +786,13 @@ export default function AdminPage() {
     }
   };
 
+  // Lets the Dashboard's stat cards jump to a tab and, for the order stats, pre-apply a status
+  // filter (e.g. "Pending orders" -> Orders tab filtered to Pending) in one click.
+  const handleDashboardNavigate = (tab, orderStatus) => {
+    if (orderStatus !== undefined) setOrderStatusFilter(orderStatus);
+    setActiveTab(tab);
+  };
+
   return (
     <AdminLayout activeTab={activeTab} onTabChange={setActiveTab} user={user} onLogout={handleLogout}>
       {activeTab === 'overview' && (
@@ -797,7 +804,7 @@ export default function AdminPage() {
           reports={reports}
           reportsLoading={reportsLoading}
           products={products}
-          onNavigate={setActiveTab}
+          onNavigate={handleDashboardNavigate}
           orderStatusPendingId={orderStatusPendingId}
           handleUpdateOrderStatus={handleUpdateOrderStatus}
         />
