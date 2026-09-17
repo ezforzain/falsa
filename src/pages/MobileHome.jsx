@@ -12,7 +12,7 @@ import SearchHintOverlay from '../components/SearchHintOverlay';
 import MobileTopBar from '../components/MobileTopBar';
 import MarketplaceFilters, { EMPTY_MARKETPLACE_FILTERS } from '../components/marketplace/MarketplaceFilters';
 import MobileProductCard from '../components/product/MobileProductCard';
-import { IconSearch, IconSliders, IconArrowRight, IconTruck, IconPin, IconGift, IconStore, IconBox, IconSparkle, IconGrid } from '../components/icons';
+import { IconSearch, IconSliders, IconArrowRight, IconTruck, IconPin, IconGift, IconStore, IconBox, IconSparkle, IconGrid, IconClock } from '../components/icons';
 
 // Accent used only for this new home look (hero CTA + active tab pill) — deliberately a
 // different shade from the admin panel's #7C3AED so the two never read as the same theme.
@@ -258,47 +258,83 @@ export default function MobileHome() {
         </div>
       </div>
 
-      {/* "Safah Mart" promo banner — mirrors the reference design's second banner: local-market
-          branding, a fast-delivery badge, a row of shopping categories, and a CTA. Purely
-          decorative/navigational (links into the real Categories page) — not a live backend
-          feature — since it's a marketing block, not a functional filter. */}
+      {/* "Safah Mart" promo banner — mirrors the reference design's second banner: light-blue
+          card, pin + brand wordmark, a two-line "Fast delivery / 40 min" ribbon badge, a
+          skyline silhouette, a row of shopping categories, and a CTA. Purely decorative/
+          navigational (links into the real Categories page) — not a live backend feature —
+          since it's a marketing block, not a functional filter. */}
       <Link
         to="/categories"
-        className="block mx-[18px] mb-3 rounded-[22px] bg-green-deep px-4 pt-4 pb-4 no-underline text-inherit"
+        className="block mx-[18px] mb-3 rounded-[22px] overflow-hidden relative px-4 pt-4 pb-3.5 no-underline text-inherit"
+        style={{ background: 'linear-gradient(135deg, #EAF2FF 0%, #D9E9FB 100%)' }}
       >
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <IconPin width="16" height="16" className="text-orange shrink-0" strokeWidth="2.2" />
-            <span className="font-display text-[15px] font-bold tracking-tight truncate">
-              <span className="text-orange">{t('home.bannerBrand1')}</span> <span className="text-white">{t('home.bannerBrand2')}</span>
-            </span>
+        {/* Decorative city-skyline silhouette, bottom-right — plain SVG rects, no image asset. */}
+        <svg
+          className="absolute bottom-0 right-0 pointer-events-none"
+          width="150"
+          height="60"
+          viewBox="0 0 150 60"
+          fill="#2D6FC9"
+          opacity="0.1"
+          aria-hidden="true"
+        >
+          <rect x="0" y="26" width="18" height="34" />
+          <rect x="22" y="14" width="16" height="46" />
+          <rect x="42" y="30" width="14" height="30" />
+          <rect x="60" y="6" width="18" height="54" />
+          <rect x="82" y="22" width="16" height="38" />
+          <rect x="102" y="34" width="14" height="26" />
+          <rect x="120" y="16" width="16" height="44" />
+          <rect x="138" y="28" width="12" height="32" />
+        </svg>
+
+        <div className="relative flex items-start justify-between gap-2 mb-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0">
+                <IconPin width="13" height="13" style={{ color: '#2D6FC9' }} strokeWidth="2.4" />
+              </span>
+              <span className="font-display text-[17px] font-extrabold tracking-tight truncate">
+                <span className="text-orange">{t('home.bannerBrand1')}</span> <span className="text-ink">{t('home.bannerBrand2')}</span>
+              </span>
+            </div>
+            <p className="text-[11px] text-ink-soft mt-1 ml-[34px]">{t('home.bannerTagline')}</p>
           </div>
-          <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 font-mono text-[9.5px] font-semibold tracking-[0.08em] uppercase text-gold">
-            <IconTruck width="11" height="11" strokeWidth="2.4" />
-            {t('home.bannerBadge')}
+          <div className="shrink-0 rounded-xl px-2.5 py-1.5 text-center text-white shadow-sm" style={{ background: '#2D6FC9' }}>
+            <div className="flex items-center gap-1 justify-center text-[8.5px] font-bold uppercase tracking-wide">
+              <IconTruck width="10" height="10" strokeWidth="2.6" />
+              {t('home.bannerBadge')}
+            </div>
+            <div className="flex items-center gap-1 justify-center text-[12.5px] font-extrabold mt-0.5 leading-none">
+              <IconClock width="12" height="12" strokeWidth="2.6" />
+              {t('home.bannerEta')}
+            </div>
+          </div>
+        </div>
+
+        <div className="relative flex items-center justify-between gap-2 mt-3">
+          <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar min-w-0">
+            {[
+              { Icon: IconGift, label: t('home.bannerFreshFood') },
+              { Icon: IconStore, label: t('home.bannerRestaurants') },
+              { Icon: IconBox, label: t('home.bannerMalls') },
+              { Icon: IconSparkle, label: t('home.bannerBakeries') },
+              { Icon: IconGrid, label: t('home.bannerMore') },
+            ].map(({ Icon, label: itemLabel }) => (
+              <span key={itemLabel} className="flex items-center gap-1 shrink-0 text-[10.5px] font-medium text-ink-soft">
+                <Icon width="13" height="13" strokeWidth="2" style={{ color: '#2D6FC9' }} />
+                {itemLabel}
+              </span>
+            ))}
+          </div>
+          <span
+            className="shrink-0 inline-flex items-center gap-1 rounded-full px-3.5 py-2 text-white font-semibold text-[11.5px]"
+            style={{ background: '#2D6FC9' }}
+          >
+            {t('home.bannerCta')}
+            <IconArrowRight width="12" height="12" strokeWidth="2.4" />
           </span>
         </div>
-        <p className="text-[11px] text-teal-mist mb-3">{t('home.bannerTagline')}</p>
-
-        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar mb-3.5 pb-0.5">
-          {[
-            { Icon: IconGift, label: t('home.bannerFreshFood') },
-            { Icon: IconStore, label: t('home.bannerRestaurants') },
-            { Icon: IconBox, label: t('home.bannerMalls') },
-            { Icon: IconSparkle, label: t('home.bannerBakeries') },
-            { Icon: IconGrid, label: t('home.bannerMore') },
-          ].map(({ Icon, label: itemLabel }) => (
-            <span key={itemLabel} className="flex items-center gap-1.5 shrink-0 text-[11px] font-medium text-white/90">
-              <Icon width="14" height="14" strokeWidth="2" />
-              {itemLabel}
-            </span>
-          ))}
-        </div>
-
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-orange px-4 py-2 text-white font-semibold text-[12px]">
-          {t('home.bannerCta')}
-          <IconArrowRight width="13" height="13" strokeWidth="2.4" />
-        </span>
       </Link>
 
       {/* Category row — the reference design's fixed Women/Men/Kids/Beauty/Home/Accessories/
