@@ -50,7 +50,10 @@ export const translations = {
       viewProfile: 'View Profile',
     },
     home: {
+      verifiedSuppliers: 'Verified suppliers · 40 countries',
+      sourcingToday: 'What are you sourcing today?',
       startExploring: 'Start exploring',
+      startExploringSub: 'Browse the full catalogue',
       requestQuotation: 'Request for Quotation',
       topSellers: 'Top Sellers',
       freeShipping: 'FREE shipping',
@@ -196,7 +199,10 @@ export const translations = {
       viewProfile: 'پروفائل دیکھیں',
     },
     home: {
+      verifiedSuppliers: 'تصدیق شدہ سپلائرز · 40 ممالک',
+      sourcingToday: 'آج آپ کیا تلاش کر رہے ہیں؟',
       startExploring: 'تلاش شروع کریں',
+      startExploringSub: 'مکمل کیٹلاگ دیکھیں',
       requestQuotation: 'قیمت کی درخواست',
       topSellers: 'بہترین فروخت کنندگان',
       freeShipping: 'مفت شپنگ',
