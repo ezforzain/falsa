@@ -63,7 +63,10 @@
   --color-green-tint-border: #2C3E56;
   --color-teal-soft: #7FA6E0;
   --color-teal-softer: #4A6A94;
-  --color-teal-mist: #1C2838;
+  /* teal-mist is used as *text* on the hero/footer, which stay dark navy regardless of site
+     theme (Footer.jsx, DesktopHome.jsx) — it needs to stay light-on-dark in both themes, unlike
+     every other token here that flips. */
+  --color-teal-mist: #A9C2E0;
 
   --color-orange: #e29a52;
   --color-orange-hover: #d0813a;
