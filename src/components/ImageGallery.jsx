@@ -193,7 +193,7 @@ export default function ImageGallery({
               onClick={() => scrollTo(i)}
               aria-label={`Show image ${i + 1}`}
               className={`${thumbHeightClassName} rounded-lg overflow-hidden cursor-pointer transition-colors`}
-              style={{ border: `2px solid ${i === selectedIndex ? '#0E5A46' : '#E4E0D6'}` }}
+              style={{ border: `2px solid ${i === selectedIndex ? 'var(--color-green)' : '#E4E0D6'}` }}
             >
               <SafeImage src={src} alt="" className="w-full h-full object-cover" />
             </button>

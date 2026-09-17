@@ -38,9 +38,25 @@ const byReach = (products) => products.slice().sort((a, b) => reachOf(b) - reach
 
 router.get(
   '/categories',
-  asyncHandler(async (_req, res) => {
-    const categories = await Category.find({ kind: 'category' }).sort({ order: 1 });
-    res.json({ categories: categories.map(({ key, name, icon, img }) => ({ key, name, icon, img })) });
+  asyncHandler(async (req, res) => {
+    const { placement } = req.query;
+    const filter = { kind: 'category' };
+    if (placement === 'spotlight' || placement === 'b2b') {
+      // Categories created before this field existed have no `marketplacePlacement` stored in
+      // Mongo at all (Mongoose only applies the schema default on hydration, not to the raw
+      // document) — treat "field missing" the same as an explicit 'both' so they don't vanish.
+      filter.$or = [{ marketplacePlacement: { $in: [placement, 'both'] } }, { marketplacePlacement: { $exists: false } }];
+    }
+    const categories = await Category.find(filter).sort({ order: 1 });
+    res.json({
+      categories: categories.map(({ key, name, icon, img, marketplacePlacement }) => ({
+        key,
+        name,
+        icon,
+        img,
+        marketplacePlacement,
+      })),
+    });
   })
 );
 

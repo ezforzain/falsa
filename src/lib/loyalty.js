@@ -7,7 +7,7 @@ const TIERS = [
   { key: 'bronze', label: 'Bronze Member', minOrders: 2, minSpend: 8000, className: 'bg-[#F4E9DD] text-[#8A5A2B] border-[#E3C8A4]' },
   { key: 'silver', label: 'Silver Member', minOrders: 6, minSpend: 25000, className: 'bg-[#EAEEF2] text-[#546374] border-[#CBD5E0]' },
   { key: 'gold', label: 'Gold Member', minOrders: 12, minSpend: 75000, className: 'bg-[#FBF0D3] text-[#8A6D1A] border-[#EFD48A]' },
-  { key: 'platinum', label: 'Platinum Member', minOrders: 25, minSpend: 200000, className: 'bg-gradient-to-r from-[#E8F3EE] to-[#DCEEE6] text-green border-green/30' },
+  { key: 'platinum', label: 'Platinum Member', minOrders: 25, minSpend: 200000, className: 'bg-gradient-to-r from-green-tint to-teal-mist text-green border-green/30' },
 ];
 
 export function computeLoyaltyTier(orders = []) {

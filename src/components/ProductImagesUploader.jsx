@@ -109,7 +109,7 @@ export default function ProductImagesUploader({ images, onChange, max = 6, type 
           <div key={`pending-${i}`} className="aspect-square rounded-xl border border-dashed border-border-strong flex items-center justify-center">
             <span
               className="w-5 h-5 border-2 border-border-strong rounded-full inline-block"
-              style={{ borderTopColor: '#0E5A46', animation: 'spin 0.8s linear infinite' }}
+              style={{ borderTopColor: 'var(--color-green)', animation: 'spin 0.8s linear infinite' }}
             />
           </div>
         ))}

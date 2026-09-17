@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Seller } from '../models/Seller.js';
 import { User } from '../models/User.js';
 import { Product } from '../models/Product.js';
+import { SellerProduct } from '../models/SellerProduct.js';
 import { PromotionRequest } from '../models/PromotionRequest.js';
 import { Payout } from '../models/Payout.js';
 import { SellerOrder, ORDER_STATUSES } from '../models/SellerOrder.js';
@@ -317,16 +318,29 @@ router.get(
   })
 );
 
+const CATEGORY_PLACEMENTS = ['spotlight', 'b2b', 'both'];
+
 router.post(
   '/categories',
   asyncHandler(async (req, res) => {
-    const { key, name, icon, img } = req.body;
+    const { key, name, icon, img, marketplacePlacement } = req.body;
     if (!key || !name) return res.status(400).json({ message: 'Key and name are required.' });
+    if (marketplacePlacement !== undefined && !CATEGORY_PLACEMENTS.includes(marketplacePlacement)) {
+      return res.status(400).json({ message: 'Invalid market placement.' });
+    }
     if (await Category.exists({ kind: 'category', key })) {
       return res.status(409).json({ message: 'A category with this key already exists.' });
     }
     const count = await Category.countDocuments({ kind: 'category' });
-    const category = await Category.create({ kind: 'category', order: count, key, name, icon: icon || '', img: img || '' });
+    const category = await Category.create({
+      kind: 'category',
+      order: count,
+      key,
+      name,
+      icon: icon || '',
+      img: img || '',
+      marketplacePlacement: marketplacePlacement || 'both',
+    });
     res.status(201).json({ category: { ...category.toObject(), id: category._id } });
   })
 );
@@ -334,12 +348,16 @@ router.post(
 router.patch(
   '/categories/:id',
   asyncHandler(async (req, res) => {
-    const { name, icon, img, order } = req.body;
+    const { name, icon, img, order, marketplacePlacement } = req.body;
+    if (marketplacePlacement !== undefined && !CATEGORY_PLACEMENTS.includes(marketplacePlacement)) {
+      return res.status(400).json({ message: 'Invalid market placement.' });
+    }
     const update = {};
     if (name !== undefined) update.name = name;
     if (icon !== undefined) update.icon = icon;
     if (img !== undefined) update.img = img;
     if (order !== undefined) update.order = order;
+    if (marketplacePlacement !== undefined) update.marketplacePlacement = marketplacePlacement;
     const category = await Category.findOneAndUpdate({ _id: req.params.id, kind: 'category' }, update, { new: true });
     if (!category) return res.status(404).json({ message: 'Category not found.' });
     res.json({ category: { ...category.toObject(), id: category._id } });
@@ -352,6 +370,28 @@ router.delete(
     const deleted = await Category.findOneAndDelete({ _id: req.params.id, kind: 'category' });
     if (!deleted) return res.status(404).json({ message: 'Category not found.' });
     res.json({ ok: true });
+  })
+);
+
+// Bulk-assigns existing products to this category by name. Writes both SellerProduct (the
+// seller-editable source of truth) and Product (the public read copy) since publicCatalogSync
+// overwrites Product.category from SellerProduct.category on every listing save — updating
+// only Product would get silently reverted the next time the seller edits their listing.
+router.patch(
+  '/categories/:id/products',
+  asyncHandler(async (req, res) => {
+    const { productIds } = req.body;
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ message: 'productIds must be a non-empty array.' });
+    }
+    const category = await Category.findOne({ _id: req.params.id, kind: 'category' });
+    if (!category) return res.status(404).json({ message: 'Category not found.' });
+
+    const [sellerProductResult, productResult] = await Promise.all([
+      SellerProduct.updateMany({ _id: { $in: productIds } }, { category: category.name }),
+      Product.updateMany({ _id: { $in: productIds } }, { category: category.name }),
+    ]);
+    res.json({ ok: true, matched: productResult.matchedCount ?? productResult.n ?? 0 });
   })
 );
 

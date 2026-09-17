@@ -3,6 +3,8 @@ import Button from '../../../components/admin/ui/Button';
 import EmptyState from '../../../components/admin/ui/EmptyState';
 import { IconEdit, IconLayers, IconPlus, IconTrash } from '../../../components/icons';
 
+const PLACEMENT_LABELS = { spotlight: 'Spotlight', b2b: 'B2B', both: 'Both' };
+
 export default function CategoriesTab({ categoriesList, categoriesLoading, categoriesError, openAddCategory, openEditCategory, setDeleteCategoryTarget }) {
   return (
     <>
@@ -49,6 +51,9 @@ export default function CategoriesTab({ categoriesList, categoriesLoading, categ
                   <div className="font-semibold text-[14px] text-[var(--admin-ink)] truncate">{c.name}</div>
                   <div className="text-xs text-[var(--admin-text-muted)] truncate">{c.key}</div>
                 </div>
+                <span className="shrink-0 text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-[var(--admin-primary-tint)] text-[var(--admin-primary)]">
+                  {PLACEMENT_LABELS[c.marketplacePlacement] || 'Both'}
+                </span>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <button

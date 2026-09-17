@@ -8,7 +8,7 @@ const ACTIVE_COLOR = '#FF6A00';
 // matches the green chat accent used throughout MessengerPage (icon badge, "Start a Chat"
 // button, bubbles); Account matches the green used across the profile page itself (avatar ring,
 // buttons, badges).
-const ACTIVE_COLOR_BY_KEY = { messenger: '#0E5A46', account: '#0E5A46' };
+const ACTIVE_COLOR_BY_KEY = { messenger: 'var(--color-green)', account: 'var(--color-green)' };
 
 // "account" just navigates to /account like every other tab — the account menu itself only
 // opens from that page (see the trigger inside AccountPage), matching desktop exactly, where
