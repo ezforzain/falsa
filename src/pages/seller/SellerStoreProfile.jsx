@@ -5,6 +5,7 @@ import StoreLogoUploader from '../../components/StoreLogoUploader';
 import StoreBannerUploader from '../../components/StoreBannerUploader';
 import PromoBannerManager from '../../components/PromoBannerManager';
 import StoreSectionsManager from '../../components/StoreSectionsManager';
+import SafahMartSettingsCard from '../../components/SafahMartSettingsCard';
 import SellerCard from '../../components/seller/SellerCard';
 import { IconStore } from '../../components/icons';
 
@@ -146,6 +147,10 @@ export default function SellerStoreProfile() {
               store, not the platform-wide catalog.
             </p>
             <StoreSectionsManager sections={store.sections} products={products} onChange={(sections) => setStore((s) => ({ ...s, sections }))} />
+          </SellerCard>
+
+          <SellerCard eyebrow="Safah Mart">
+            <SafahMartSettingsCard safahMart={store.safahMart} onChange={(safahMart) => setStore((s) => ({ ...s, safahMart }))} />
           </SellerCard>
         </>
       )}

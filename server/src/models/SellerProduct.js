@@ -25,6 +25,13 @@ const sellerProductSchema = new mongoose.Schema(
     freeShipping: { type: Boolean, default: true },
     // Qualifies freeShipping: false = free shipping within the seller's own country only.
     worldwideFreeShipping: { type: Boolean, default: false },
+    // Explicit opt-in for the Safah Mart local-delivery marketplace (see Product.safahMartEnabled).
+    safahMartEnabled: { type: Boolean, default: false },
+    safahMartCategory: {
+      type: String,
+      enum: ['grocery', 'fastfood', 'restaurant', 'bakery', 'mall', 'shop'],
+      default: 'shop',
+    },
     // #hashtags parsed live from the description in the seller form.
     tags: { type: [String], default: [] },
     // Seller-controlled position on their own public store page. Left null until the seller

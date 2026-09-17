@@ -291,7 +291,7 @@ export default function MobileHome() {
           not a hand-coded approximation, so it matches exactly. Purely decorative/navigational
           (links into the real Categories page) — not a live backend feature, since it's a
           marketing image, not a functional filter. */}
-      <Link to="/categories" className="block mx-[18px] mb-3 rounded-[16px] overflow-hidden">
+      <Link to="/safah-mart" className="block mx-[18px] mb-3 rounded-[16px] overflow-hidden">
         <img src={safahMartBanner} alt="Safah Mart — your city's local marketplace, fast delivery in 40 minutes" className="block w-full h-auto" />
       </Link>
 

@@ -35,7 +35,12 @@ const userSchema = new mongoose.Schema(
     // signup (slug of companyName + a short random suffix so collisions are effectively
     // impossible without a retry loop) and editable afterwards via PATCH /api/auth/profile.
     // Sparse so legacy/seed accounts created before this field existed don't all collide on null.
-    handle: { type: String, default: null, unique: true, sparse: true },
+    // No `default` on purpose: Mongoose writes an explicit `null` for a defaulted field even when
+    // it's never provided, and a sparse index still indexes an explicit null (only a genuinely
+    // *missing* field is skipped) — a default here would make every handle-less account collide
+    // on the same null key the first time a second one is created. Callers that want "no handle"
+    // must omit the key entirely, not pass null.
+    handle: { type: String, unique: true, sparse: true },
 
     // Email verification — the account is only ever flipped to true by a successful
     // /api/auth/verify-email/otp call; nothing else sets it. A 6-digit code emailed at signup
@@ -89,6 +94,11 @@ const userSchema = new mongoose.Schema(
         city: { type: String, required: true },
         address: { type: String, required: true },
         label: { type: String, enum: ['Home', 'Office'], default: 'Home' },
+        // Optional — set from the browser's Geolocation API or from geocoding a typed address
+        // (see useSafahMartLocation.js / POST /api/marketplace/geocode) when the buyer opts to
+        // save their Safah Mart delivery location. Never required, checkout works without it.
+        lat: { type: Number, default: null },
+        lng: { type: Number, default: null },
       },
       _id: false,
       default: null,

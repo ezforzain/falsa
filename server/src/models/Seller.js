@@ -35,6 +35,26 @@ const sellerSchema = new mongoose.Schema(
       type: [{ name: { type: String, required: true }, productIds: { type: [String], default: [] } }],
       default: [],
     },
+    // Safah Mart shop-location + local-delivery config, set from Seller Store Profile
+    // (PATCH /api/seller/store/safah-mart). `enabled` tracks whether the seller has completed
+    // setup (i.e. has real coordinates) — a product can be Safah-Mart-enabled before this is
+    // filled in, it just won't surface in GET /api/marketplace/safah-mart until it is (that route
+    // filters on the denormalized Product.sellerSafahLat/Lng being non-null, not this flag).
+    safahMart: {
+      type: {
+        enabled: { type: Boolean, default: false },
+        lat: { type: Number, default: null },
+        lng: { type: Number, default: null },
+        deliveryRadiusKm: { type: Number, default: 5 },
+        prepTimeMinutes: { type: Number, default: 30 },
+        // "HH:MM", one daily window applied every day — an MVP simplification vs. per-weekday hours.
+        opensAt: { type: String, default: '09:00' },
+        closesAt: { type: String, default: '21:00' },
+        sameDayDelivery: { type: Boolean, default: true },
+      },
+      _id: false,
+      default: () => ({}),
+    },
   },
   { timestamps: true, toJSON: { virtuals: true } }
 );
