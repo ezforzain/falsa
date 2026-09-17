@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { normalizeQuery, searchHints, unsplash } from '../data/mockData';
+import { normalizeQuery, searchHints, unsplash, mobileTabs as fallbackTabs } from '../data/mockData';
 import { catalog, marketplace } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -33,21 +33,14 @@ const DISPLAY_CATEGORIES = [
   { key: 'market', name: 'Market', img: unsplash('photo-1555529669-e69e7aa0ba9a', 200), fallback: IconStore },
 ];
 
-// Recommended / Trending / Offers — the reference design's three simple tabs. Each is still
-// wired to a real endpoint rather than being a dead label: Recommended reuses the curated
-// Spotlight feed, Trending hits the dedicated trending endpoint (unfiltered — no category/search
-// support server-side, same as Desktop's "Trending Now"), and Offers reuses Spotlight forced to
-// discounted items only.
-const HOME_TABS = [
-  { key: 'recommended', label: 'Recommended', filterSection: 'spotlight' },
-  { key: 'trending', label: 'Trending', filterSection: null },
-  { key: 'offers', label: 'Offers', filterSection: 'spotlight' },
-];
-
-const HOME_TAB_FETCHERS = {
-  recommended: (opts) => marketplace.spotlight(opts),
-  trending: () => catalog.trendingProducts(),
-  offers: (opts) => marketplace.spotlight({ ...opts, discountOnly: true }),
+// The real B2B / Spotlight / Worldwide / Free Shipping marketplace tabs — kept as-is per
+// feedback (only their look changed to the segmented-pill style, not the tabs themselves).
+// Same keys as the seeded MobileTab list (server/src/seed/data.js).
+const MARKETPLACE_FETCHERS = {
+  aimode: marketplace.b2b,
+  spotlight: marketplace.spotlight,
+  worldwide: marketplace.worldwide,
+  freeshipping: marketplace.freeShipping,
 };
 
 function CategoryCircleImg({ img, alt, FallbackIcon }) {
@@ -72,7 +65,9 @@ export default function MobileHome() {
   const { user } = useAuth();
   const { t } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState('recommended');
+  const [tabs, setTabs] = useState([]);
+  const [tabsLoading, setTabsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('spotlight');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -87,6 +82,28 @@ export default function MobileHome() {
   const searchInputRef = useRef(null);
   const productGridRef = useRef(null);
 
+  // Tab row is core navigation chrome, not optional decoration — always falls back to the local
+  // static list rather than silently disappearing if the backend is unseeded or unreachable.
+  useEffect(() => {
+    let cancelled = false;
+    setTabsLoading(true);
+    catalog
+      .mobileTabs()
+      .then(({ tabs: fetched }) => {
+        if (cancelled) return;
+        setTabs(fetched && fetched.length > 0 ? fetched : fallbackTabs);
+      })
+      .catch(() => {
+        if (!cancelled) setTabs(fallbackTabs);
+      })
+      .finally(() => {
+        if (!cancelled) setTabsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Debounce the search box so we're not firing a request on every keystroke.
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(normalizeQuery(searchQuery)), 300);
@@ -94,17 +111,16 @@ export default function MobileHome() {
   }, [searchQuery]);
 
   // Fetch the product grid from the server whenever the tab, its filters, or the (debounced)
-  // search changes. Trending's endpoint takes no params (matches Desktop's "Trending Now"), so
-  // search/filters are ignored while that tab is active. Pulled out to a stable callback (rather
-  // than inline in the effect) so pull-to-refresh can re-trigger the same fetch on demand; a
-  // request-id ref discards stale responses the same way an effect-local `cancelled` flag would.
+  // search changes. Pulled out to a stable callback (rather than inline in the effect) so
+  // pull-to-refresh can re-trigger the same fetch on demand; a request-id ref discards stale
+  // responses the same way an effect-local `cancelled` flag would.
   const fetchIdRef = useRef(0);
   const fetchProducts = useCallback(() => {
     const requestId = ++fetchIdRef.current;
     setProductsLoading(true);
     setProductsError(null);
 
-    const fetcher = HOME_TAB_FETCHERS[activeTab];
+    const fetcher = MARKETPLACE_FETCHERS[activeTab] || catalog.products;
     return fetcher({
       category: marketplaceFilters.category,
       q: debouncedQuery,
@@ -152,7 +168,7 @@ export default function MobileHome() {
 
   const scrollToGrid = () => productGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  const activeTabDef = HOME_TABS.find((tab) => tab.key === activeTab);
+  const activeTabDef = tabs.find((tab) => tab.key === activeTab);
 
   return (
     <div className="min-h-screen bg-surface font-sans">
@@ -305,51 +321,64 @@ export default function MobileHome() {
         ))}
       </div>
 
-      {/* Recommended / Trending / Offers — segmented pill control, each backed by a real
-          endpoint (see HOME_TAB_FETCHERS). */}
-      <div className="flex items-center gap-1 mx-[18px] mb-2 rounded-full bg-surface-muted p-1">
-        {HOME_TABS.map((tab) => {
-          const isActive = tab.key === activeTab;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => {
-                setActiveTab(tab.key);
-                setMarketplaceFilters(EMPTY_MARKETPLACE_FILTERS);
-                setFiltersOpen(false);
-              }}
-              className={`flex-1 whitespace-nowrap rounded-full px-3 py-2 text-[12.5px] font-semibold cursor-pointer transition-colors ${
-                isActive ? 'text-white shadow-sm' : 'text-ink-soft hover:text-ink'
-              }`}
-              style={isActive ? { background: ACCENT } : undefined}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+      {/* B2B / Spotlight / Worldwide / Free Shipping — same real tabs and data as before, just in
+          the segmented-pill look instead of icon chips. */}
+      <div className="flex items-center gap-1 mx-[18px] mb-2 rounded-full bg-surface-muted p-1 overflow-x-auto no-scrollbar">
+        {tabsLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="animate-pulse h-8 w-[80px] shrink-0 rounded-full bg-surface" />
+            ))
+          : tabs.map((tab) => {
+              const isActive = tab.key === activeTab;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(tab.key);
+                    // Each section has its own filter panel (see FilterConfig) — a value picked
+                    // under one section (say B2B's Max MOQ) would otherwise silently keep being
+                    // sent to the new section's query even though its panel doesn't show that
+                    // control anymore.
+                    setMarketplaceFilters(EMPTY_MARKETPLACE_FILTERS);
+                  }}
+                  className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-[12px] font-semibold cursor-pointer transition-colors ${
+                    isActive ? 'text-white shadow-sm' : 'text-ink-soft hover:text-ink'
+                  }`}
+                  style={isActive ? { background: ACCENT } : undefined}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
       </div>
 
+      {/* Tab context banner */}
+      {activeTabDef?.banner && (
+        <div className="mx-[18px] mb-2 bg-green-tint rounded-md px-3 py-2 text-[12.5px] text-green font-medium">
+          {activeTabDef.banner}
+        </div>
+      )}
+
       {/* Active label + filters toggle — merged onto one row so the space between the tab row
-          and the grid stays tight. Hidden for Trending since that endpoint takes no filters. */}
+          and the grid stays tight. The expanded filters panel still narrows fetchProducts exactly
+          as before. */}
       <div ref={productGridRef} className="flex items-center justify-between gap-3 px-[18px] pt-1.5 pb-2.5 scroll-mt-4">
         <span className="text-[12.5px] text-text min-w-0 truncate">
           {t('home.showing')} <strong className="text-ink">{label}</strong>
         </span>
-        {activeTabDef?.filterSection && (
-          <button
-            type="button"
-            onClick={() => setFiltersOpen((v) => !v)}
-            className="flex items-center gap-1 shrink-0 rounded-md border border-border bg-surface px-2.5 py-1.5 text-[12px] font-semibold text-ink-soft cursor-pointer transition-colors hover:border-border-strong hover:text-ink"
-          >
-            <IconSliders width="13" height="13" />
-            {t('common.filters')}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          className="flex items-center gap-1 shrink-0 rounded-md border border-border bg-surface px-2.5 py-1.5 text-[12px] font-semibold text-ink-soft cursor-pointer transition-colors hover:border-border-strong hover:text-ink"
+        >
+          <IconSliders width="13" height="13" />
+          {t('common.filters')}
+        </button>
       </div>
-      {filtersOpen && activeTabDef?.filterSection && (
+      {filtersOpen && (
         <div className="px-[18px] pb-3">
-          <MarketplaceFilters section={activeTabDef.filterSection} value={marketplaceFilters} onChange={setMarketplaceFilters} />
+          <MarketplaceFilters section={activeTab} value={marketplaceFilters} onChange={setMarketplaceFilters} />
         </div>
       )}
 
