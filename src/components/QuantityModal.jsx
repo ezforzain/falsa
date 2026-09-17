@@ -89,15 +89,19 @@ export default function QuantityModal({ product, open, alreadyInCart = 0, loadin
             <div className="text-[14.5px] font-semibold text-ink leading-snug line-clamp-2">{product.name}</div>
             <div className="font-display font-bold text-green text-[15px] mt-0.5">
               {product.price}
-              <span className="text-xs font-medium text-text-muted"> /{product.unit}</span>
+              {product.unit && <span className="text-xs font-medium text-text-muted"> /{product.unit}</span>}
             </div>
           </div>
         </div>
 
         <div className="flex items-center justify-between text-xs text-text-muted mb-4">
-          <span>
-            MOQ: <strong className="text-ink-soft">{product.moq}</strong>
-          </span>
+          {product.moq ? (
+            <span>
+              MOQ: <strong className="text-ink-soft">{product.moq}</strong>
+            </span>
+          ) : (
+            <span />
+          )}
           {isTracked && (
             <span className={outOfStock ? 'text-orange-text font-semibold' : ''}>
               {outOfStock ? 'Out of stock' : `${remaining} available${alreadyInCart > 0 ? ` (${alreadyInCart} already in cart)` : ''}`}

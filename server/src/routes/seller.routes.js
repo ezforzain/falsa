@@ -116,8 +116,13 @@ router.post(
       variants,
       shipping,
     } = req.body;
-    if (!name || !category || !price || !unit || !moq) {
+    if (!name || !category || !price) {
       return res.status(400).json({ message: 'Please fill in all required fields.' });
+    }
+    // Unit/MOQ only apply to B2B (bulk/wholesale) listings — a Spotlight (B2C) listing sells a
+    // single unit, so they're optional there.
+    if (b2bEnabled && (!unit || !moq)) {
+      return res.status(400).json({ message: 'Unit and MOQ are required for B2B listings.' });
     }
     if (!Number.isFinite(price) || price <= 0) {
       return res.status(400).json({ message: 'Price must be a positive number.' });
@@ -151,8 +156,8 @@ router.post(
       description: description || '',
       sku: sku?.trim() || generateSku(category),
       price,
-      unit,
-      moq,
+      unit: unit || '',
+      moq: moq || '',
       stock,
       status: status || 'active',
       images: gallery,

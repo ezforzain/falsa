@@ -10,8 +10,10 @@ const sellerProductSchema = new mongoose.Schema(
     description: { type: String, default: '' },
     sku: { type: String, required: true },
     price: { type: Number, required: true },
-    unit: { type: String, required: true },
-    moq: { type: String, required: true },
+    // Only meaningful for B2B (bulk/wholesale) listings — a Spotlight (B2C) listing sells a
+    // single unit to a single buyer, so these are left blank rather than required.
+    unit: { type: String, default: '' },
+    moq: { type: String, default: '' },
     stock: { type: Number, required: true },
     status: { type: String, default: 'active' },
     images: { type: [String], default: [] },

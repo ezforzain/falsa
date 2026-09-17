@@ -232,7 +232,7 @@ export default function SellerProducts() {
                   </span>
                 </Link>
                 <span className="text-[13.5px] font-bold text-ink whitespace-nowrap">
-                  {formatPKR(p.price)} <span className="text-xs font-medium text-text-muted">/{p.unit}</span>
+                  {formatPKR(p.price)} {p.unit && <span className="text-xs font-medium text-text-muted">/{p.unit}</span>}
                 </span>
                 <span className="text-[12.5px] text-text whitespace-nowrap w-[90px]">{p.stock === 0 ? '—' : `${p.stock} in stock`}</span>
                 <span className="flex items-center gap-1.5 flex-wrap">

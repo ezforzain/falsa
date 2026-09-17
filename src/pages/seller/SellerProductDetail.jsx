@@ -168,15 +168,18 @@ export default function SellerProductDetail() {
 
           <div className="font-display font-bold text-green text-2xl mb-4">
             {formatPKR(product.price)}
-            <span className="text-sm font-medium text-text-muted"> /{product.unit}</span>
+            {product.unit && <span className="text-sm font-medium text-text-muted"> /{product.unit}</span>}
           </div>
 
           {product.description && <p className="text-sm text-text leading-relaxed mb-5">{product.description}</p>}
 
           <div className="grid grid-cols-2 gap-3 mb-6">
             {[
-              { label: 'MOQ', value: product.moq },
-              { label: 'Stock', value: product.stock === 0 ? 'Out of stock' : `${product.stock.toLocaleString('en-US')} ${product.unit}` },
+              ...(product.moq ? [{ label: 'MOQ', value: product.moq }] : []),
+              {
+                label: 'Stock',
+                value: product.stock === 0 ? 'Out of stock' : `${product.stock.toLocaleString('en-US')}${product.unit ? ` ${product.unit}` : ''}`,
+              },
               { label: 'SKU', value: product.sku || '—' },
               {
                 label: 'Created',

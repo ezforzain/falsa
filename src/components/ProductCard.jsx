@@ -28,11 +28,13 @@ export default function ProductCard({ product }) {
         <div className="flex justify-between items-baseline">
           <span className="font-display font-bold text-[17px] text-green">
             {product.price}
-            <span className="text-xs font-medium text-text-muted"> /{product.unit}</span>
+            {product.unit && <span className="text-xs font-medium text-text-muted"> /{product.unit}</span>}
           </span>
-          <span className="font-mono text-[11px] text-orange-text bg-orange-tint px-2.5 py-1 rounded-md">
-            MOQ {product.moq}
-          </span>
+          {product.moq && (
+            <span className="font-mono text-[11px] text-orange-text bg-orange-tint px-2.5 py-1 rounded-md">
+              MOQ {product.moq}
+            </span>
+          )}
         </div>
       </div>
     </Link>
