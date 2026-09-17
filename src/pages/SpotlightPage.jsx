@@ -163,7 +163,7 @@ export default function SpotlightPage() {
       {/* Section title banner */}
       <section
         className="w-full flex items-center justify-center text-center px-4 py-14 sm:py-20 lg:py-24"
-        style={{ background: 'radial-gradient(circle at 50% 50%, #7FC0A8 0%, #0E5A46 55%, #0A3D30 100%)' }}
+        style={{ background: 'radial-gradient(circle at 50% 50%, var(--color-teal-soft) 0%, var(--color-green) 55%, var(--color-green-deep) 100%)' }}
       >
         <h1 className="flex flex-wrap items-baseline justify-center gap-x-3 sm:gap-x-4 gap-y-1 font-display text-white m-0">
           <span className="text-2xl sm:text-3xl font-medium">Free Shipping</span>

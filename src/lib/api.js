@@ -141,7 +141,8 @@ export const auth = {
 // ---------- Catalog ----------
 
 export const catalog = {
-  categories: () => request('/api/categories'),
+  categories: ({ placement } = {}) =>
+    request(`/api/categories${placement ? `?placement=${encodeURIComponent(placement)}` : ''}`),
   mobileCategories: () => request('/api/categories/mobile'),
   mobileTabs: () => request('/api/mobile-tabs'),
   hashtags: (q) => request(`/api/hashtags?q=${encodeURIComponent(q)}`),
@@ -356,6 +357,8 @@ export const adminCategories = {
   create: (payload) => request('/api/admin/categories', { method: 'POST', body: payload, auth: true }),
   update: (id, payload) => request(`/api/admin/categories/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload, auth: true }),
   remove: (id) => request(`/api/admin/categories/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }),
+  assignProducts: (id, productIds) =>
+    request(`/api/admin/categories/${encodeURIComponent(id)}/products`, { method: 'PATCH', body: { productIds }, auth: true }),
 };
 
 // ---------- Admin: marketplace filter panels (per section) ----------

@@ -10,6 +10,9 @@ const categorySchema = new mongoose.Schema({
   fullName: String, // mobile only
   icon: String, // category only
   img: String,
+  // category only — which marketplace(s) this category's chip/filter should appear under.
+  // 'both' (the default) preserves today's behavior for every existing/seeded category.
+  marketplacePlacement: { type: String, enum: ['spotlight', 'b2b', 'both'], default: 'both' },
 });
 
 export const Category = mongoose.model('Category', categorySchema);

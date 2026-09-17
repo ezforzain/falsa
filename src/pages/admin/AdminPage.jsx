@@ -341,14 +341,18 @@ export default function AdminPage() {
   };
 
   const handleSubmitCategoryForm = async (payload) => {
+    const { productIdsToAssign, ...categoryPayload } = payload;
     setCategoryFormLoading(true);
     setCategoryFormError(null);
     try {
       if (editingCategory) {
-        await adminCategories.update(editingCategory.id, payload);
+        await adminCategories.update(editingCategory.id, categoryPayload);
+        if (productIdsToAssign?.length) {
+          await adminCategories.assignProducts(editingCategory.id, productIdsToAssign);
+        }
         showToast('Category updated');
       } else {
-        await adminCategories.create(payload);
+        await adminCategories.create(categoryPayload);
         showToast('Category added');
       }
       setCategoryFormOpen(false);

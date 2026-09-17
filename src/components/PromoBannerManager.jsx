@@ -138,7 +138,7 @@ export default function PromoBannerManager({ banners, onChange }) {
         className="cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl py-3.5 text-[13px] font-semibold text-text-muted hover:text-green hover:border-green transition-colors"
       >
         {uploading ? (
-          <span className="w-4 h-4 border-2 border-border-strong rounded-full inline-block" style={{ borderTopColor: '#0E5A46', animation: 'spin 0.8s linear infinite' }} />
+          <span className="w-4 h-4 border-2 border-border-strong rounded-full inline-block" style={{ borderTopColor: 'var(--color-green)', animation: 'spin 0.8s linear infinite' }} />
         ) : (
           <IconPlus width="15" height="15" />
         )}

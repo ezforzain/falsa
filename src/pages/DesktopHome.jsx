@@ -77,10 +77,16 @@ export default function DesktopHome() {
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState(null);
 
+  // The B2B/Spotlight marketplace tabs (aimode/spotlight) narrow the chip row to categories
+  // placed under that market; Worldwide/Free Shipping and the default Trending view aren't
+  // market-specific, so they show every category.
+  const categoryPlacement = activeMarketplaceTab === 'aimode' ? 'b2b' : activeMarketplaceTab === 'spotlight' ? 'spotlight' : undefined;
+
   useEffect(() => {
     let cancelled = false;
+    setCategoriesLoading(true);
     catalog
-      .categories()
+      .categories({ placement: categoryPlacement })
       .then(({ categories: fetched }) => {
         if (!cancelled) setCategories(fetched);
       })
@@ -93,7 +99,7 @@ export default function DesktopHome() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [categoryPlacement]);
 
   const selectedCategory = view.type === 'category' ? categories.find((cat) => cat.key === view.key) || null : null;
   const sectionTitle = selectedCategory ? selectedCategory.name : view.type === 'all' ? 'All Products' : 'Trending Now';
@@ -184,7 +190,7 @@ export default function DesktopHome() {
                       : 'border-border bg-surface text-ink-soft hover:border-green hover:text-green hover:bg-green-tint'
                   }`}
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0E5A46" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d={cat.icon} />
                   </svg>
                   {cat.name}
@@ -231,7 +237,10 @@ export default function DesktopHome() {
           />
           <div
             className="absolute inset-0"
-            style={{ background: 'linear-gradient(90deg, #0A3D30 0%, rgba(10,61,48,0.25) 40%, rgba(10,61,48,0) 100%)' }}
+            style={{
+              background:
+                'linear-gradient(90deg, var(--color-green-deep) 0%, color-mix(in srgb, var(--color-green-deep) 25%, transparent) 40%, transparent 100%)',
+            }}
           />
           <div className="absolute bottom-6 right-6 bg-white/92 backdrop-blur-sm rounded-2xl px-[18px] py-3.5 flex items-center gap-3">
             <IconTruck width="22" height="22" className="text-green" />

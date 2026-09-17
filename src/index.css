@@ -5,17 +5,19 @@
   --font-sans: 'Public Sans', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 
-  /* Brand */
+  /* Brand — dark navy blue primary accent (replaces the earlier deep-green brand; token names
+     are kept as-is since every component already references them via Tailwind utilities like
+     bg-green/text-green/border-teal-soft — only the values below changed). */
   --color-cream: #F7F5F0;
   --color-cream-dark: #EDEAE2;
-  --color-green-deep: #0A3D30;
-  --color-green: #0E5A46;
-  --color-green-hover: #0B4A3A;
-  --color-green-tint: #E8F3EE;
-  --color-green-tint-border: #BFDCCF;
-  --color-teal-soft: #7FC0A8;
-  --color-teal-softer: #A8CDBC;
-  --color-teal-mist: #DCEDE5;
+  --color-green-deep: #0B1E3D;
+  --color-green: #1B3A6B;
+  --color-green-hover: #15305A;
+  --color-green-tint: #E8EEF7;
+  --color-green-tint-border: #BFD0E8;
+  --color-teal-soft: #6C93C4;
+  --color-teal-softer: #9AB6D9;
+  --color-teal-mist: #DCE7F5;
 
   --color-orange: #C97B2D;
   --color-orange-hover: #B56A20;
@@ -54,14 +56,14 @@
 :root[data-theme='dark'] {
   --color-cream: #14181a;
   --color-cream-dark: #1b211f;
-  --color-green-deep: #06140f;
-  --color-green: #34a67f;
-  --color-green-hover: #2c8f6d;
-  --color-green-tint: #16241e;
-  --color-green-tint-border: #2c4a3d;
-  --color-teal-soft: #6fbe9e;
-  --color-teal-softer: #588c77;
-  --color-teal-mist: #1e2e28;
+  --color-green-deep: #071224;
+  --color-green: #5B8DEF;
+  --color-green-hover: #4A79D6;
+  --color-green-tint: #16202E;
+  --color-green-tint-border: #2C3E56;
+  --color-teal-soft: #7FA6E0;
+  --color-teal-softer: #4A6A94;
+  --color-teal-mist: #1C2838;
 
   --color-orange: #e29a52;
   --color-orange-hover: #d0813a;

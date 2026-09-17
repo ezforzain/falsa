@@ -6,7 +6,7 @@ import { convertHeicIfNeeded } from '../utils/imageConversion.js';
 const router = Router();
 
 // POST /api/uploads/:type  (multipart, field name "file") -> { url }
-// :type is one of "business-docs" | "products" | "store-banners" | "store-logos" | "avatars".
+// :type is one of "business-docs" | "products" | "store-banners" | "store-logos" | "avatars" | "categories".
 // Public — corporate
 // signup needs to upload its business document before an account (and therefore a session) exists.
 router.post('/:type', (req, res, next) => {

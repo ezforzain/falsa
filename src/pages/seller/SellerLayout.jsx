@@ -83,7 +83,7 @@ export default function SellerLayout() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream">
-        <span className="w-8 h-8 border-[3px] border-border rounded-full inline-block" style={{ borderTopColor: '#0E5A46', animation: 'spin 0.8s linear infinite' }} />
+        <span className="w-8 h-8 border-[3px] border-border rounded-full inline-block" style={{ borderTopColor: 'var(--color-green)', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );
   }

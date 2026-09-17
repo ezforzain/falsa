@@ -76,6 +76,17 @@ export function validatePromoBannerImageFile(file) {
   return null;
 }
 
+// Admin category tile photos — same backend/limits as product photos.
+export const ALLOWED_CATEGORY_IMAGE_TYPES = ALLOWED_PRODUCT_IMAGE_TYPES;
+export const MAX_CATEGORY_IMAGE_BYTES = MAX_PRODUCT_IMAGE_BYTES;
+
+export function validateCategoryImageFile(file) {
+  if (!file) return 'Please choose a photo.';
+  if (!ALLOWED_CATEGORY_IMAGE_TYPES.includes(file.type)) return 'Only JPG, PNG, or WEBP images are allowed.';
+  if (file.size > MAX_CATEGORY_IMAGE_BYTES) return 'Image must be 8MB or smaller.';
+  return null;
+}
+
 export function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

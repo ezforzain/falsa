@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { IconStar } from './icons';
+import { IconStar, IconTruck } from './icons';
 import VerifiedBadge from './VerifiedBadge';
 
 export default function ProductCard({ product }) {
@@ -36,6 +36,13 @@ export default function ProductCard({ product }) {
             </span>
           )}
         </div>
+
+        {(product.freeShipping || product.worldwideFreeShipping) && (
+          <span className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-semibold text-green bg-green-tint px-2 py-1 rounded-md">
+            <IconTruck width="12" height="12" strokeWidth="2.4" />
+            Free Shipping
+          </span>
+        )}
       </div>
     </Link>
   );
