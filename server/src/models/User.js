@@ -38,9 +38,12 @@ const userSchema = new mongoose.Schema(
     handle: { type: String, default: null, unique: true, sparse: true },
 
     // Email verification — the account is only ever flipped to true by a successful
-    // /api/auth/verify-email call; nothing else sets it.
+    // /api/auth/verify-email/otp call; nothing else sets it. A 6-digit code emailed at signup
+    // (and on resend), same shape/reasoning as the forgot-password OTP below — attempts locks
+    // the code out after repeated wrong guesses.
     emailVerified: { type: Boolean, default: false },
-    emailVerificationTokenHash: { type: String, default: null },
+    emailVerificationOtpHash: { type: String, default: null },
+    emailVerificationOtpAttempts: { type: Number, default: 0 },
     emailVerificationExpires: { type: Date, default: null },
     // Cooldown for the resend button — see /api/auth/verify-email/resend.
     emailVerificationSentAt: { type: Date, default: null },
@@ -117,7 +120,7 @@ userSchema.methods.toPublicJSON = function toPublicJSON() {
   const obj = this.toObject({ virtuals: true });
   delete obj.passwordHash;
   delete obj.businessDocument;
-  delete obj.emailVerificationTokenHash;
+  delete obj.emailVerificationOtpHash;
   delete obj.passwordResetOtpHash;
   delete obj.passwordResetTokenHash;
   delete obj.__v;

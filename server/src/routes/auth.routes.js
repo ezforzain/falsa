@@ -9,8 +9,8 @@ import { Session } from '../models/Session.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import {
   signAuthToken,
-  createEmailVerificationToken,
-  hashEmailVerificationToken,
+  createEmailVerificationOtp,
+  hashEmailVerificationOtp,
   createPasswordResetOtp,
   hashPasswordResetOtp,
   createPasswordResetToken,
@@ -18,7 +18,7 @@ import {
 } from '../utils/token.js';
 import { requireAuth } from '../middleware/auth.js';
 import { serializeUser } from '../utils/serializeUser.js';
-import { sendVerificationEmail, sendPasswordResetOtpEmail } from '../utils/mailer.js';
+import { sendVerificationOtpEmail, sendPasswordResetOtpEmail } from '../utils/mailer.js';
 import { describeBan, liftExpiredBan } from '../utils/ban.js';
 
 const router = Router();
@@ -70,17 +70,18 @@ async function createSessionAndToken(user, req) {
   return signAuthToken(user, sessionId);
 }
 
-// Generates a fresh verification token, saves its hash on the user, and emails it to their
-// registered address. Shared by signup and the resend endpoint so the two can never drift.
+// Generates a fresh 6-digit verification code, saves its hash on the user, and emails it to
+// their registered address. Shared by signup and the resend endpoint so the two can never drift.
 async function issueEmailVerification(user) {
-  const { token, tokenHash, expires } = createEmailVerificationToken();
+  const { code, codeHash, expires } = createEmailVerificationOtp();
   user.set({
-    emailVerificationTokenHash: tokenHash,
+    emailVerificationOtpHash: codeHash,
+    emailVerificationOtpAttempts: 0,
     emailVerificationExpires: expires,
     emailVerificationSentAt: new Date(),
   });
   await user.save();
-  await sendVerificationEmail(user, token);
+  await sendVerificationOtpEmail(user, code);
 }
 
 const RESEND_COOLDOWN_MS = 60 * 1000;
@@ -230,24 +231,35 @@ router.post(
   })
 );
 
-// ---------- POST /api/auth/verify-email ----------
-// Public — the token itself, freshly emailed to the user's registered address, is the
-// credential here, so this deliberately doesn't require a signed-in session (the link should
-// work from any device/browser the user opens their inbox in).
+// ---------- POST /api/auth/verify-email/otp ----------
+// Signup already signs the account straight in (see below), so this is requireAuth-gated and
+// checks the code against the signed-in user directly — no separate email lookup needed, same
+// pattern as /verify-email/resend. Wrong-code attempts are capped per code so a 6-digit code
+// can't just be brute-forced within its 10-minute window (mirrors /forgot-password/verify).
 router.post(
-  '/verify-email',
+  '/verify-email/otp',
+  requireAuth,
   asyncHandler(async (req, res) => {
-    const { token } = req.body;
-    if (!token) return res.status(400).json({ message: 'Verification token is required.' });
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ message: 'Verification code is required.' });
 
-    const user = await User.findOne({ emailVerificationTokenHash: hashEmailVerificationToken(token) });
-    if (!user || !user.emailVerificationExpires || user.emailVerificationExpires < new Date()) {
-      return res.status(400).json({ message: 'This verification link is invalid or has expired.' });
+    const user = req.user;
+    const invalid = () => res.status(400).json({ message: 'Invalid or expired code.' });
+    if (user.emailVerified) return res.status(400).json({ message: 'Your email is already verified.' });
+    if (!user.emailVerificationOtpHash || !user.emailVerificationExpires || user.emailVerificationExpires < new Date()) {
+      return invalid();
+    }
+    if (user.emailVerificationOtpAttempts >= 5) return invalid();
+    if (hashEmailVerificationOtp(String(code).trim()) !== user.emailVerificationOtpHash) {
+      user.emailVerificationOtpAttempts += 1;
+      await user.save();
+      return invalid();
     }
 
     user.set({
       emailVerified: true,
-      emailVerificationTokenHash: null,
+      emailVerificationOtpHash: null,
+      emailVerificationOtpAttempts: 0,
       emailVerificationExpires: null,
     });
     await user.save();
