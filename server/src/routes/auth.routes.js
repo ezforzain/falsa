@@ -195,7 +195,9 @@ router.post(
       phone,
       passwordHash,
       companyName,
-      handle,
+      // Omit the key entirely when generation failed rather than passing null — see the `handle`
+      // field comment in models/User.js for why an explicit null breaks the sparse unique index.
+      ...(handle ? { handle } : {}),
       country,
       category: category || null,
       address: address || null,
@@ -431,6 +433,12 @@ router.patch(
     // phone is required on the User schema itself — sending it empty would otherwise fail deep
     // inside req.user.save() as a raw ValidationError (generic 500) instead of a clear 400.
     if (!phone || !String(phone).trim()) return res.status(400).json({ message: 'Phone number is required.' });
+    // phone also has a unique index (see models/User.js) — without this check, changing it to a
+    // number already on another account fails deep inside req.user.save() as a raw Mongo
+    // duplicate-key error (generic 500), the same failure mode `handle`'s pre-check below already
+    // guards against, and takes every other field in this same request down with it.
+    const phoneTaken = await User.findOne({ phone: String(phone).trim(), _id: { $ne: req.user._id } });
+    if (phoneTaken) return res.status(409).json({ message: 'That phone number is already in use by another account.' });
 
     const update = { companyName, phone, country, category };
     // address/city are optional on this route (undefined = "leave it alone") — only sellers'
@@ -589,6 +597,8 @@ router.patch(
       return res.status(400).json({ message: 'Please fill in full name, phone, city, and address.' });
     }
     const label = address.label === 'Office' ? 'Office' : 'Home';
+    const lat = Number(address.lat);
+    const lng = Number(address.lng);
     req.user.set({
       savedAddress: {
         fullName: String(address.fullName).trim(),
@@ -596,6 +606,10 @@ router.patch(
         city: String(address.city).trim(),
         address: String(address.address).trim(),
         label,
+        // Optional — only set when the caller (Safah Mart's "save this as my address") includes
+        // resolved coordinates. Never required for a plain checkout address save.
+        lat: Number.isFinite(lat) ? lat : null,
+        lng: Number.isFinite(lng) ? lng : null,
       },
     });
     await req.user.save();

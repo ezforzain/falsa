@@ -1,0 +1,81 @@
+import { Link } from 'react-router-dom';
+import { formatPKR, parsePrice } from '../../data/mockData';
+import WishlistButton from '../WishlistButton';
+import { IconStar, IconPin, IconClock } from '../icons';
+
+const ACCENT = '#6C63FF';
+
+// Adapted from MobileProductCard for Safah Mart's own result shape (distanceKm/eta, computed
+// server-side in GET /api/marketplace/safah-mart) — kept as its own component rather than adding
+// optional props to the shared card, which is also used by Home/Wishlist and shouldn't change
+// shape for a Safah-Mart-only need.
+export default function SafahMartProductCard({ product }) {
+  const currentPrice = parsePrice(product.price);
+  const discountPercent = product.discountPercent || 0;
+  const originalPrice = discountPercent > 0 ? currentPrice / (1 - discountPercent / 100) : null;
+  const reviewCount = product.reviews?.length || 0;
+
+  return (
+    <Link
+      to={`/product/${product.id}`}
+      className="group block bg-surface border border-border rounded-[14px] overflow-hidden no-underline text-inherit transition-all duration-200 active:scale-[0.98]"
+    >
+      <div className="relative aspect-square overflow-hidden bg-surface-muted">
+        <img src={product.img} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
+        {discountPercent > 0 && (
+          <span
+            className="absolute top-1.5 left-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: '#FCE0E4', color: '#E0355F' }}
+          >
+            -{discountPercent}%
+          </span>
+        )}
+        <WishlistButton
+          productId={product.id}
+          productName={product.name}
+          size={16}
+          className="absolute top-1.5 right-1.5 w-7 h-7 bg-white/90 backdrop-blur-sm"
+        />
+      </div>
+
+      <div className="px-2.5 pt-2.5 pb-2.5 flex flex-col gap-1">
+        <div className="text-[12.5px] font-semibold text-ink leading-snug line-clamp-2 min-h-[32px]">{product.name}</div>
+
+        <div className="flex items-center gap-1 text-[11px] text-text-muted min-w-0">
+          <span className="truncate">{product.seller}</span>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-[11px] text-text-muted">
+          <span className="flex items-center gap-0.5 shrink-0">
+            <IconStar width="11" height="11" />
+            {product.rating}
+          </span>
+          {reviewCount > 0 && <span>({reviewCount})</span>}
+          {product.sold > 0 && <span className="truncate">· {product.sold} sold</span>}
+        </div>
+
+        <div className="flex items-center gap-1 text-[11px] text-text-muted">
+          <IconPin width="11" height="11" />
+          {Number.isFinite(product.distanceKm) ? `${product.distanceKm.toFixed(1)} km away` : ''}
+        </div>
+
+        <div className="flex items-baseline gap-1.5 flex-wrap">
+          <span className="font-display font-bold text-[14.5px]" style={{ color: ACCENT }}>{product.price}</span>
+          {originalPrice && (
+            <span className="text-[10.5px] text-text-muted line-through">{formatPKR(originalPrice)}</span>
+          )}
+        </div>
+
+        {product.eta && (
+          <span
+            className="inline-flex self-start items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+            style={{ background: 'rgba(108,99,255,0.1)', color: ACCENT }}
+          >
+            <IconClock width="10" height="10" strokeWidth="2.4" />
+            {product.eta}
+          </span>
+        )}
+      </div>
+    </Link>
+  );
+}

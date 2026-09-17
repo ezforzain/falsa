@@ -12,6 +12,14 @@ import { IconBox, IconChevronDown, IconClose, IconPlus, IconSparkle, IconTrash }
 
 const MAX_IMAGES = 6;
 const DISPATCH_OPTIONS = ['Same day', '1-2 days', '3-5 days', '1 week+'];
+const SAFAH_MART_CATEGORIES = [
+  { value: 'grocery', label: 'Grocery' },
+  { value: 'fastfood', label: 'Fast Food' },
+  { value: 'restaurant', label: 'Restaurant' },
+  { value: 'bakery', label: 'Bakery' },
+  { value: 'mall', label: 'Shopping Mall' },
+  { value: 'shop', label: 'Local Shop' },
+];
 
 const emptyForm = {
   name: '',
@@ -28,6 +36,8 @@ const emptyForm = {
   b2bEnabled: false,
   freeShipping: true,
   worldwideFreeShipping: false,
+  safahMartEnabled: false,
+  safahMartCategory: 'shop',
   specifications: {},
   variantAxes: {},
   variants: [],
@@ -101,7 +111,7 @@ function Section({ title, open, onToggle, children }) {
 
 export default function ProductFormModal({ open, product, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
-  const [openSections, setOpenSections] = useState({ details: true, shipping: true, b2b: true });
+  const [openSections, setOpenSections] = useState({ details: true, shipping: true, safahMart: true, b2b: true });
   const [manualVariantOpen, setManualVariantOpen] = useState(false);
   const [manualVariant, setManualVariant] = useState({ name: '', price: '', stock: '' });
   // One-at-a-time Model + Color + Photo builder — used instead of the axis/cartesian picker for
@@ -148,6 +158,8 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       b2bEnabled: Boolean(product.b2bEnabled),
       freeShipping: product.freeShipping !== false,
       worldwideFreeShipping: Boolean(product.worldwideFreeShipping),
+      safahMartEnabled: Boolean(product.safahMartEnabled),
+      safahMartCategory: product.safahMartCategory || 'shop',
       specifications: specsArrayToMap(product.specifications, tpl),
       variantAxes: loadedAxes,
       variants: (product.variants || []).map((v) => ({
@@ -298,6 +310,8 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       b2bEnabled: form.b2bEnabled,
       freeShipping: form.freeShipping,
       worldwideFreeShipping: form.freeShipping && form.worldwideFreeShipping,
+      safahMartEnabled: form.safahMartEnabled,
+      safahMartCategory: form.safahMartEnabled ? form.safahMartCategory : 'shop',
       tags: mergeHashtags(form.tags, descriptionTags),
       specifications,
       variantAxes: template
@@ -844,6 +858,38 @@ export default function ProductFormModal({ open, product, loading, error, onClos
                 ))}
               </select>
             </div>
+          </Section>
+
+          <Section title="Safah Mart" open={openSections.safahMart} onToggle={() => toggleSection('safahMart')}>
+            <label className="flex items-center gap-2.5 text-[13.5px] font-medium text-ink cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.safahMartEnabled}
+                onChange={toggle('safahMartEnabled')}
+                className="w-4 h-4 accent-green cursor-pointer"
+              />
+              List in Safah Mart (local, fast delivery marketplace)
+            </label>
+            <p className="text-[12px] text-text-muted -mt-1 pl-6">
+              Shown to nearby buyers based on your shop's delivery radius and hours — set those up
+              in Store Profile first, or this product won't appear until you do.
+            </p>
+            {form.safahMartEnabled && (
+              <div className="pl-6">
+                <label className={labelClass}>Safah Mart category</label>
+                <select
+                  value={form.safahMartCategory}
+                  onChange={(e) => setForm((f) => ({ ...f, safahMartCategory: e.target.value }))}
+                  className={fieldClass}
+                >
+                  {SAFAH_MART_CATEGORIES.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </Section>
 
           {form.b2bEnabled && (

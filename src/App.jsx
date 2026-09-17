@@ -13,6 +13,7 @@ import StorePage from './pages/StorePage';
 import CartPage from './pages/CartPage';
 import OrdersPage from './pages/OrdersPage';
 import CategoriesPage from './pages/CategoriesPage';
+import SafahMartPage from './pages/SafahMartPage';
 import MessengerPage from './pages/MessengerPage';
 import ConversationPage from './pages/ConversationPage';
 import AccountPage from './pages/AccountPage';
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/safah-mart" element={<SafahMartPage />} />
           <Route path="/messenger" element={<MessengerPage />} />
           <Route path="/messenger/:id" element={<ConversationPage />} />
           <Route path="/account" element={<AccountPage />} />

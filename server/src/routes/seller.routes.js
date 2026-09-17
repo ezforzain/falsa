@@ -20,6 +20,19 @@ import { applyMessageDelete, serializeMessages } from '../utils/conversationMess
 
 const BANK_FIELDS = ['bankName', 'accountTitle', 'accountNumber', 'iban'];
 
+// Which status this generic PATCH may move an order TO, keyed by its CURRENT status. 'Shipped'
+// is deliberately reachable only through PATCH /orders/:id/ship (it needs real courier/tracking
+// info, and GET /seller/payouts sums `Delivered` orders into pendingBalance — letting this route
+// jump straight to Delivered, or move backwards, would let a seller inflate their own payout
+// balance without ever actually shipping anything).
+const ORDER_STATUS_TRANSITIONS = {
+  Pending: ['Processing', 'Cancelled'],
+  Processing: ['Cancelled'],
+  Shipped: ['Delivered'],
+  Delivered: [],
+  Cancelled: [],
+};
+
 const router = Router();
 router.use(requireAuth, requireRole('seller'));
 
@@ -110,6 +123,8 @@ router.post(
       b2bEnabled,
       freeShipping,
       worldwideFreeShipping,
+      safahMartEnabled,
+      safahMartCategory,
       tags,
       specifications,
       variantAxes,
@@ -165,6 +180,8 @@ router.post(
       b2bEnabled: Boolean(b2bEnabled),
       freeShipping: freeShipping !== false,
       worldwideFreeShipping: Boolean(worldwideFreeShipping),
+      safahMartEnabled: Boolean(safahMartEnabled),
+      safahMartCategory: safahMartCategory || 'shop',
       // Normalized + de-duped server-side too (the chip input already does this
       // client-side) so the backend never trusts unnormalized/duplicate hashtags.
       tags: normalizeHashtagList(tags),
@@ -251,6 +268,17 @@ router.patch(
     }
     const order = await SellerOrder.findOne({ _id: req.params.id, sellerId: req.user._id });
     if (!order) return res.status(404).json({ message: 'Order not found or invalid status.' });
+
+    if (status === order.status) {
+      return res.json({ order: serializeOrder(order) });
+    }
+    if (status === 'Shipped') {
+      return res.status(400).json({ message: 'Use "Ship Now" to mark an order as shipped — it records the courier and tracking details.' });
+    }
+    if (!ORDER_STATUS_TRANSITIONS[order.status]?.includes(status)) {
+      return res.status(409).json({ message: `An order can't move from "${order.status}" to "${status}".` });
+    }
+
     order.status = status;
     await order.save();
     res.json({ order: serializeOrder(order) });
@@ -598,6 +626,46 @@ router.patch(
       { new: true }
     );
     if (!store) return res.status(404).json({ message: 'No storefront found for this account.' });
+    res.json({ store: serializeStore(store) });
+  })
+);
+
+// ---------- Safah Mart shop location + local-delivery config ----------
+
+router.patch(
+  '/store/safah-mart',
+  asyncHandler(async (req, res) => {
+    const store = await loadOwnStore(req, res);
+    if (!store) return;
+    const { lat, lng, deliveryRadiusKm, prepTimeMinutes, opensAt, closesAt, sameDayDelivery } = req.body;
+    const numLat = Number(lat);
+    const numLng = Number(lng);
+    store.safahMart = {
+      enabled: Number.isFinite(numLat) && Number.isFinite(numLng),
+      lat: Number.isFinite(numLat) ? numLat : null,
+      lng: Number.isFinite(numLng) ? numLng : null,
+      deliveryRadiusKm: Number(deliveryRadiusKm) > 0 ? Number(deliveryRadiusKm) : 5,
+      prepTimeMinutes: Number(prepTimeMinutes) >= 0 ? Number(prepTimeMinutes) : 30,
+      opensAt: opensAt || '09:00',
+      closesAt: closesAt || '21:00',
+      sameDayDelivery: sameDayDelivery !== false,
+    };
+    await store.save();
+    // Re-push onto every already-enabled product — same denormalization-refresh pattern as
+    // admin.routes.js's Seller verified/officialStore -> Product.updateMany re-push — so a
+    // seller changing their delivery radius/hours doesn't require re-saving every product.
+    await Product.updateMany(
+      { sellerId: store._id, safahMartEnabled: true },
+      {
+        sellerSafahLat: store.safahMart.lat,
+        sellerSafahLng: store.safahMart.lng,
+        sellerDeliveryRadiusKm: store.safahMart.deliveryRadiusKm,
+        sellerPrepTimeMinutes: store.safahMart.prepTimeMinutes,
+        sellerOpensAt: store.safahMart.opensAt,
+        sellerClosesAt: store.safahMart.closesAt,
+        sellerSameDayDelivery: store.safahMart.sameDayDelivery,
+      }
+    );
     res.json({ store: serializeStore(store) });
   })
 );

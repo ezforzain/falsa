@@ -4,6 +4,8 @@ import { FilterConfig, FILTER_SECTIONS } from '../models/FilterConfig.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { buildMarketplaceFilter, toMongoFilter } from '../utils/marketplaceQuery.js';
 import { rankAndBlendByCountry, rankOnly, sortByOption, meetsRatingMin } from '../utils/marketplaceRanking.js';
+import { haversineDistanceKm, computeDeliveryEta } from '../utils/geo.js';
+import { geocodeAddress } from '../services/geocodingService.js';
 
 const router = Router();
 
@@ -99,6 +101,66 @@ router.get(
     const products = applyRatingFilter(await Product.find(toMongoFilter(clauses)).lean(), Number(req.query.ratingMin));
     const ordered = orderProducts(products, { sortBy: req.query.sortBy, rank: () => rankOnly(products) });
     res.json({ products: ordered.map(serializeProduct) });
+  })
+);
+
+// Safah Mart — location-based local marketplace. Unlike the four sections above, this one
+// requires a buyer position (lat/lng) and drops any product the seller's own configured delivery
+// radius can't reach, rather than ranking/blending everything in the catalog.
+router.get(
+  '/safah-mart',
+  asyncHandler(async (req, res) => {
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return res.status(400).json({ message: 'Location (lat/lng) is required.' });
+    }
+
+    const clauses = buildMarketplaceFilter(req.query);
+    clauses.push({ safahMartEnabled: true });
+    clauses.push({ sellerSafahLat: { $ne: null }, sellerSafahLng: { $ne: null } });
+    if (req.query.safahCategory) {
+      const values = String(req.query.safahCategory)
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean);
+      if (values.length) clauses.push({ safahMartCategory: { $in: values } });
+    }
+
+    const products = applyRatingFilter(await Product.find(toMongoFilter(clauses)).lean(), Number(req.query.ratingMin));
+    const withDistance = products
+      .map((p) => {
+        const distanceKm = haversineDistanceKm(lat, lng, p.sellerSafahLat, p.sellerSafahLng);
+        const eta = computeDeliveryEta({
+          distanceKm,
+          deliveryRadiusKm: p.sellerDeliveryRadiusKm ?? 5,
+          prepTimeMinutes: p.sellerPrepTimeMinutes ?? 30,
+          opensAt: p.sellerOpensAt ?? '09:00',
+          closesAt: p.sellerClosesAt ?? '21:00',
+          sameDayDelivery: p.sellerSameDayDelivery !== false,
+        });
+        // Never surface a product as Safah Mart eligible when the seller's own radius can't
+        // reach this buyer — computeDeliveryEta returns null in exactly that case.
+        return eta ? { ...p, distanceKm, eta } : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.distanceKm - b.distanceKm);
+
+    res.json({ products: withDistance.map(serializeProduct) });
+  })
+);
+
+// Server-side geocoding for the Safah Mart manual-address fallback (a buyer who denies/lacks
+// browser geolocation) — must happen server-side, not in the browser, per Nominatim's usage
+// policy (custom User-Agent, no client-side hammering).
+router.post(
+  '/geocode',
+  asyncHandler(async (req, res) => {
+    const address = String(req.body?.address || '').trim();
+    if (!address) return res.status(400).json({ message: 'Address is required.' });
+    const result = await geocodeAddress(address);
+    if (!result) return res.status(404).json({ message: 'Could not locate that address. Try a more specific address.' });
+    res.json(result);
   })
 );
 

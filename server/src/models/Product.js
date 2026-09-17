@@ -99,6 +99,23 @@ const productSchema = new mongoose.Schema(
     sellerCountry: { type: String, default: null },
     sellerVerified: { type: Boolean, default: false },
     sellerOfficialStore: { type: Boolean, default: false },
+    // Explicit seller opt-in for the Safah Mart local-delivery marketplace — never inferred.
+    safahMartEnabled: { type: Boolean, default: false },
+    safahMartCategory: {
+      type: String,
+      enum: ['grocery', 'fastfood', 'restaurant', 'bakery', 'mall', 'shop'],
+      default: 'shop',
+    },
+    // Denormalized from Seller.safahMart at sync time (see publicCatalogSync.js), same pattern
+    // as sellerCountry/sellerVerified/sellerOfficialStore above — GET /api/marketplace/safah-mart
+    // filters and computes distance/ETA straight off these plain fields, never populate()ing Seller.
+    sellerSafahLat: { type: Number, default: null },
+    sellerSafahLng: { type: Number, default: null },
+    sellerDeliveryRadiusKm: { type: Number, default: null },
+    sellerPrepTimeMinutes: { type: Number, default: null },
+    sellerOpensAt: { type: String, default: null },
+    sellerClosesAt: { type: String, default: null },
+    sellerSameDayDelivery: { type: Boolean, default: true },
     // Numeric twins of `price` ("Rs 670") and `moq` ("500m") for range filtering/sorting —
     // the display strings are unchanged and still the source of truth for rendering.
     priceValue: { type: Number, default: null },
