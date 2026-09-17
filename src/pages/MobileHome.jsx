@@ -25,9 +25,9 @@ const ACCENT = '#6C63FF';
 // products or fork the real Category model, these are presentational nav shortcuts only; live
 // category filtering still happens via the Filters panel below and the dedicated Categories page.
 const DISPLAY_CATEGORIES = [
-  { key: 'women', name: 'Women', img: unsplash('photo-1483985988355-763728e1935b', 200), fallback: IconGrid },
+  { key: 'women', name: 'Women', img: unsplash('photo-1524504388940-b1c1722653e1', 200), fallback: IconGrid },
   { key: 'men', name: 'Men', img: unsplash('photo-1516257984-b1b4d707412e', 200), fallback: IconGrid },
-  { key: 'kids', name: 'Kids', img: unsplash('photo-1503457574465-89094ee2d2b0', 200), fallback: IconGift },
+  { key: 'kids', name: 'Kids', img: unsplash('photo-1503919545889-aef636e10ad4', 200), fallback: IconGift },
   { key: 'beauty', name: 'Beauty', img: unsplash('photo-1596462502278-27bfdc403348', 200), fallback: IconSparkle },
   { key: 'home', name: 'Home', img: unsplash('photo-1567016432779-094069958ea5', 200), fallback: IconBox },
   { key: 'accessories', name: 'Accessories', img: unsplash('photo-1584917865442-de89df76afd3', 200), fallback: IconBox },
@@ -232,8 +232,8 @@ export default function MobileHome() {
           <button
             type="button"
             onClick={scrollToGrid}
-            className="self-start flex items-center gap-1.5 rounded-full text-ink font-semibold text-[12px] pl-3.5 pr-3 py-2 cursor-pointer transition-transform active:scale-95"
-            style={{ background: 'var(--color-gold)' }}
+            className="self-start flex items-center gap-1.5 rounded-full text-white font-semibold text-[12px] pl-3.5 pr-3 py-2 cursor-pointer transition-transform active:scale-95 shadow-sm"
+            style={{ background: ACCENT }}
           >
             {t('home.heroCta')}
             <IconArrowRight width="13" height="13" strokeWidth="2.4" />
