@@ -214,8 +214,9 @@ export default function DesktopHome() {
             <span className="w-6 h-px inline-block" style={{ background: '#6C63FF' }} />
             New arrivals
           </div>
-          <h1 className="font-display text-[32px] sm:text-[40px] lg:text-[50px] leading-[1.05] font-bold text-ink mb-[18px] tracking-tight text-balance">
-            Fresh picks, just for you.
+          <h1 className="font-display text-[32px] sm:text-[40px] lg:text-[50px] leading-[1.05] font-bold mb-[18px] tracking-tight text-balance">
+            <span className="text-ink">Fresh picks, </span>
+            <span style={{ color: '#6C63FF' }}>just for you.</span>
           </h1>
           <p className="text-base leading-relaxed text-text mb-7 max-w-[420px] text-balance">
             Great products from verified sellers, at better prices — every day.
@@ -240,9 +241,12 @@ export default function DesktopHome() {
         </div>
         <div className="relative min-h-[300px]">
           <img
-            src={unsplash('photo-1473188588951-666fce8e7c68', 1200)}
+            src={unsplash('photo-1483985988355-763728e1935b', 1200)}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.src = unsplash('photo-1473188588951-666fce8e7c68', 1200);
+            }}
           />
           <div className="absolute bottom-6 right-6 bg-white/92 backdrop-blur-sm rounded-2xl px-[18px] py-3.5 flex items-center gap-3">
             <IconTruck width="22" height="22" className="text-green" />
@@ -254,31 +258,44 @@ export default function DesktopHome() {
         </div>
       </section>
 
-      {/* Trust strip */}
-      <div className="flex justify-center items-center gap-11 py-[30px] border-b border-border flex-wrap">
-        <div className="flex items-center gap-2.5 font-display font-bold text-base text-green">
-          <IconShield width="20" height="20" />
-          100% Trusted — falsafah tot
+      {/* Second promo banner — dark card mirroring the reference design's second banner block,
+          content-wise it's the same real trust props the old plain trust strip listed, just
+          given a bolder, boxed presentation with a CTA into the grid below. */}
+      <section className="mt-9 rounded-[22px] bg-green-deep px-8 sm:px-11 py-9 sm:py-10">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-7">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 font-mono text-[11px] font-semibold tracking-[0.14em] uppercase text-gold mb-3.5">
+              <IconTruck width="13" height="13" strokeWidth="2.4" />
+              Fast delivery
+            </div>
+            <h2 className="font-display text-2xl sm:text-[28px] font-bold text-white tracking-tight text-balance max-w-[420px]">
+              Shop smarter — verified sellers, fast shipping, every order.
+            </h2>
+          </div>
+          <a
+            href="#trending"
+            onClick={scrollToTrending}
+            className="shrink-0 self-start lg:self-center cursor-pointer bg-orange hover:bg-orange-hover text-white font-semibold text-[14.5px] px-7 py-3.5 rounded-full no-underline flex items-center gap-2 transition-colors"
+          >
+            Shop Now
+            <IconArrowRight width="15" height="15" strokeWidth="2.4" />
+          </a>
         </div>
-        <div className="flex gap-[30px] text-[13.5px] text-text flex-wrap">
-          <span className="flex items-center gap-1.5">
-            <IconCheck className="text-green" strokeWidth="2.2" />
-            Verified sellers
-          </span>
-          <span className="flex items-center gap-1.5">
-            <IconCheck className="text-green" strokeWidth="2.2" />
-            Secure escrow payments
-          </span>
-          <span className="flex items-center gap-1.5">
-            <IconCheck className="text-green" strokeWidth="2.2" />
-            Worldwide delivery
-          </span>
-          <span className="flex items-center gap-1.5">
-            <IconCheck className="text-green" strokeWidth="2.2" />
-            Trade assurance
-          </span>
+
+        <div className="grid gap-3 mt-7" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
+          {[
+            { Icon: IconShield, label: 'Verified sellers' },
+            { Icon: IconCheck, label: 'Secure escrow payments' },
+            { Icon: IconTruck, label: 'Worldwide delivery' },
+            { Icon: IconCheck, label: 'Trade assurance' },
+          ].map(({ Icon, label }) => (
+            <div key={label} className="flex items-center gap-2.5 rounded-xl bg-white/[0.08] border border-white/10 px-3.5 py-3">
+              <Icon width="16" height="16" className="text-white shrink-0" strokeWidth="2.2" />
+              <span className="text-[13px] font-medium text-teal-mist">{label}</span>
+            </div>
+          ))}
         </div>
-      </div>
+      </section>
 
       {/* Trending Now / category results — or, when a marketplace tab is active, that tab's
           real filtered/ranked results instead. */}
