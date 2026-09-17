@@ -347,11 +347,12 @@ export default function MobileHome() {
         </div>
       </div>
 
-      {/* Category circles */}
-      <div className="grid grid-cols-4 gap-x-2 gap-y-4 px-[18px] pt-4 pb-1.5">
+      {/* Category row — WhatsApp Status-style horizontal scroll: a single row the user swipes
+          through (3–4 circles visible at a time) instead of wrapping into a multi-row grid. */}
+      <div className="flex gap-x-4 overflow-x-auto no-scrollbar px-[18px] pt-4 pb-1.5">
         {metaLoading
-          ? Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-2">
+          ? Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="shrink-0 w-[70px] flex flex-col items-center gap-2">
                 <div className="animate-pulse w-[62px] h-[62px] rounded-full bg-surface-muted" />
               </div>
             ))
@@ -361,7 +362,7 @@ export default function MobileHome() {
                 <div
                   key={cat.key}
                   onClick={() => setActiveCategory((c) => (c === cat.key ? 'all' : cat.key))}
-                  className="flex flex-col items-center gap-2 cursor-pointer"
+                  className="shrink-0 w-[70px] flex flex-col items-center gap-2 cursor-pointer"
                 >
                   <span
                     className="w-[62px] h-[62px] rounded-full overflow-hidden transition-colors"
@@ -373,7 +374,7 @@ export default function MobileHome() {
                     <img src={cat.img} alt={cat.name} className="w-full h-full object-cover" />
                   </span>
                   <span
-                    className="text-[11.5px] text-center leading-tight"
+                    className="text-[11.5px] text-center leading-tight line-clamp-2"
                     style={{ fontWeight: isActive ? 700 : 600, color: isActive ? 'var(--color-green)' : 'var(--color-ink-soft)' }}
                   >
                     {cat.name}
