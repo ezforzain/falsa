@@ -12,7 +12,7 @@ import SearchHintOverlay from '../components/SearchHintOverlay';
 import MobileTopBar from '../components/MobileTopBar';
 import MarketplaceFilters, { EMPTY_MARKETPLACE_FILTERS } from '../components/marketplace/MarketplaceFilters';
 import MobileProductCard from '../components/product/MobileProductCard';
-import { IconSearch, IconBox, IconSparkle, IconGlobe, IconTruck, IconSliders } from '../components/icons';
+import { IconSearch, IconBox, IconSparkle, IconGlobe, IconTruck, IconSliders, IconArrowRight } from '../components/icons';
 
 // Icon per tab key — the backend only knows key/label/banner, so the visual mark lives here,
 // keyed the same way as the seeded tabs (see server/src/seed/data.js).
@@ -237,10 +237,21 @@ export default function MobileHome() {
         </div>
       )}
 
-      {/* Search bar */}
-      <div className="px-[18px] pt-2 pb-4">
-        <div className="relative flex items-center gap-3 rounded-2xl border border-border bg-surface pl-4 pr-2 py-2 shadow-[0_1px_3px_rgba(27,31,29,0.05)] transition-all duration-150 focus-within:border-orange/40 focus-within:shadow-[0_0_0_3px_rgba(201,123,45,0.12)]">
-          <IconSearch width="18" height="18" className="text-text-muted shrink-0" strokeWidth="1.8" />
+      {/* Hero card — dark navy "sourcing" card matching the new home design: overline + headline,
+          search bar, a full-width "Start exploring" row, a 2-up quotation/top-sellers grid, and
+          the shipping/money-back trust banner, all boxed together instead of stacked as separate
+          cream sections. */}
+      <div className="mx-[18px] mb-4 rounded-[22px] bg-green-deep px-4 pt-5 pb-4">
+        <div className="inline-flex items-center gap-2 font-mono text-[10.5px] font-medium tracking-[0.14em] uppercase text-gold mb-3">
+          <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block shrink-0" />
+          {t('home.verifiedSuppliers')}
+        </div>
+        <h1 className="font-display text-[22px] leading-[1.2] font-bold text-white mb-4 tracking-tight text-balance">
+          {t('home.sourcingToday')}
+        </h1>
+
+        <div className="relative flex items-center gap-3 rounded-2xl bg-white/10 border border-white/10 pl-4 pr-2 py-2 mb-3 transition-all duration-150 focus-within:border-gold/50 focus-within:bg-white/[0.14]">
+          <IconSearch width="18" height="18" className="text-white/55 shrink-0" strokeWidth="1.8" />
           <span className="flex-1 relative min-w-0">
             <input
               ref={searchInputRef}
@@ -250,95 +261,82 @@ export default function MobileHome() {
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               onKeyDown={(e) => e.key === 'Enter' && runSearch()}
-              className="w-full border-none outline-none bg-transparent text-[14.5px] text-ink font-sans relative z-10 py-1.5"
+              className="w-full border-none outline-none bg-transparent text-[14.5px] text-white font-sans relative z-10 py-1.5"
             />
-            <SearchHintOverlay hint={currentHint} visible={!searchFocused && !searchQuery} />
+            <SearchHintOverlay hint={currentHint} visible={!searchFocused && !searchQuery} className="!text-white/45" />
           </span>
           <button
             type="button"
             onClick={runSearch}
             aria-label="Search"
-            className="w-10 h-10 rounded-xl bg-orange hover:bg-orange-hover active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer shadow-[0_2px_8px_rgba(201,123,45,0.35)]"
+            className="w-10 h-10 rounded-xl bg-gold hover:brightness-95 active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer"
           >
-            <IconSearch width="16" height="16" className="text-white" strokeWidth="2.4" />
+            <IconArrowRight width="16" height="16" className="text-green-deep" strokeWidth="2.6" />
           </button>
         </div>
-      </div>
 
-      {/* Quick actions — each gets its own vivid gradient badge (instead of a flat tint) plus a
-          matching colored glow and a faint wash on the card itself, so the row reads as three
-          distinct, colorful entry points rather than three identical gray cards. */}
-      <div className="flex gap-3 px-[18px] pb-4">
-        {[
-          {
-            label: t('home.startExploring'),
-            badge: 'bg-gradient-to-br from-green to-green-hover',
-            glow: 'shadow-[0_6px_16px_rgba(14,90,70,0.32)]',
-            wash: 'from-green-tint/70',
-            hoverBorder: 'hover:border-green/30',
-            icon: <IconGrid />,
-            onClick: () => navigate('/categories'),
-          },
-          {
-            label: t('home.requestQuotation'),
-            badge: 'bg-gradient-to-br from-orange to-[#E0973F]',
-            glow: 'shadow-[0_6px_16px_rgba(201,123,45,0.35)]',
-            wash: 'from-orange-tint/70',
-            hoverBorder: 'hover:border-orange/30',
-            icon: <IconTarget />,
-            onClick: () => navigate('/messenger'),
-          },
-          {
-            label: t('home.topSellers'),
-            badge: 'bg-gradient-to-br from-gold to-orange',
-            glow: 'shadow-[0_6px_16px_rgba(197,140,50,0.35)]',
-            wash: 'from-gold/25',
-            hoverBorder: 'hover:border-gold/40',
-            icon: <IconTrophy />,
-            onClick: () => {
+        <button
+          type="button"
+          onClick={() => navigate('/categories')}
+          className="group w-full flex items-center gap-3 rounded-2xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 px-3.5 py-3 mb-3 text-left cursor-pointer transition-colors"
+        >
+          <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange to-[#E0973F] flex items-center justify-center shrink-0 transition-transform duration-150 group-hover:scale-105">
+            <IconGrid />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="font-display block text-[14px] font-semibold text-white leading-snug tracking-[-0.01em]">{t('home.startExploring')}</span>
+            <span className="block text-[11.5px] text-teal-mist leading-snug">{t('home.startExploringSub')}</span>
+          </span>
+          <IconArrowRight width="16" height="16" className="text-white/50 shrink-0" strokeWidth="2.2" />
+        </button>
+
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <button
+            type="button"
+            onClick={() => navigate('/messenger')}
+            className="flex items-center gap-2.5 rounded-2xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 px-3 py-3 text-left cursor-pointer transition-colors"
+          >
+            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange to-[#E0973F] flex items-center justify-center shrink-0">
+              <IconTarget />
+            </span>
+            <span className="font-display text-[12.5px] font-semibold text-white leading-snug tracking-[-0.01em]">{t('home.requestQuotation')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
               setMarketplaceFilters((f) => ({ ...f, verified: true }));
               setFiltersOpen(true);
               productGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            },
-          },
-        ].map((a) => (
-          <button
-            key={a.label}
-            type="button"
-            onClick={a.onClick}
-            className={`group flex-1 bg-gradient-to-b ${a.wash} to-surface border border-border rounded-2xl px-3 py-3.5 flex flex-col items-start gap-2.5 text-left cursor-pointer transition-all duration-150 ${a.hoverBorder} hover:shadow-[0_10px_24px_rgba(27,31,29,0.1)] hover:-translate-y-0.5 active:scale-[0.97] active:shadow-none`}
+            }}
+            className="flex items-center gap-2.5 rounded-2xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 px-3 py-3 text-left cursor-pointer transition-colors"
           >
-            <span className={`w-9 h-9 rounded-xl ${a.badge} ${a.glow} flex items-center justify-center transition-transform duration-150 group-hover:scale-105 group-hover:rotate-3`}>
-              {a.icon}
+            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-orange flex items-center justify-center shrink-0">
+              <IconTrophy />
             </span>
-            <span className="font-display text-[12.5px] font-semibold text-ink leading-snug tracking-[-0.01em]">{a.label}</span>
+            <span className="font-display text-[12.5px] font-semibold text-white leading-snug tracking-[-0.01em]">{t('home.topSellers')}</span>
           </button>
-        ))}
-      </div>
-
-      {/* Trust banner — labels wrap onto a second line instead of forcing single-line width, so
-          a long line like "Money-back protection" never overflows past the card. Icon badges are
-          round, colorful gradients (green = shipping, teal = protection) rather than flat white
-          squares, so the two perks feel distinct instead of visually identical. */}
-      <div className="mx-[18px] mb-1.5 rounded-2xl border border-orange/15 bg-gradient-to-br from-orange-tint to-[#FBF2E4] px-4 py-3.5 flex items-center shadow-[0_1px_3px_rgba(27,31,29,0.03)]">
-        <div className="flex-1 flex items-center gap-3 min-w-0">
-          <span className="w-9 h-9 rounded-full bg-gradient-to-br from-green to-green-hover flex items-center justify-center shrink-0 shadow-[0_3px_10px_rgba(14,90,70,0.35)]">
-            <IconShipFast />
-          </span>
-          <span className="min-w-0">
-            <span className="font-display block text-[12.5px] font-bold text-ink leading-snug tracking-[-0.01em]">{t('home.freeShipping')}</span>
-            <span className="block text-[11px] text-orange-text-dark/80 leading-snug">{t('home.freeShippingSub')}</span>
-          </span>
         </div>
-        <span className="w-px self-stretch bg-orange/20 mx-3.5 shrink-0" />
-        <div className="flex-1 flex items-center gap-3 min-w-0">
-          <span className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-soft to-green flex items-center justify-center shrink-0 shadow-[0_3px_10px_rgba(14,90,70,0.3)]">
-            <IconMoneyBack />
-          </span>
-          <span className="min-w-0">
-            <span className="font-display block text-[12.5px] font-bold text-ink leading-snug tracking-[-0.01em]">{t('home.moneyBack')}</span>
-            <span className="block text-[11px] text-orange-text-dark/80 leading-snug">{t('home.moneyBackSub')}</span>
-          </span>
+
+        <div className="rounded-2xl bg-white/[0.06] border border-white/10 px-3.5 py-3 flex items-center">
+          <div className="flex-1 flex items-center gap-2.5 min-w-0">
+            <span className="w-8 h-8 rounded-full bg-gradient-to-br from-orange to-[#E0973F] flex items-center justify-center shrink-0">
+              <IconShipFast />
+            </span>
+            <span className="min-w-0">
+              <span className="font-display block text-[12px] font-bold text-white leading-snug tracking-[-0.01em]">{t('home.freeShipping')}</span>
+              <span className="block text-[10.5px] text-teal-mist leading-snug">{t('home.freeShippingSub')}</span>
+            </span>
+          </div>
+          <span className="w-px self-stretch bg-white/10 mx-3 shrink-0" />
+          <div className="flex-1 flex items-center gap-2.5 min-w-0">
+            <span className="w-8 h-8 rounded-full bg-gradient-to-br from-gold to-orange flex items-center justify-center shrink-0">
+              <IconMoneyBack />
+            </span>
+            <span className="min-w-0">
+              <span className="font-display block text-[12px] font-bold text-white leading-snug tracking-[-0.01em]">{t('home.moneyBack')}</span>
+              <span className="block text-[10.5px] text-teal-mist leading-snug">{t('home.moneyBackSub')}</span>
+            </span>
+          </div>
         </div>
       </div>
 
