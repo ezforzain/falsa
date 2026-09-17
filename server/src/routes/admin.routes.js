@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import { Seller } from '../models/Seller.js';
 import { User } from '../models/User.js';
 import { Product } from '../models/Product.js';
@@ -387,8 +388,14 @@ router.patch(
     const category = await Category.findOne({ _id: req.params.id, kind: 'category' });
     if (!category) return res.status(404).json({ message: 'Category not found.' });
 
+    // Product._id is a free-form string (seeded catalog entries use readable slugs, see
+    // Product.js), but SellerProduct._id is always a real ObjectId — casting a slug through it
+    // throws instead of just not matching. Only pass along the ids that could possibly be one.
+    const sellerProductIds = productIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
     const [sellerProductResult, productResult] = await Promise.all([
-      SellerProduct.updateMany({ _id: { $in: productIds } }, { category: category.name }),
+      sellerProductIds.length > 0
+        ? SellerProduct.updateMany({ _id: { $in: sellerProductIds } }, { category: category.name })
+        : Promise.resolve({ matchedCount: 0 }),
       Product.updateMany({ _id: { $in: productIds } }, { category: category.name }),
     ]);
     res.json({ ok: true, matched: productResult.matchedCount ?? productResult.n ?? 0 });
