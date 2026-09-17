@@ -1,13 +1,65 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { catalog } from '../lib/api';
 import { formatPKR, parsePrice } from '../data/mockData';
 import { parseMoqNumber } from '../lib/moq';
 import AddressForm, { EMPTY_ADDRESS } from '../components/AddressForm';
-import { IconCart, IconCheck, IconEdit, IconTruck } from '../components/icons';
+import { IconCart, IconCheck, IconEdit, IconPlus, IconTruck } from '../components/icons';
 
 const LABEL_ICON = { Home: '🏠', Office: '🏢' };
+
+// Quick-add card for the empty-cart "You might like" rail — a trimmed-down ProductCard with an
+// inline Add button (instead of only linking through to the product page) so an empty cart isn't
+// a dead end. Adds at the product's MOQ, same as ProductPage's own quick-add, since the backend
+// rejects anything below it.
+function SuggestedProductCard({ product, onAdd }) {
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleAdd = async () => {
+    setAdding(true);
+    setError(null);
+    try {
+      await onAdd(product);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  return (
+    <div className="bg-surface border border-border rounded-2xl overflow-hidden flex flex-col">
+      <Link to={`/product/${product.id}`} className="block h-28 overflow-hidden shrink-0">
+        <img src={product.img} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
+      </Link>
+      <div className="p-3 flex flex-col gap-2 flex-1">
+        <Link
+          to={`/product/${product.id}`}
+          className="text-[12.5px] font-semibold text-ink no-underline hover:underline line-clamp-2 leading-snug"
+        >
+          {product.name}
+        </Link>
+        <div className="mt-auto flex items-center justify-between gap-2">
+          <span className="font-display font-bold text-green text-[13px] whitespace-nowrap">{product.price}</span>
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={adding}
+            aria-label={`Add ${product.name} to cart`}
+            className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 shrink-0 flex items-center gap-1 bg-green hover:bg-green-hover text-white text-[11px] font-semibold px-3 py-1.5 rounded-full transition-colors"
+          >
+            <IconPlus width="10" height="10" />
+            {adding ? 'Adding…' : 'Add'}
+          </button>
+        </div>
+        {error && <p className="text-[10.5px] text-orange-text leading-snug">{error}</p>}
+      </div>
+    </div>
+  );
+}
 
 function AddressSummaryCard({ address, onEdit }) {
   return (
@@ -37,11 +89,28 @@ function AddressSummaryCard({ address, onEdit }) {
 }
 
 export default function CartPage() {
-  const { items, updateQty, removeFromCart, subtotal, loading, checkout } = useCart();
+  const { items, addToCart, updateQty, removeFromCart, subtotal, loading, checkout } = useCart();
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [qtyError, setQtyError] = useState(null); // { productId, message }
   const qtyErrorTimer = useRef(null);
+
+  // Suggested products shown on the empty-cart state (see SuggestedProductCard above) — only
+  // fetched once the cart is confirmed empty, so a cart that actually has items never pays for it.
+  const [suggested, setSuggested] = useState([]);
+  useEffect(() => {
+    if (loading || items.length > 0) return;
+    let cancelled = false;
+    catalog
+      .trendingProducts()
+      .then(({ products }) => {
+        if (!cancelled) setSuggested(products.slice(0, 6));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, items.length]);
 
   // 'cart' -> 'address' (only reachable once signed in — see handleProceed) -> order confirmed.
   const [checkoutStep, setCheckoutStep] = useState('cart');
@@ -157,6 +226,21 @@ export default function CartPage() {
             Browse marketplace
           </Link>
         </div>
+
+        {suggested.length > 0 && (
+          <div className="max-w-[900px] mx-auto mt-10">
+            <h2 className="text-sm font-bold text-ink-soft mb-4">You might like</h2>
+            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+              {suggested.map((product) => (
+                <SuggestedProductCard
+                  key={product.id}
+                  product={product}
+                  onAdd={(p) => addToCart(p, parseMoqNumber(p.moq) || 1)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     );
   }
