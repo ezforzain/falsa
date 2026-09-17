@@ -18,10 +18,10 @@ export default function MobileProductCard({ product }) {
       to={`/product/${product.id}`}
       className="group block bg-surface border border-border rounded-[14px] overflow-hidden no-underline text-inherit transition-all duration-200 active:scale-[0.98]"
     >
-      <div className="relative h-[150px] overflow-hidden bg-surface-muted">
+      <div className="relative aspect-square overflow-hidden bg-surface-muted">
         <img src={product.img} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
         {discountPercent > 0 && (
-          <span className="absolute top-2 left-2 bg-orange text-white text-[10.5px] font-bold px-2 py-1 rounded-full">
+          <span className="absolute top-1.5 left-1.5 bg-orange text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
             -{discountPercent}%
           </span>
         )}

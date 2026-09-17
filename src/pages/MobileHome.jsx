@@ -12,7 +12,7 @@ import SearchHintOverlay from '../components/SearchHintOverlay';
 import MobileTopBar from '../components/MobileTopBar';
 import MarketplaceFilters, { EMPTY_MARKETPLACE_FILTERS } from '../components/marketplace/MarketplaceFilters';
 import MobileProductCard from '../components/product/MobileProductCard';
-import { IconSearch, IconBox, IconSparkle, IconGlobe, IconTruck, IconSliders, IconArrowRight } from '../components/icons';
+import { IconSearch, IconBox, IconSparkle, IconGlobe, IconTruck, IconSliders, IconArrowRight, IconCamera } from '../components/icons';
 
 // Icon per tab key — the backend only knows key/label/banner, so the visual mark lives here,
 // keyed the same way as the seeded tabs (see server/src/seed/data.js).
@@ -177,12 +177,45 @@ export default function MobileHome() {
 
       <MobileTopBar />
 
+      {/* Standalone search bar — pulled out of the hero card so it reads as its own entry point
+          at the very top of the page, matching the new reference layout, instead of being nested
+          inside the dark hero card alongside the quick-action tiles. */}
+      <div className="px-[18px] pt-1 pb-3">
+        <div className="flex items-center gap-2.5 rounded-xl border border-border bg-surface pl-4 pr-1.5 py-1.5 shadow-[0_1px_3px_rgba(27,31,29,0.05)] transition-all duration-150 focus-within:border-green/40">
+          <IconSearch width="17" height="17" className="text-text-muted shrink-0" strokeWidth="1.8" />
+          <span className="flex-1 relative min-w-0">
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              onKeyDown={(e) => e.key === 'Enter' && runSearch()}
+              className="w-full border-none outline-none bg-transparent text-[13.5px] text-ink font-sans relative z-10 py-1"
+            />
+            <SearchHintOverlay hint={currentHint} visible={!searchFocused && !searchQuery} />
+          </span>
+          <IconCamera width="16" height="16" className="text-text-muted shrink-0" strokeWidth="1.8" />
+          <button
+            type="button"
+            onClick={runSearch}
+            aria-label="Search"
+            className="w-9 h-9 rounded-lg bg-ink hover:opacity-90 active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer"
+          >
+            <IconSearch width="15" height="15" className="text-white" strokeWidth="2.4" />
+          </button>
+        </div>
+      </div>
+
       {/* Top tabs — pill chips (own icon + label per option) rather than an underlined text row,
-          so B2B/Spotlight/Worldwide/Free Shipping read as distinct, tappable entry points. */}
-      <div className="flex items-center gap-2 px-[18px] pt-3.5 pb-2.5 overflow-x-auto no-scrollbar">
+          so B2B/Spotlight/Worldwide/Free Shipping read as distinct, tappable entry points. Kept
+          low-profile/flat (rounded-md, no glow) rather than full rounded pills so the row reads
+          as a slim marketplace tab bar instead of a chunky floating-button row. */}
+      <div className="flex items-center gap-2 px-[18px] pt-2.5 pb-2 overflow-x-auto no-scrollbar">
         {metaLoading
           ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="animate-pulse h-9 w-[104px] shrink-0 rounded-full bg-surface-muted" />
+              <div key={i} className="animate-pulse h-7 w-[84px] shrink-0 rounded-md bg-surface-muted" />
             ))
           : tabs.map((tab) => {
               const isActive = tab.key === activeTab;
@@ -199,16 +232,16 @@ export default function MobileHome() {
                     // control anymore.
                     setMarketplaceFilters(EMPTY_MARKETPLACE_FILTERS);
                   }}
-                  className={`flex items-center gap-1.5 shrink-0 whitespace-nowrap rounded-full pl-2.5 pr-3.5 py-2 text-[13px] font-semibold cursor-pointer transition-colors border ${
+                  className={`flex items-center gap-1 shrink-0 whitespace-nowrap rounded-md pl-2 pr-2.5 py-1.5 text-[12px] font-semibold cursor-pointer transition-colors border ${
                     isActive
-                      ? 'bg-green text-white border-green shadow-[0_4px_12px_rgba(14,90,70,0.25)]'
+                      ? 'bg-green text-white border-green'
                       : 'bg-surface text-ink-soft border-border hover:border-green/40 hover:text-ink'
                   }`}
                 >
                   {Icon && (
                     <Icon
-                      width="15"
-                      height="15"
+                      width="13"
+                      height="13"
                       className={isActive ? 'text-white' : 'text-green'}
                       strokeWidth={isActive ? 2.4 : 2}
                     />
@@ -221,34 +254,16 @@ export default function MobileHome() {
 
       {/* Tab context banner */}
       {activeTabDef?.banner && (
-        <div className="mx-[18px] mb-2 bg-green-tint rounded-[10px] px-3.5 py-2.5 text-[12.5px] text-green font-medium">
+        <div className="mx-[18px] mb-2 bg-green-tint rounded-md px-3 py-2 text-[12.5px] text-green font-medium">
           {activeTabDef.banner}
         </div>
       )}
 
-      {/* Marketplace filters — collapsed by default so the compact mobile header doesn't get
-          crowded; every field here actually narrows the fetch above (see fetchProducts). */}
-      <div className="px-[18px] pb-1">
-        <button
-          type="button"
-          onClick={() => setFiltersOpen((v) => !v)}
-          className="flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-soft cursor-pointer py-1"
-        >
-          <IconSliders width="14" height="14" />
-          {t('common.filters')}
-        </button>
-      </div>
-      {filtersOpen && (
-        <div className="px-[18px] pb-3">
-          <MarketplaceFilters section={activeTab} value={marketplaceFilters} onChange={setMarketplaceFilters} />
-        </div>
-      )}
-
       {/* Hero card — dark navy "sourcing" card matching the new home design: overline + headline,
-          search bar, a full-width "Start exploring" row, a 2-up quotation/top-sellers grid, and
-          the shipping/money-back trust banner, all boxed together instead of stacked as separate
-          cream sections. */}
-      <div className="mx-[18px] mb-4 rounded-[22px] bg-green-deep px-4 pt-5 pb-4">
+          a full-width "Start exploring" row, a 2-up quotation/top-sellers grid, and the
+          shipping/money-back trust banner, all boxed together. Search now lives in its own
+          standalone bar above (see top of this component) rather than nested in here. */}
+      <div className="mx-[18px] mb-3 rounded-[22px] bg-green-deep px-4 pt-4 pb-4">
         <div className="inline-flex items-center gap-2 font-mono text-[10.5px] font-medium tracking-[0.14em] uppercase text-gold mb-3">
           <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block shrink-0" />
           {t('home.verifiedSuppliers')}
@@ -256,31 +271,6 @@ export default function MobileHome() {
         <h1 className="font-display text-[22px] leading-[1.2] font-bold text-white mb-4 tracking-tight text-balance">
           {t('home.sourcingToday')}
         </h1>
-
-        <div className="relative flex items-center gap-3 rounded-2xl bg-white/10 border border-white/10 pl-4 pr-2 py-2 mb-3 transition-all duration-150 focus-within:border-gold/50 focus-within:bg-white/[0.14]">
-          <IconSearch width="18" height="18" className="text-white/55 shrink-0" strokeWidth="1.8" />
-          <span className="flex-1 relative min-w-0">
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              onKeyDown={(e) => e.key === 'Enter' && runSearch()}
-              className="w-full border-none outline-none bg-transparent text-[14.5px] text-white font-sans relative z-10 py-1.5"
-            />
-            <SearchHintOverlay hint={currentHint} visible={!searchFocused && !searchQuery} className="!text-white/45" />
-          </span>
-          <button
-            type="button"
-            onClick={runSearch}
-            aria-label="Search"
-            className="w-10 h-10 rounded-xl bg-gold hover:brightness-95 active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer"
-          >
-            <IconArrowRight width="16" height="16" className="text-green-deep" strokeWidth="2.6" />
-          </button>
-        </div>
 
         <button
           type="button"
@@ -349,7 +339,7 @@ export default function MobileHome() {
 
       {/* Category row — WhatsApp Status-style horizontal scroll: a single row the user swipes
           through (3–4 circles visible at a time) instead of wrapping into a multi-row grid. */}
-      <div className="flex gap-x-4 overflow-x-auto no-scrollbar px-[18px] pt-4 pb-1.5">
+      <div className="flex gap-x-4 overflow-x-auto no-scrollbar px-[18px] pt-3 pb-1.5">
         {metaLoading
           ? Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="shrink-0 w-[70px] flex flex-col items-center gap-2">
@@ -384,17 +374,34 @@ export default function MobileHome() {
             })}
       </div>
 
-      {/* Active label */}
-      <div ref={productGridRef} className="px-[18px] pt-2.5 pb-2.5 text-[13px] text-text scroll-mt-4">
-        {t('home.showing')} <strong className="text-ink">{label}</strong>
+      {/* Active label + filters toggle — merged onto one row (instead of two separate stacked
+          blocks) so the space between the category row and the grid stays tight. The expanded
+          filters panel still narrows fetchProducts exactly as before. */}
+      <div ref={productGridRef} className="flex items-center justify-between gap-3 px-[18px] pt-2.5 pb-2.5 scroll-mt-4">
+        <span className="text-[12.5px] text-text min-w-0 truncate">
+          {t('home.showing')} <strong className="text-ink">{label}</strong>
+        </span>
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          className="flex items-center gap-1 shrink-0 rounded-md border border-border bg-surface px-2.5 py-1.5 text-[12px] font-semibold text-ink-soft cursor-pointer transition-colors hover:border-green/40 hover:text-ink"
+        >
+          <IconSliders width="13" height="13" />
+          {t('common.filters')}
+        </button>
       </div>
+      {filtersOpen && (
+        <div className="px-[18px] pb-3">
+          <MarketplaceFilters section={activeTab} value={marketplaceFilters} onChange={setMarketplaceFilters} />
+        </div>
+      )}
 
       {/* Product grid */}
       {productsLoading && (
-        <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-8">
+        <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-[110px]">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="animate-pulse bg-surface border border-border rounded-[14px] overflow-hidden">
-              <div className="h-[130px] bg-surface-muted" />
+              <div className="aspect-square bg-surface-muted" />
               <div className="px-2.5 pt-2.5 pb-3 flex flex-col gap-1.5">
                 <div className="h-3 bg-surface-muted rounded w-full" />
                 <div className="h-3 bg-surface-muted rounded w-1/2" />
@@ -405,22 +412,24 @@ export default function MobileHome() {
       )}
 
       {!productsLoading && productsError && (
-        <div className="mx-[18px] mb-8 text-center py-8 px-5 bg-cream rounded-[14px] border border-dashed border-border-strong">
+        <div className="mx-[18px] mb-[110px] text-center py-8 px-5 bg-cream rounded-[14px] border border-dashed border-border-strong">
           <div className="text-[13.5px] text-orange-text">{productsError}</div>
         </div>
       )}
 
       {!productsLoading && !productsError && products.length > 0 && (
         <>
-          <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-3">
+          <div className="grid grid-cols-2 gap-2.5 px-[18px] pb-2">
             {feedProducts.map((p) => (
               <MobileProductCard key={p.feedKey} product={p} />
             ))}
           </div>
 
           {/* Infinite-scroll sentinel — the feed loops the catalog endlessly rather than ever
-              showing an "end", so there's a loading spinner here but no end-of-feed message. */}
-          <div ref={sentinelRef} className="flex items-center justify-center py-6">
+              showing an "end", so there's a loading spinner here but no end-of-feed message. Bottom
+              padding clears the fixed BottomNavBar (72px + safe-area-inset, up to ~106px on
+              notched devices) so the last row/spinner never sits under it. */}
+          <div ref={sentinelRef} className="flex items-center justify-center pt-4 pb-[110px]">
             {loadingMore && (
               <span className="w-6 h-6 rounded-full border-2 border-border-strong border-t-green animate-[spin_0.7s_linear_infinite]" />
             )}
@@ -429,7 +438,7 @@ export default function MobileHome() {
       )}
 
       {!productsLoading && !productsError && products.length === 0 && (
-        <div className="mx-[18px] mb-8 text-center py-8 px-5 bg-cream rounded-[14px] border border-dashed border-border-strong">
+        <div className="mx-[18px] mb-[110px] text-center py-8 px-5 bg-cream rounded-[14px] border border-dashed border-border-strong">
           <div className="text-[13.5px] font-semibold text-ink mb-1">No results found</div>
           <div className="text-[13.5px] text-text mb-2.5">Nothing matched "{debouncedQuery}". Try a different keyword or category.</div>
           <button
