@@ -240,7 +240,10 @@ export default function ProductFormModal({ open, product, loading, error, onClos
   const setShippingField = (key) => (e) => setForm((f) => ({ ...f, shipping: { ...f.shipping, [key]: e.target.value } }));
   const toggleSection = (key) => setOpenSections((s) => ({ ...s, [key]: !s[key] }));
 
-  const setListingType = (b2bEnabled) => setForm((f) => ({ ...f, b2bEnabled }));
+  // Spotlight (B2C) has no Unit/MOQ fields — clear any leftover value from a prior B2B toggle
+  // rather than silently keeping it hidden but still submitted.
+  const setListingType = (b2bEnabled) =>
+    setForm((f) => ({ ...f, b2bEnabled, ...(b2bEnabled ? {} : { unit: '', moq: '' }) }));
 
   const addPriceTier = () =>
     setForm((f) => ({ ...f, priceTiers: [...f.priceTiers, { minQty: '', maxQty: '', price: '' }] }));
@@ -443,27 +446,44 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>Price (Rs)</label>
-              <input type="text" inputMode="numeric" value={form.price} onChange={set('price')} placeholder="670" className={fieldClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Unit</label>
-              <input type="text" value={form.unit} onChange={set('unit')} placeholder="metre" className={fieldClass} />
-            </div>
-          </div>
+          {form.b2bEnabled ? (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Price (Rs)</label>
+                  <input type="text" inputMode="numeric" value={form.price} onChange={set('price')} placeholder="670" className={fieldClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Unit</label>
+                  <input type="text" value={form.unit} onChange={set('unit')} placeholder="metre" className={fieldClass} />
+                </div>
+              </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>MOQ</label>
-              <input type="text" value={form.moq} onChange={set('moq')} placeholder="500m" className={fieldClass} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>MOQ</label>
+                  <input type="text" value={form.moq} onChange={set('moq')} placeholder="500m" className={fieldClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Stock</label>
+                  <input type="text" inputMode="numeric" value={form.stock} onChange={set('stock')} placeholder="2400" className={fieldClass} />
+                </div>
+              </div>
+            </>
+          ) : (
+            // Spotlight (B2C) sells a single unit to a single buyer — Unit/MOQ are bulk/wholesale
+            // concepts that don't apply, so they're skipped entirely rather than left as empty gaps.
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelClass}>Price (Rs)</label>
+                <input type="text" inputMode="numeric" value={form.price} onChange={set('price')} placeholder="670" className={fieldClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Stock</label>
+                <input type="text" inputMode="numeric" value={form.stock} onChange={set('stock')} placeholder="2400" className={fieldClass} />
+              </div>
             </div>
-            <div>
-              <label className={labelClass}>Stock</label>
-              <input type="text" inputMode="numeric" value={form.stock} onChange={set('stock')} placeholder="2400" className={fieldClass} />
-            </div>
-          </div>
+          )}
 
           <div>
             <label className={labelClass}>SKU (optional)</label>

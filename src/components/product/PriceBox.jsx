@@ -17,7 +17,7 @@ export default function PriceBox({ product, rating, reviewCount, soldCount, pric
         <span className="font-display font-bold text-[34px] sm:text-[40px] text-orange tracking-tight leading-none">
           {formatPKR(currentPrice)}
         </span>
-        <span className="text-sm text-text-muted font-medium">/ {product.unit}</span>
+        {product.unit && <span className="text-sm text-text-muted font-medium">/ {product.unit}</span>}
       </div>
 
       {originalPrice && (
