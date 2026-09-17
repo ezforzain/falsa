@@ -212,23 +212,23 @@ export default function DesktopHome() {
         <div className="p-7 sm:p-10 lg:p-[60px] flex flex-col justify-center relative z-10">
           <div className="inline-flex items-center gap-2 font-mono text-[11.5px] tracking-[0.16em] uppercase mb-[18px]" style={{ color: '#6C63FF' }}>
             <span className="w-6 h-px inline-block" style={{ background: '#6C63FF' }} />
-            New arrivals
+            New season
           </div>
           <h1 className="font-display text-[32px] sm:text-[40px] lg:text-[50px] leading-[1.05] font-bold mb-[18px] tracking-tight text-balance">
-            <span className="text-ink">Fresh picks, </span>
-            <span style={{ color: '#6C63FF' }}>just for you.</span>
+            <span className="text-ink block">Fresh Looks</span>
+            <span className="block" style={{ color: '#6C63FF' }}>For You</span>
           </h1>
           <p className="text-base leading-relaxed text-text mb-7 max-w-[420px] text-balance">
-            Great products from verified sellers, at better prices — every day.
+            Trendy styles • Better vibes • Every day
           </p>
           <div className="flex gap-3.5 items-center flex-wrap">
             <a
               href="#trending"
               onClick={scrollToTrending}
-              className="relative z-10 pointer-events-auto cursor-pointer text-white font-semibold text-[15px] px-8 py-[15px] rounded-full no-underline flex items-center gap-2 shadow-[0_8px_24px_rgba(108,99,255,0.35)] transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-              style={{ background: '#6C63FF' }}
+              className="relative z-10 pointer-events-auto cursor-pointer text-ink font-semibold text-[15px] px-8 py-[15px] rounded-full no-underline flex items-center gap-2 shadow-[0_8px_24px_rgba(245,201,138,0.5)] transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              style={{ background: 'var(--color-gold)' }}
             >
-              Explore Now
+              Explore New Styles
               <IconArrowRight width="15" height="15" strokeWidth="2.4" />
             </a>
             <Link

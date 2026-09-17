@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { normalizeQuery, searchHints, unsplash, mobileTabs as fallbackTabs } from '../data/mockData';
+import { Link } from 'react-router-dom';
+import { normalizeQuery, searchHints, unsplash } from '../data/mockData';
 import { catalog, marketplace } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -11,30 +12,67 @@ import SearchHintOverlay from '../components/SearchHintOverlay';
 import MobileTopBar from '../components/MobileTopBar';
 import MarketplaceFilters, { EMPTY_MARKETPLACE_FILTERS } from '../components/marketplace/MarketplaceFilters';
 import MobileProductCard from '../components/product/MobileProductCard';
-import { IconSearch, IconSliders, IconArrowRight, IconTruck, IconShield } from '../components/icons';
+import { IconSearch, IconSliders, IconArrowRight, IconTruck, IconPin, IconGift, IconStore, IconBox, IconSparkle, IconGrid } from '../components/icons';
 
 // Accent used only for this new home look (hero CTA + active tab pill) — deliberately a
 // different shade from the admin panel's #7C3AED so the two never read as the same theme.
 const ACCENT = '#6C63FF';
 
-// Each tab drives a real, distinct marketplace query — same keys as the seeded MobileTab list
-// (server/src/seed/data.js), just rendered as a segmented pill row instead of icon chips now.
-const MARKETPLACE_FETCHERS = {
-  aimode: marketplace.b2b,
-  spotlight: marketplace.spotlight,
-  worldwide: marketplace.worldwide,
-  freeshipping: marketplace.freeShipping,
+// Static, decorative shortcuts into the Categories page — the reference design shows a fixed
+// fashion-style set (Women/Men/Kids/...) that doesn't correspond to this catalog's real,
+// admin-managed taxonomy (Textiles, Electronics, Rice & Grains, ...). Rather than mislabel real
+// products or fork the real Category model, these are presentational nav shortcuts only; live
+// category filtering still happens via the Filters panel below and the dedicated Categories page.
+const DISPLAY_CATEGORIES = [
+  { key: 'women', name: 'Women', img: unsplash('photo-1483985988355-763728e1935b', 200), fallback: IconGrid },
+  { key: 'men', name: 'Men', img: unsplash('photo-1516257984-b1b4d707412e', 200), fallback: IconGrid },
+  { key: 'kids', name: 'Kids', img: unsplash('photo-1503457574465-89094ee2d2b0', 200), fallback: IconGift },
+  { key: 'beauty', name: 'Beauty', img: unsplash('photo-1596462502278-27bfdc403348', 200), fallback: IconSparkle },
+  { key: 'home', name: 'Home', img: unsplash('photo-1567016432779-094069958ea5', 200), fallback: IconBox },
+  { key: 'accessories', name: 'Accessories', img: unsplash('photo-1584917865442-de89df76afd3', 200), fallback: IconBox },
+  { key: 'market', name: 'Market', img: unsplash('photo-1555529669-e69e7aa0ba9a', 200), fallback: IconStore },
+];
+
+// Recommended / Trending / Offers — the reference design's three simple tabs. Each is still
+// wired to a real endpoint rather than being a dead label: Recommended reuses the curated
+// Spotlight feed, Trending hits the dedicated trending endpoint (unfiltered — no category/search
+// support server-side, same as Desktop's "Trending Now"), and Offers reuses Spotlight forced to
+// discounted items only.
+const HOME_TABS = [
+  { key: 'recommended', label: 'Recommended', filterSection: 'spotlight' },
+  { key: 'trending', label: 'Trending', filterSection: null },
+  { key: 'offers', label: 'Offers', filterSection: 'spotlight' },
+];
+
+const HOME_TAB_FETCHERS = {
+  recommended: (opts) => marketplace.spotlight(opts),
+  trending: () => catalog.trendingProducts(),
+  offers: (opts) => marketplace.spotlight({ ...opts, discountOnly: true }),
 };
+
+function CategoryCircleImg({ img, alt, FallbackIcon }) {
+  return (
+    <span className="relative w-full h-full block bg-surface-muted">
+      <span className="absolute inset-0 flex items-center justify-center text-text-muted">
+        <FallbackIcon width="22" height="22" strokeWidth="1.8" />
+      </span>
+      <img
+        src={img}
+        alt={alt}
+        className="absolute inset-0 w-full h-full object-cover"
+        onError={(e) => {
+          e.currentTarget.style.display = 'none';
+        }}
+      />
+    </span>
+  );
+}
 
 export default function MobileHome() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const [categories, setCategories] = useState([]);
-  const [tabs, setTabs] = useState([]);
-  const [metaLoading, setMetaLoading] = useState(true);
 
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('spotlight');
+  const [activeTab, setActiveTab] = useState('recommended');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -49,55 +87,26 @@ export default function MobileHome() {
   const searchInputRef = useRef(null);
   const productGridRef = useRef(null);
 
-  // Fetch the tabs + category circles once on mount, and again whenever the active marketplace
-  // tab changes. Categories come from the same admin-managed taxonomy Desktop uses, filtered by
-  // placement just like Desktop's chip row. The tab row is core navigation chrome, not optional
-  // decoration — so unlike the category circles (which just stay empty on failure), it always
-  // falls back to the local static list rather than silently disappearing if the backend is
-  // unseeded or unreachable.
-  const categoryPlacement = activeTab === 'aimode' ? 'b2b' : activeTab === 'spotlight' ? 'spotlight' : undefined;
-
-  useEffect(() => {
-    let cancelled = false;
-    setMetaLoading(true);
-    Promise.allSettled([catalog.categories({ placement: categoryPlacement }), catalog.mobileTabs()]).then(([catRes, tabRes]) => {
-      if (cancelled) return;
-      setCategories(catRes.status === 'fulfilled' ? catRes.value.categories : []);
-      const fetchedTabs = tabRes.status === 'fulfilled' ? tabRes.value.tabs : [];
-      setTabs(fetchedTabs && fetchedTabs.length > 0 ? fetchedTabs : fallbackTabs);
-      setMetaLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [categoryPlacement]);
-
   // Debounce the search box so we're not firing a request on every keystroke.
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(normalizeQuery(searchQuery)), 300);
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  const activeCatDef = categories.find((c) => c.key === activeCategory);
-
-  // Fetch the product grid from the server whenever the tab, its filters, the category, or the
-  // (debounced) search changes. Each tab hits its own real marketplace endpoint (B2B,
-  // country-aware Spotlight/Worldwide, or Free Shipping eligibility). Pulled out to a stable
-  // callback (rather than inline in the effect) so pull-to-refresh can re-trigger the same fetch
-  // on demand; a request-id ref discards stale responses the same way an effect-local `cancelled`
-  // flag would.
+  // Fetch the product grid from the server whenever the tab, its filters, or the (debounced)
+  // search changes. Trending's endpoint takes no params (matches Desktop's "Trending Now"), so
+  // search/filters are ignored while that tab is active. Pulled out to a stable callback (rather
+  // than inline in the effect) so pull-to-refresh can re-trigger the same fetch on demand; a
+  // request-id ref discards stale responses the same way an effect-local `cancelled` flag would.
   const fetchIdRef = useRef(0);
   const fetchProducts = useCallback(() => {
     const requestId = ++fetchIdRef.current;
     setProductsLoading(true);
     setProductsError(null);
 
-    const fetcher = MARKETPLACE_FETCHERS[activeTab] || catalog.products;
+    const fetcher = HOME_TAB_FETCHERS[activeTab];
     return fetcher({
-      // The category quick-circles (activeCatDef) and the filter panel's own Category multiselect
-      // both narrow by category — a circle tap wins when set, since it's the more deliberate,
-      // single-purpose action; the panel's category filter only applies once no circle is active.
-      category: activeCatDef?.name || marketplaceFilters.category,
+      category: marketplaceFilters.category,
       q: debouncedQuery,
       buyerCountry: getBuyerCountry(user),
       country: marketplaceFilters.country,
@@ -120,7 +129,7 @@ export default function MobileHome() {
       .finally(() => {
         if (fetchIdRef.current === requestId) setProductsLoading(false);
       });
-  }, [activeTab, activeCatDef?.name, debouncedQuery, marketplaceFilters, user]);
+  }, [activeTab, debouncedQuery, marketplaceFilters, user]);
 
   useEffect(() => {
     fetchProducts();
@@ -128,13 +137,10 @@ export default function MobileHome() {
 
   const { pullDistance, refreshing, threshold } = usePullToRefresh(fetchProducts);
 
-  let label = activeCatDef ? activeCatDef.name : t('home.allCategories');
-  if (debouncedQuery) label = `Results for "${debouncedQuery}"`;
+  const label = debouncedQuery ? `Results for "${debouncedQuery}"` : t('home.allCategories');
 
   // The mock catalog is small and finite — this loops it endlessly (reshuffled each lap) so the
   // feed behaves like an infinite/YouTube-style feed instead of stopping after ~9 products.
-  // Filtering itself happens server-side (the section's own marketplace endpoint, driven by the
-  // filter panel below) rather than client-side over whatever already loaded.
   const { items: feedProducts, loadingMore, sentinelRef } = useInfiniteFeed(products, { batchSize: 6 });
 
   // Paused the moment the user focuses the search field or has typed anything, and only
@@ -145,6 +151,8 @@ export default function MobileHome() {
   const runSearch = () => searchInputRef.current?.blur();
 
   const scrollToGrid = () => productGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const activeTabDef = HOME_TABS.find((tab) => tab.key === activeTab);
 
   return (
     <div className="min-h-screen bg-surface font-sans">
@@ -167,8 +175,9 @@ export default function MobileHome() {
 
       <MobileTopBar />
 
-      {/* Search bar — a single plain pill (icon + input, no camera/inline button) so it reads as
-          a light entry point rather than a boxy toolbar. */}
+      {/* Search bar — a single plain pill. Placeholder stays the real, rotating search-hint
+          system (shows actual catalog queries like "cotton twill fabric") rather than the
+          reference's fashion-specific copy, since this catalog isn't apparel-only. */}
       <div className="px-[18px] pt-1 pb-3">
         <div className="flex items-center gap-2.5 rounded-full border border-border bg-surface-muted/60 px-4 py-2.5 transition-all duration-150 focus-within:border-border-strong focus-within:bg-surface">
           <IconSearch width="17" height="17" className="text-text-muted shrink-0" strokeWidth="1.8" />
@@ -188,40 +197,32 @@ export default function MobileHome() {
         </div>
       </div>
 
-      {/* Hero banner — soft gradient promo card replacing the old dark-navy sourcing card, with a
-          product photo, an eyebrow label, headline, and a single CTA into the grid below. */}
+      {/* Hero banner — soft gradient promo card, matching the reference design's "New Season /
+          Fresh Looks For You" hero: two-tone headline, script flourish, peach CTA, photo. */}
       <div
-        className="mx-[18px] mb-3 rounded-[22px] overflow-hidden relative grid grid-cols-[1.3fr_1fr] min-h-[172px]"
+        className="mx-[18px] mb-3 rounded-[22px] overflow-hidden relative grid grid-cols-[1.3fr_1fr] min-h-[190px]"
         style={{ background: 'linear-gradient(135deg, #F5ECF8 0%, #FBEDE9 100%)' }}
       >
         <div className="p-4 flex flex-col justify-center relative">
           <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: ACCENT }}>
-            <span className="w-1.5 h-1.5 rounded-full inline-block shrink-0" style={{ background: ACCENT }} />
             {t('home.heroEyebrow')}
           </span>
-          <h1 className="font-display text-[19px] leading-[1.2] font-bold mb-1.5 tracking-tight text-balance">
-            <span className="text-ink">{t('home.heroTitleLine1')} </span>
-            <span style={{ color: ACCENT }}>{t('home.heroTitleLine2')}</span>
+          <h1 className="font-display text-[21px] leading-[1.15] font-bold mb-1.5 tracking-tight text-balance">
+            <span className="text-ink block">{t('home.heroTitleLine1')}</span>
+            <span className="block" style={{ color: ACCENT }}>{t('home.heroTitleLine2')}</span>
           </h1>
-          <p className="text-[11.5px] text-text leading-snug mb-3 text-balance">{t('home.heroSubtitle')}</p>
+          <p className="text-[11px] text-text leading-snug mb-3 text-balance">{t('home.heroSubtitle')}</p>
           <button
             type="button"
             onClick={scrollToGrid}
-            className="self-start flex items-center gap-1.5 rounded-full text-white font-semibold text-[12px] pl-3.5 pr-3 py-2 cursor-pointer transition-transform active:scale-95"
-            style={{ background: ACCENT }}
+            className="self-start flex items-center gap-1.5 rounded-full text-ink font-semibold text-[12px] pl-3.5 pr-3 py-2 cursor-pointer transition-transform active:scale-95"
+            style={{ background: 'var(--color-gold)' }}
           >
             {t('home.heroCta')}
             <IconArrowRight width="13" height="13" strokeWidth="2.4" />
           </button>
-          {/* Small handwritten-style flourish, matching the reference design's script accent. */}
-          <span
-            className="absolute bottom-2 right-1.5 text-[11px] leading-tight text-right hidden xs:block"
-            style={{ fontFamily: 'cursive', color: ACCENT, opacity: 0.75, transform: 'rotate(-4deg)' }}
-          >
-            {t('home.heroFlourish')} ♥
-          </span>
         </div>
-        <div className="relative min-h-[172px]">
+        <div className="relative min-h-[190px]">
           <img
             src={unsplash('photo-1483985988355-763728e1935b', 400)}
             alt=""
@@ -230,155 +231,125 @@ export default function MobileHome() {
               e.currentTarget.src = unsplash('photo-1473188588951-666fce8e7c68', 400);
             }}
           />
+          {/* Small handwritten-style flourish, matching the reference design's script accent —
+              sits over the photo rather than the cramped text column. */}
+          <span
+            className="absolute top-2.5 right-2 text-[10.5px] leading-tight text-right drop-shadow-sm"
+            style={{ fontFamily: 'cursive', color: '#fff', opacity: 0.95, transform: 'rotate(-4deg)' }}
+          >
+            {t('home.heroFlourish')} <span aria-hidden>♥</span>
+          </span>
         </div>
       </div>
 
-      {/* Second promo banner — dark card with a fast-delivery badge, a 2-up trust row (the same
-          real free-shipping framing + verified-sellers shortcut the old hero exposed), and a CTA
-          into the grid below. Visually mirrors the reference design's second banner, content-wise
-          it stays truthful to what Falsafah actually offers rather than naming a fictitious
-          sub-brand. */}
-      <div className="mx-[18px] mb-3 rounded-[22px] bg-green-deep px-4 pt-4 pb-4">
-        <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 font-mono text-[10px] font-semibold tracking-[0.1em] uppercase text-gold mb-2.5">
-          <IconTruck width="12" height="12" strokeWidth="2.4" />
-          {t('home.bannerBadge')}
-        </div>
-        <h2 className="font-display text-[16px] font-bold text-white mb-3 tracking-tight text-balance">{t('home.bannerTitle')}</h2>
-
-        <div className="grid grid-cols-2 gap-2.5 mb-3.5">
-          <div className="flex items-center gap-2 rounded-xl bg-white/[0.08] border border-white/10 px-2.5 py-2.5">
-            <span className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-              <IconTruck width="14" height="14" className="text-white" strokeWidth="2.2" />
-            </span>
-            <span className="min-w-0">
-              <span className="font-display block text-[11px] font-bold text-white leading-snug">{t('home.trustFreeShipping')}</span>
-              <span className="block text-[9.5px] text-teal-mist leading-snug">{t('home.trustFreeShippingSub')}</span>
+      {/* "Safah Mart" promo banner — mirrors the reference design's second banner: local-market
+          branding, a fast-delivery badge, a row of shopping categories, and a CTA. Purely
+          decorative/navigational (links into the real Categories page) — not a live backend
+          feature — since it's a marketing block, not a functional filter. */}
+      <Link
+        to="/categories"
+        className="block mx-[18px] mb-3 rounded-[22px] bg-green-deep px-4 pt-4 pb-4 no-underline text-inherit"
+      >
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <IconPin width="16" height="16" className="text-orange shrink-0" strokeWidth="2.2" />
+            <span className="font-display text-[15px] font-bold tracking-tight truncate">
+              <span className="text-orange">{t('home.bannerBrand1')}</span> <span className="text-white">{t('home.bannerBrand2')}</span>
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setMarketplaceFilters((f) => ({ ...f, verified: true }));
-              setFiltersOpen(true);
-              scrollToGrid();
-            }}
-            className="flex items-center gap-2 rounded-xl bg-white/[0.08] border border-white/10 px-2.5 py-2.5 text-left cursor-pointer transition-colors hover:bg-white/[0.12]"
-          >
-            <span className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-              <IconShield width="14" height="14" className="text-white" strokeWidth="2.2" />
+          <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 font-mono text-[9.5px] font-semibold tracking-[0.08em] uppercase text-gold">
+            <IconTruck width="11" height="11" strokeWidth="2.4" />
+            {t('home.bannerBadge')}
+          </span>
+        </div>
+        <p className="text-[11px] text-teal-mist mb-3">{t('home.bannerTagline')}</p>
+
+        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar mb-3.5 pb-0.5">
+          {[
+            { Icon: IconGift, label: t('home.bannerFreshFood') },
+            { Icon: IconStore, label: t('home.bannerRestaurants') },
+            { Icon: IconBox, label: t('home.bannerMalls') },
+            { Icon: IconSparkle, label: t('home.bannerBakeries') },
+            { Icon: IconGrid, label: t('home.bannerMore') },
+          ].map(({ Icon, label: itemLabel }) => (
+            <span key={itemLabel} className="flex items-center gap-1.5 shrink-0 text-[11px] font-medium text-white/90">
+              <Icon width="14" height="14" strokeWidth="2" />
+              {itemLabel}
             </span>
-            <span className="min-w-0">
-              <span className="font-display block text-[11px] font-bold text-white leading-snug">{t('home.trustVerified')}</span>
-              <span className="block text-[9.5px] text-teal-mist leading-snug">{t('home.trustVerifiedSub')}</span>
-            </span>
-          </button>
+          ))}
         </div>
 
-        <button
-          type="button"
-          onClick={scrollToGrid}
-          className="w-full flex items-center justify-center gap-1.5 rounded-full bg-orange hover:bg-orange-hover text-white font-semibold text-[12.5px] py-2.5 cursor-pointer transition-colors"
-        >
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-orange px-4 py-2 text-white font-semibold text-[12px]">
           {t('home.bannerCta')}
           <IconArrowRight width="13" height="13" strokeWidth="2.4" />
-        </button>
-      </div>
+        </span>
+      </Link>
 
-      {/* Category row — WhatsApp Status-style horizontal scroll: a single row the user swipes
-          through (3–4 circles visible at a time) instead of wrapping into a multi-row grid. */}
+      {/* Category row — the reference design's fixed Women/Men/Kids/Beauty/Home/Accessories/
+          Market set, as static shortcuts into the Categories page (see DISPLAY_CATEGORIES). */}
       <div className="flex gap-x-4 overflow-x-auto no-scrollbar px-[18px] pt-1 pb-2">
-        {metaLoading
-          ? Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="shrink-0 w-[70px] flex flex-col items-center gap-2">
-                <div className="animate-pulse w-[64px] h-[64px] rounded-full bg-surface-muted" />
-              </div>
-            ))
-          : categories.map((cat) => {
-              const isActive = activeCategory === cat.key;
-              return (
-                <div
-                  key={cat.key}
-                  onClick={() => setActiveCategory((c) => (c === cat.key ? 'all' : cat.key))}
-                  className="shrink-0 w-[70px] flex flex-col items-center gap-2 cursor-pointer"
-                >
-                  <span
-                    className="w-[64px] h-[64px] rounded-full overflow-hidden transition-colors"
-                    style={{
-                      border: isActive ? `2.5px solid ${ACCENT}` : '2px solid var(--color-border)',
-                      boxShadow: isActive ? '0 4px 10px rgba(108,99,255,0.25)' : 'none',
-                    }}
-                  >
-                    <img src={cat.img} alt={cat.name} className="w-full h-full object-cover" />
-                  </span>
-                  <span
-                    className="text-[11.5px] text-center leading-tight line-clamp-2"
-                    style={{ fontWeight: isActive ? 700 : 600, color: isActive ? ACCENT : 'var(--color-ink-soft)' }}
-                  >
-                    {cat.name}
-                  </span>
-                </div>
-              );
-            })}
+        {DISPLAY_CATEGORIES.map((cat) => (
+          <Link
+            key={cat.key}
+            to="/categories"
+            className="shrink-0 w-[70px] flex flex-col items-center gap-2 no-underline text-inherit"
+          >
+            <span
+              className="w-[64px] h-[64px] rounded-full overflow-hidden"
+              style={{ border: '2px solid var(--color-border)' }}
+            >
+              <CategoryCircleImg img={cat.img} alt={cat.name} FallbackIcon={cat.fallback} />
+            </span>
+            <span className="text-[11.5px] text-center leading-tight font-semibold text-ink-soft">{cat.name}</span>
+          </Link>
+        ))}
       </div>
 
-      {/* Marketplace tabs — segmented pill control (B2B / Spotlight / Worldwide / Free Shipping,
-          same real data as before) instead of a row of icon chips. */}
-      <div className="flex items-center gap-1 mx-[18px] mb-2 rounded-full bg-surface-muted p-1 overflow-x-auto no-scrollbar">
-        {metaLoading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="animate-pulse h-8 w-[80px] shrink-0 rounded-full bg-surface" />
-            ))
-          : tabs.map((tab) => {
-              const isActive = tab.key === activeTab;
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(tab.key);
-                    // Each section has its own filter panel (see FilterConfig) — a value picked
-                    // under one section (say B2B's Max MOQ) would otherwise silently keep being
-                    // sent to the new section's query even though its panel doesn't show that
-                    // control anymore.
-                    setMarketplaceFilters(EMPTY_MARKETPLACE_FILTERS);
-                  }}
-                  className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-[12px] font-semibold cursor-pointer transition-colors ${
-                    isActive ? 'text-white shadow-sm' : 'text-ink-soft hover:text-ink'
-                  }`}
-                  style={isActive ? { background: ACCENT } : undefined}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
+      {/* Recommended / Trending / Offers — segmented pill control, each backed by a real
+          endpoint (see HOME_TAB_FETCHERS). */}
+      <div className="flex items-center gap-1 mx-[18px] mb-2 rounded-full bg-surface-muted p-1">
+        {HOME_TABS.map((tab) => {
+          const isActive = tab.key === activeTab;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => {
+                setActiveTab(tab.key);
+                setMarketplaceFilters(EMPTY_MARKETPLACE_FILTERS);
+                setFiltersOpen(false);
+              }}
+              className={`flex-1 whitespace-nowrap rounded-full px-3 py-2 text-[12.5px] font-semibold cursor-pointer transition-colors ${
+                isActive ? 'text-white shadow-sm' : 'text-ink-soft hover:text-ink'
+              }`}
+              style={isActive ? { background: ACCENT } : undefined}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
-
-      {/* Tab context banner */}
-      {tabs.find((tab) => tab.key === activeTab)?.banner && (
-        <div className="mx-[18px] mb-2 bg-green-tint rounded-md px-3 py-2 text-[12.5px] text-green font-medium">
-          {tabs.find((tab) => tab.key === activeTab)?.banner}
-        </div>
-      )}
 
       {/* Active label + filters toggle — merged onto one row so the space between the tab row
-          and the grid stays tight. The expanded filters panel still narrows fetchProducts
-          exactly as before. */}
+          and the grid stays tight. Hidden for Trending since that endpoint takes no filters. */}
       <div ref={productGridRef} className="flex items-center justify-between gap-3 px-[18px] pt-1.5 pb-2.5 scroll-mt-4">
         <span className="text-[12.5px] text-text min-w-0 truncate">
           {t('home.showing')} <strong className="text-ink">{label}</strong>
         </span>
-        <button
-          type="button"
-          onClick={() => setFiltersOpen((v) => !v)}
-          className="flex items-center gap-1 shrink-0 rounded-md border border-border bg-surface px-2.5 py-1.5 text-[12px] font-semibold text-ink-soft cursor-pointer transition-colors hover:border-border-strong hover:text-ink"
-        >
-          <IconSliders width="13" height="13" />
-          {t('common.filters')}
-        </button>
+        {activeTabDef?.filterSection && (
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((v) => !v)}
+            className="flex items-center gap-1 shrink-0 rounded-md border border-border bg-surface px-2.5 py-1.5 text-[12px] font-semibold text-ink-soft cursor-pointer transition-colors hover:border-border-strong hover:text-ink"
+          >
+            <IconSliders width="13" height="13" />
+            {t('common.filters')}
+          </button>
+        )}
       </div>
-      {filtersOpen && (
+      {filtersOpen && activeTabDef?.filterSection && (
         <div className="px-[18px] pb-3">
-          <MarketplaceFilters section={activeTab} value={marketplaceFilters} onChange={setMarketplaceFilters} />
+          <MarketplaceFilters section={activeTabDef.filterSection} value={marketplaceFilters} onChange={setMarketplaceFilters} />
         </div>
       )}
 
