@@ -4,6 +4,10 @@ import VerifiedBadge from '../VerifiedBadge';
 import WishlistButton from '../WishlistButton';
 import { IconStar, IconTruck } from '../icons';
 
+// Same violet accent as the rest of the mobile Home look (hero CTA, tabs) — the reference
+// design's product price is this same violet, not the site's navy brand color.
+const ACCENT = '#6C63FF';
+
 // The 2-column grid card used across the mobile Home feed and Wishlist — image, name, price
 // (with original/discount when present), seller + verified badge, rating + review count, sold
 // count, a free-shipping chip, and a wishlist heart layered over the image.
@@ -21,7 +25,10 @@ export default function MobileProductCard({ product }) {
       <div className="relative aspect-square overflow-hidden bg-surface-muted">
         <img src={product.img} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
         {discountPercent > 0 && (
-          <span className="absolute top-1.5 left-1.5 bg-orange text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+          <span
+            className="absolute top-1.5 left-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: '#FCE0E4', color: '#E0355F' }}
+          >
             -{discountPercent}%
           </span>
         )}
@@ -51,7 +58,7 @@ export default function MobileProductCard({ product }) {
         </div>
 
         <div className="flex items-baseline gap-1.5 flex-wrap">
-          <span className="font-display font-bold text-[14.5px] text-green">{product.price}</span>
+          <span className="font-display font-bold text-[14.5px]" style={{ color: ACCENT }}>{product.price}</span>
           {originalPrice && (
             <span className="text-[10.5px] text-text-muted line-through">{formatPKR(originalPrice)}</span>
           )}

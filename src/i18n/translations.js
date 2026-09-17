@@ -58,6 +58,10 @@ export const translations = {
       heroFlourish: 'Good Style Good Mood',
       showing: 'Showing',
       allCategories: 'All categories',
+      sortRecommended: 'Recommended',
+      sortTrending: 'Trending',
+      sortOffers: 'Offers',
+      noOffers: 'No discounted items right now — check back soon.',
     },
     settings: {
       title: 'Settings',
@@ -203,6 +207,10 @@ export const translations = {
       heroFlourish: 'اچھا انداز اچھا موڈ',
       showing: 'دکھایا جا رہا ہے',
       allCategories: 'تمام کیٹیگریز',
+      sortRecommended: 'تجویز کردہ',
+      sortTrending: 'ٹرینڈنگ',
+      sortOffers: 'آفرز',
+      noOffers: 'ابھی کوئی رعایتی آئٹم موجود نہیں — جلد دیکھیں۔',
     },
     settings: {
       title: 'ترتیبات',

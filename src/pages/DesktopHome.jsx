@@ -225,8 +225,8 @@ export default function DesktopHome() {
             <a
               href="#trending"
               onClick={scrollToTrending}
-              className="relative z-10 pointer-events-auto cursor-pointer text-ink font-semibold text-[15px] px-8 py-[15px] rounded-full no-underline flex items-center gap-2 shadow-[0_8px_24px_rgba(245,201,138,0.5)] transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-              style={{ background: 'var(--color-gold)' }}
+              className="relative z-10 pointer-events-auto cursor-pointer text-white font-semibold text-[15px] px-8 py-[15px] rounded-full no-underline flex items-center gap-2 shadow-[0_8px_24px_rgba(108,99,255,0.35)] transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              style={{ background: '#6C63FF' }}
             >
               Explore New Styles
               <IconArrowRight width="15" height="15" strokeWidth="2.4" />
