@@ -1,10 +1,14 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatPKR } from '../../../data/mockData';
-import { statusBadgeClass } from '../../seller/statusStyles';
+import { ORDER_STATUSES } from '../../seller/statusStyles';
+import { ORDER_STATUS_TONES } from '../../../components/admin/ui/Badge';
 import VerifiedBadge from '../../../components/VerifiedBadge';
 import Card, { CardHeader } from '../../../components/admin/ui/Card';
 import StatCard from '../../../components/admin/ui/StatCard';
+import StatusMenu from '../../../components/admin/ui/StatusMenu';
 import { IconBox, IconCheck, IconChevronRight, IconClock, IconReceipt, IconStore, IconUser, IconWallet } from '../../../components/icons';
+
+const toneOf = (status) => ORDER_STATUS_TONES[status] || 'neutral';
 
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -34,7 +38,18 @@ function ViewAllLink({ onClick }) {
   );
 }
 
-export default function DashboardTab({ overview, overviewLoading, overviewError, usersList, reports, reportsLoading, products, onNavigate }) {
+export default function DashboardTab({
+  overview,
+  overviewLoading,
+  overviewError,
+  usersList,
+  reports,
+  reportsLoading,
+  products,
+  onNavigate,
+  orderStatusPendingId,
+  handleUpdateOrderStatus,
+}) {
   // Simple week-over-week revenue trend from data already fetched for the chart below (no new
   // API calls) — only shown once there are at least two full weeks of daily data AND the prior
   // week had enough revenue for a percentage to be meaningful (a near-zero prior week turns any
@@ -157,8 +172,14 @@ export default function DashboardTab({ overview, overviewLoading, overviewError,
                       <div className="text-xs text-[var(--admin-text-muted)] truncate mt-0.5">{o.sellerName} · {o.productName}</div>
                     </div>
                     <div className="shrink-0 text-right">
-                      <div className="font-semibold text-sm text-[var(--admin-ink)]">{formatPKR(o.total)}</div>
-                      <span className={`inline-block text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded mt-1 ${statusBadgeClass(o.status)}`}>{o.status}</span>
+                      <div className="font-semibold text-sm text-[var(--admin-ink)] mb-1">{formatPKR(o.total)}</div>
+                      <StatusMenu
+                        value={o.status}
+                        options={ORDER_STATUSES}
+                        toneOf={toneOf}
+                        pending={orderStatusPendingId === o.id}
+                        onSelect={(status) => handleUpdateOrderStatus(o, status)}
+                      />
                     </div>
                   </div>
                 ))
