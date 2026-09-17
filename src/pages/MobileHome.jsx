@@ -56,13 +56,20 @@ export default function MobileHome() {
   const productGridRef = useRef(null);
   const navigate = useNavigate();
 
-  // Fetch the tabs + curated category circles once on mount. The B2B/Spotlight/Worldwide/Free
-  // Shipping row is core navigation chrome, not optional decoration — so unlike the category
-  // circles (which just stay empty on failure), it always falls back to the local static list
-  // rather than silently disappearing if the backend is unseeded or unreachable.
+  // Fetch the tabs + category circles once on mount, and again whenever the active marketplace
+  // tab changes. Categories now come from the same admin-managed taxonomy Desktop uses (rather
+  // than the old static, non-admin-editable `kind: 'mobile'` list) so a category created in the
+  // Admin Panel shows up here too, filtered by placement just like Desktop's chip row. The
+  // B2B/Spotlight/Worldwide/Free Shipping row is core navigation chrome, not optional decoration
+  // — so unlike the category circles (which just stay empty on failure), it always falls back to
+  // the local static list rather than silently disappearing if the backend is unseeded or
+  // unreachable.
+  const categoryPlacement = activeTab === 'aimode' ? 'b2b' : activeTab === 'spotlight' ? 'spotlight' : undefined;
+
   useEffect(() => {
     let cancelled = false;
-    Promise.allSettled([catalog.mobileCategories(), catalog.mobileTabs()]).then(([catRes, tabRes]) => {
+    setMetaLoading(true);
+    Promise.allSettled([catalog.categories({ placement: categoryPlacement }), catalog.mobileTabs()]).then(([catRes, tabRes]) => {
       if (cancelled) return;
       setCategories(catRes.status === 'fulfilled' ? catRes.value.categories : []);
       const fetchedTabs = tabRes.status === 'fulfilled' ? tabRes.value.tabs : [];
@@ -72,7 +79,7 @@ export default function MobileHome() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [categoryPlacement]);
 
   // Debounce the search box so we're not firing a request on every keystroke.
   useEffect(() => {
@@ -100,7 +107,7 @@ export default function MobileHome() {
       // The category quick-circles (activeCatDef) and the filter panel's own Category multiselect
       // both narrow by category — a circle tap wins when set, since it's the more deliberate,
       // single-purpose action; the panel's category filter only applies once no circle is active.
-      category: activeCatDef?.fullName || marketplaceFilters.category,
+      category: activeCatDef?.name || marketplaceFilters.category,
       q: debouncedQuery,
       buyerCountry: getBuyerCountry(user),
       country: marketplaceFilters.country,
@@ -123,7 +130,7 @@ export default function MobileHome() {
       .finally(() => {
         if (fetchIdRef.current === requestId) setProductsLoading(false);
       });
-  }, [activeTab, activeCatDef?.fullName, debouncedQuery, marketplaceFilters, user]);
+  }, [activeTab, activeCatDef?.name, debouncedQuery, marketplaceFilters, user]);
 
   useEffect(() => {
     fetchProducts();
