@@ -220,14 +220,13 @@ export const marketplace = {
   spotlight: (opts) => request(`/api/marketplace/spotlight?${buildMarketplaceParams(opts)}`),
   worldwide: (opts) => request(`/api/marketplace/worldwide?${buildMarketplaceParams(opts)}`),
   freeShipping: (opts) => request(`/api/marketplace/free-shipping?${buildMarketplaceParams(opts)}`),
-  // Location-based Safah Mart discovery — lat/lng are required (the backend 400s without them),
-  // safahCategory is grocery/fastfood/restaurant/bakery/mall/shop (comma-joined for multiselect).
-  safahMart: ({ lat, lng, safahCategory, ...rest } = {}) => {
+  // Location-based Safah Mart discovery — lat/lng are required (the backend 400s without them).
+  // No category param: fetches every nearby result once, and the buyer page (SafahMartPage.jsx)
+  // filters by the shared `category` field client-side from that same result set.
+  safahMart: ({ lat, lng, ...rest } = {}) => {
     const params = buildMarketplaceParams(rest);
     params.set('lat', lat);
     params.set('lng', lng);
-    const categoryList = joinList(safahCategory);
-    if (categoryList) params.set('safahCategory', categoryList);
     return request(`/api/marketplace/safah-mart?${params}`);
   },
   // Server-side geocoding for the manual-address fallback when a buyer denies/lacks geolocation.
@@ -269,7 +268,6 @@ export const seller = {
   updateBankDetails: (payload) => request('/api/seller/bank-details', { method: 'PATCH', body: payload, auth: true }),
   getStoreProfile: () => request('/api/seller/store', { auth: true }),
   updateStoreProfile: (payload) => request('/api/seller/store', { method: 'PATCH', body: payload, auth: true }),
-  updateSafahMartSettings: (payload) => request('/api/seller/store/safah-mart', { method: 'PATCH', body: payload, auth: true }),
   addStoreBanner: (url) => request('/api/seller/store/banners', { method: 'POST', body: { url }, auth: true }),
   removeStoreBanner: (bannerId) => request(`/api/seller/store/banners/${encodeURIComponent(bannerId)}`, { method: 'DELETE', auth: true }),
   reorderStoreBanners: (order) => request('/api/seller/store/banners/order', { method: 'PATCH', body: { order }, auth: true }),

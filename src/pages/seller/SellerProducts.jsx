@@ -227,7 +227,7 @@ export default function SellerProducts() {
                   <span className="min-w-0">
                     <span className="block text-[13.5px] font-bold text-ink truncate">{p.name}</span>
                     <span className="block text-[11.5px] text-text-muted truncate">
-                      {p.sku ? `SKU ${p.sku}` : `${(p.views || 0).toLocaleString('en-US')} views`}
+                      {p.sku && `SKU ${p.sku} · `}{(p.views || 0).toLocaleString('en-US')} views
                     </span>
                   </span>
                 </Link>

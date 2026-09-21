@@ -116,28 +116,23 @@ router.get(
       return res.status(400).json({ message: 'Location (lat/lng) is required.' });
     }
 
+    // category (if passed) is the same shared field/filter every other marketplace section
+    // already uses — buildMarketplaceFilter already handles it, no Safah-Mart-specific taxonomy.
     const clauses = buildMarketplaceFilter(req.query);
     clauses.push({ safahMartEnabled: true });
-    clauses.push({ sellerSafahLat: { $ne: null }, sellerSafahLng: { $ne: null } });
-    if (req.query.safahCategory) {
-      const values = String(req.query.safahCategory)
-        .split(',')
-        .map((v) => v.trim())
-        .filter(Boolean);
-      if (values.length) clauses.push({ safahMartCategory: { $in: values } });
-    }
+    clauses.push({ safahMartLat: { $ne: null }, safahMartLng: { $ne: null } });
 
     const products = applyRatingFilter(await Product.find(toMongoFilter(clauses)).lean(), Number(req.query.ratingMin));
     const withDistance = products
       .map((p) => {
-        const distanceKm = haversineDistanceKm(lat, lng, p.sellerSafahLat, p.sellerSafahLng);
+        const distanceKm = haversineDistanceKm(lat, lng, p.safahMartLat, p.safahMartLng);
         const eta = computeDeliveryEta({
           distanceKm,
-          deliveryRadiusKm: p.sellerDeliveryRadiusKm ?? 5,
-          prepTimeMinutes: p.sellerPrepTimeMinutes ?? 30,
-          opensAt: p.sellerOpensAt ?? '09:00',
-          closesAt: p.sellerClosesAt ?? '21:00',
-          sameDayDelivery: p.sellerSameDayDelivery !== false,
+          deliveryRadiusKm: p.safahMartDeliveryRadiusKm ?? 5,
+          prepTimeMinutes: p.safahMartPrepTimeMinutes ?? 30,
+          opensAt: p.safahMartOpensAt ?? '09:00',
+          closesAt: p.safahMartClosesAt ?? '21:00',
+          sameDayDelivery: p.safahMartSameDayDelivery !== false,
         });
         // Never surface a product as Safah Mart eligible when the seller's own radius can't
         // reach this buyer — computeDeliveryEta returns null in exactly that case.

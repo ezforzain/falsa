@@ -1,8 +1,13 @@
 import { Link } from 'react-router-dom';
+import { formatPKR } from '../data/mockData';
 import { IconStar, IconTruck } from './icons';
 import VerifiedBadge from './VerifiedBadge';
 
 export default function ProductCard({ product }) {
+  // originalPrice is computed server-side from the seller's regular price vs their special price
+  // (see server/src/utils/publicCatalogSync.js) — null when no special price is active.
+  const originalPrice = product.originalPrice > 0 ? product.originalPrice : null;
+
   return (
     <Link
       to={`/product/${product.id}`}
@@ -26,9 +31,12 @@ export default function ProductCard({ product }) {
           </span>
         </div>
         <div className="flex justify-between items-baseline">
-          <span className="font-display font-bold text-[17px] text-green">
-            {product.price}
-            {product.unit && <span className="text-xs font-medium text-text-muted"> /{product.unit}</span>}
+          <span className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="font-display font-bold text-[17px] text-green">
+              {product.price}
+              {product.unit && <span className="text-xs font-medium text-text-muted"> /{product.unit}</span>}
+            </span>
+            {originalPrice && <span className="text-[12.5px] text-text-muted line-through">{formatPKR(originalPrice)}</span>}
           </span>
           {product.moq && (
             <span className="font-mono text-[11px] text-orange-text bg-orange-tint px-2.5 py-1 rounded-md">

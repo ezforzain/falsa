@@ -220,6 +220,46 @@ export default function MobileHome() {
 
       <MobileTopBar />
 
+      {/* B2B / Spotlight / Worldwide / Free Shipping — moved above the search bar per feedback,
+          so the real marketplace-section switch is the first thing under the top bar. */}
+      <div className="flex items-center gap-1 mx-[18px] mt-1 mb-2 rounded-full bg-surface-muted p-1 overflow-x-auto no-scrollbar">
+        {tabsLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="animate-pulse h-8 w-[80px] shrink-0 rounded-full bg-surface" />
+            ))
+          : tabs.map((tab) => {
+              const isActive = tab.key === activeTab;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(tab.key);
+                    // Each section has its own filter panel (see FilterConfig) — a value picked
+                    // under one section (say B2B's Max MOQ) would otherwise silently keep being
+                    // sent to the new section's query even though its panel doesn't show that
+                    // control anymore.
+                    setMarketplaceFilters(EMPTY_MARKETPLACE_FILTERS);
+                    setSortMode('recommended');
+                  }}
+                  className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-[12px] font-semibold cursor-pointer transition-colors ${
+                    isActive ? 'text-white shadow-sm' : 'text-ink-soft hover:text-ink'
+                  }`}
+                  style={isActive ? { background: ACCENT } : undefined}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+      </div>
+
+      {/* Tab context banner */}
+      {activeTabDef?.banner && (
+        <div className="mx-[18px] mb-2 bg-green-tint rounded-md px-3 py-2 text-[12.5px] text-green font-medium">
+          {activeTabDef.banner}
+        </div>
+      )}
+
       {/* Search bar — a single plain pill. Placeholder stays the real, rotating search-hint
           system (shows actual catalog queries like "cotton twill fabric") rather than the
           reference's fashion-specific copy, since this catalog isn't apparel-only. */}
@@ -314,46 +354,6 @@ export default function MobileHome() {
           </Link>
         ))}
       </div>
-
-      {/* B2B / Spotlight / Worldwide / Free Shipping — same real tabs and data as before, just in
-          the segmented-pill look instead of icon chips. */}
-      <div className="flex items-center gap-1 mx-[18px] mb-2 rounded-full bg-surface-muted p-1 overflow-x-auto no-scrollbar">
-        {tabsLoading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="animate-pulse h-8 w-[80px] shrink-0 rounded-full bg-surface" />
-            ))
-          : tabs.map((tab) => {
-              const isActive = tab.key === activeTab;
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(tab.key);
-                    // Each section has its own filter panel (see FilterConfig) — a value picked
-                    // under one section (say B2B's Max MOQ) would otherwise silently keep being
-                    // sent to the new section's query even though its panel doesn't show that
-                    // control anymore.
-                    setMarketplaceFilters(EMPTY_MARKETPLACE_FILTERS);
-                    setSortMode('recommended');
-                  }}
-                  className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-[12px] font-semibold cursor-pointer transition-colors ${
-                    isActive ? 'text-white shadow-sm' : 'text-ink-soft hover:text-ink'
-                  }`}
-                  style={isActive ? { background: ACCENT } : undefined}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-      </div>
-
-      {/* Tab context banner */}
-      {activeTabDef?.banner && (
-        <div className="mx-[18px] mb-2 bg-green-tint rounded-md px-3 py-2 text-[12.5px] text-green font-medium">
-          {activeTabDef.banner}
-        </div>
-      )}
 
       {/* Recommended / Trending / Offers — reference design's second row. Purely a client-side
           re-sort/filter of the same list the tabs above already fetched (see sortProducts). */}

@@ -8,18 +8,11 @@ import VariantOptionPicker from './VariantOptionPicker';
 import { mergeHashtags } from '../lib/hashtags';
 import { getCategoryGroup, getCategoryTemplate, suggestCategories } from '../data/productCategories';
 import { getVariantOptionPreset } from '../data/variantOptions';
-import { IconBox, IconChevronDown, IconClose, IconPlus, IconSparkle, IconTrash } from './icons';
+import { IconBox, IconChevronDown, IconClose, IconPin, IconPlus, IconSparkle, IconTrash } from './icons';
 
 const MAX_IMAGES = 6;
 const DISPATCH_OPTIONS = ['Same day', '1-2 days', '3-5 days', '1 week+'];
-const SAFAH_MART_CATEGORIES = [
-  { value: 'grocery', label: 'Grocery' },
-  { value: 'fastfood', label: 'Fast Food' },
-  { value: 'restaurant', label: 'Restaurant' },
-  { value: 'bakery', label: 'Bakery' },
-  { value: 'mall', label: 'Shopping Mall' },
-  { value: 'shop', label: 'Local Shop' },
-];
+const SAFAH_ACCENT = '#6C63FF';
 
 const emptyForm = {
   name: '',
@@ -27,6 +20,7 @@ const emptyForm = {
   description: '',
   sku: '',
   price: '',
+  specialPrice: '',
   unit: '',
   moq: '',
   stock: '',
@@ -37,7 +31,13 @@ const emptyForm = {
   freeShipping: true,
   worldwideFreeShipping: false,
   safahMartEnabled: false,
-  safahMartCategory: 'shop',
+  safahMartLat: null,
+  safahMartLng: null,
+  safahMartDeliveryRadiusKm: 5,
+  safahMartPrepTimeMinutes: 30,
+  safahMartOpensAt: '09:00',
+  safahMartClosesAt: '21:00',
+  safahMartSameDayDelivery: true,
   specifications: {},
   variantAxes: {},
   variants: [],
@@ -111,13 +111,15 @@ function Section({ title, open, onToggle, children }) {
 
 export default function ProductFormModal({ open, product, loading, error, onClose, onSubmit }) {
   const [form, setForm] = useState(emptyForm);
-  const [openSections, setOpenSections] = useState({ details: true, shipping: true, safahMart: true, b2b: true });
+  const [openSections, setOpenSections] = useState({ details: true, shipping: true, b2b: true });
   const [manualVariantOpen, setManualVariantOpen] = useState(false);
   const [manualVariant, setManualVariant] = useState({ name: '', price: '', stock: '' });
   // One-at-a-time Model + Color + Photo builder — used instead of the axis/cartesian picker for
   // categories with a "Model Variant" axis (e.g. Mobiles & Accessories), since a phone's model and
   // color need their own dedicated photo rather than being auto-combined into a matrix.
   const [photoVariant, setPhotoVariant] = useState({ model: '', color: '', img: '', price: '', stock: '' });
+  const [locatingSafahMart, setLocatingSafahMart] = useState(false);
+  const [safahMartLocationError, setSafahMartLocationError] = useState(null);
   const isEdit = Boolean(product);
   const template = form.category ? getCategoryTemplate(form.category) : null;
   const categoryGroup = form.category ? getCategoryGroup(form.category) : null;
@@ -149,6 +151,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       description: product.description || '',
       sku: product.sku || '',
       price: String(product.price),
+      specialPrice: product.specialPrice != null ? String(product.specialPrice) : '',
       unit: product.unit,
       moq: product.moq,
       stock: String(product.stock),
@@ -159,7 +162,13 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       freeShipping: product.freeShipping !== false,
       worldwideFreeShipping: Boolean(product.worldwideFreeShipping),
       safahMartEnabled: Boolean(product.safahMartEnabled),
-      safahMartCategory: product.safahMartCategory || 'shop',
+      safahMartLat: product.safahMartLat ?? null,
+      safahMartLng: product.safahMartLng ?? null,
+      safahMartDeliveryRadiusKm: product.safahMartDeliveryRadiusKm ?? 5,
+      safahMartPrepTimeMinutes: product.safahMartPrepTimeMinutes ?? 30,
+      safahMartOpensAt: product.safahMartOpensAt || '09:00',
+      safahMartClosesAt: product.safahMartClosesAt || '21:00',
+      safahMartSameDayDelivery: product.safahMartSameDayDelivery !== false,
       specifications: specsArrayToMap(product.specifications, tpl),
       variantAxes: loadedAxes,
       variants: (product.variants || []).map((v) => ({
@@ -252,10 +261,38 @@ export default function ProductFormModal({ open, product, loading, error, onClos
   const setShippingField = (key) => (e) => setForm((f) => ({ ...f, shipping: { ...f.shipping, [key]: e.target.value } }));
   const toggleSection = (key) => setOpenSections((s) => ({ ...s, [key]: !s[key] }));
 
-  // Spotlight (B2C) has no Unit/MOQ fields — clear any leftover value from a prior B2B toggle
-  // rather than silently keeping it hidden but still submitted.
-  const setListingType = (b2bEnabled) =>
-    setForm((f) => ({ ...f, b2bEnabled, ...(b2bEnabled ? {} : { unit: '', moq: '' }) }));
+  // One product is exactly one of Spotlight (B2C) / B2B / Safah Mart — b2bEnabled/safahMartEnabled
+  // stay as the two independent flags the backend already expects, but the UI only ever lets one
+  // be true at a time. Spotlight (B2C) has no Unit/MOQ fields — clear any leftover value from a
+  // prior B2B selection rather than silently keeping it hidden but still submitted.
+  const listingType = form.safahMartEnabled ? 'safahMart' : form.b2bEnabled ? 'b2b' : 'spotlight';
+  const setListingType = (type) =>
+    setForm((f) => ({
+      ...f,
+      b2bEnabled: type === 'b2b',
+      safahMartEnabled: type === 'safahMart',
+      ...(type === 'b2b' ? {} : { unit: '', moq: '' }),
+    }));
+
+  const useCurrentLocationForSafahMart = () => {
+    if (!navigator.geolocation) {
+      setSafahMartLocationError('Your browser does not support location access.');
+      return;
+    }
+    setLocatingSafahMart(true);
+    setSafahMartLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setForm((f) => ({ ...f, safahMartLat: pos.coords.latitude, safahMartLng: pos.coords.longitude }));
+        setLocatingSafahMart(false);
+      },
+      () => {
+        setSafahMartLocationError('Could not get your location. Please allow location access and try again.');
+        setLocatingSafahMart(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const addPriceTier = () =>
     setForm((f) => ({ ...f, priceTiers: [...f.priceTiers, { minQty: '', maxQty: '', price: '' }] }));
@@ -302,6 +339,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       description: form.description.trim(),
       sku: form.sku.trim(),
       price: Number(form.price),
+      specialPrice: form.specialPrice === '' ? null : Number(form.specialPrice),
       unit: form.unit.trim(),
       moq: form.moq.trim(),
       stock: Number(form.stock),
@@ -311,7 +349,13 @@ export default function ProductFormModal({ open, product, loading, error, onClos
       freeShipping: form.freeShipping,
       worldwideFreeShipping: form.freeShipping && form.worldwideFreeShipping,
       safahMartEnabled: form.safahMartEnabled,
-      safahMartCategory: form.safahMartEnabled ? form.safahMartCategory : 'shop',
+      safahMartLat: form.safahMartEnabled ? form.safahMartLat : null,
+      safahMartLng: form.safahMartEnabled ? form.safahMartLng : null,
+      safahMartDeliveryRadiusKm: form.safahMartDeliveryRadiusKm,
+      safahMartPrepTimeMinutes: form.safahMartPrepTimeMinutes,
+      safahMartOpensAt: form.safahMartOpensAt,
+      safahMartClosesAt: form.safahMartClosesAt,
+      safahMartSameDayDelivery: form.safahMartSameDayDelivery,
       tags: mergeHashtags(form.tags, descriptionTags),
       specifications,
       variantAxes: template
@@ -396,39 +440,49 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             />
           </div>
 
-          {/* Listing type — decides whether this is a normal single-product B2C listing (kept
-              exactly as it's always worked, variants included) or a B2B listing, which trades the
-              consumer-facing variant matrix emphasis for the optional bulk-pricing section below.
-              This drives the same b2bEnabled flag the B2B marketplace tab already reads — just
-              surfaced as a clear choice instead of a checkbox buried under Shipping. */}
+          {/* Listing type — a product is exactly one of Spotlight (B2C), B2B, or Safah Mart, never
+              more than one: Safah Mart's own delivery/price fields replace the Spotlight-facing
+              ones entirely rather than layering on top of them. Drives the same
+              b2bEnabled/safahMartEnabled flags the marketplace tabs already read — just surfaced
+              as one clear choice instead of independent toggles. */}
           <div>
             <label className={labelClass}>Listing type</label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-2.5">
               <button
                 type="button"
-                onClick={() => setListingType(false)}
-                className={`flex items-center gap-2.5 px-4 py-3 border-[1.5px] rounded-xl cursor-pointer transition-colors text-left ${
-                  !form.b2bEnabled ? 'border-green bg-green-tint' : 'border-border hover:border-border-strong'
+                onClick={() => setListingType('spotlight')}
+                className={`flex flex-col items-center gap-1.5 px-2.5 py-3 border-[1.5px] rounded-xl cursor-pointer transition-colors text-center ${
+                  listingType === 'spotlight' ? 'border-green bg-green-tint' : 'border-border hover:border-border-strong'
                 }`}
               >
-                <IconSparkle width="16" height="16" className={!form.b2bEnabled ? 'text-green' : 'text-text-muted'} />
-                <span className="min-w-0">
-                  <span className={`block text-[13.5px] font-semibold ${!form.b2bEnabled ? 'text-green' : 'text-ink-soft'}`}>Spotlight (B2C)</span>
-                  <span className="block text-[11px] text-text-muted">Single product, buyer-facing</span>
-                </span>
+                <IconSparkle width="16" height="16" className={listingType === 'spotlight' ? 'text-green' : 'text-text-muted'} />
+                <span className={`block text-[12.5px] font-semibold ${listingType === 'spotlight' ? 'text-green' : 'text-ink-soft'}`}>Spotlight (B2C)</span>
+                <span className="block text-[10.5px] text-text-muted leading-tight">Single product, buyer-facing</span>
               </button>
               <button
                 type="button"
-                onClick={() => setListingType(true)}
-                className={`flex items-center gap-2.5 px-4 py-3 border-[1.5px] rounded-xl cursor-pointer transition-colors text-left ${
-                  form.b2bEnabled ? 'border-orange bg-orange-tint' : 'border-border hover:border-border-strong'
+                onClick={() => setListingType('b2b')}
+                className={`flex flex-col items-center gap-1.5 px-2.5 py-3 border-[1.5px] rounded-xl cursor-pointer transition-colors text-center ${
+                  listingType === 'b2b' ? 'border-orange bg-orange-tint' : 'border-border hover:border-border-strong'
                 }`}
               >
-                <IconBox width="16" height="16" className={form.b2bEnabled ? 'text-orange-text' : 'text-text-muted'} />
-                <span className="min-w-0">
-                  <span className={`block text-[13.5px] font-semibold ${form.b2bEnabled ? 'text-orange-text' : 'text-ink-soft'}`}>B2B</span>
-                  <span className="block text-[11px] text-text-muted">Bulk orders, wholesale</span>
+                <IconBox width="16" height="16" className={listingType === 'b2b' ? 'text-orange-text' : 'text-text-muted'} />
+                <span className={`block text-[12.5px] font-semibold ${listingType === 'b2b' ? 'text-orange-text' : 'text-ink-soft'}`}>B2B</span>
+                <span className="block text-[10.5px] text-text-muted leading-tight">Bulk orders, wholesale</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setListingType('safahMart')}
+                className={`flex flex-col items-center gap-1.5 px-2.5 py-3 border-[1.5px] rounded-xl cursor-pointer transition-colors text-center ${
+                  listingType === 'safahMart' ? 'bg-[rgba(108,99,255,0.08)]' : 'border-border hover:border-border-strong'
+                }`}
+                style={listingType === 'safahMart' ? { borderColor: SAFAH_ACCENT } : undefined}
+              >
+                <IconPin width="16" height="16" className={listingType === 'safahMart' ? '' : 'text-text-muted'} style={listingType === 'safahMart' ? { color: SAFAH_ACCENT } : undefined} />
+                <span className="block text-[12.5px] font-semibold" style={{ color: listingType === 'safahMart' ? SAFAH_ACCENT : undefined }}>
+                  <span className={listingType === 'safahMart' ? '' : 'text-ink-soft'}>Safah Mart</span>
                 </span>
+                <span className="block text-[10.5px] text-text-muted leading-tight">Local, fast delivery</span>
               </button>
             </div>
           </div>
@@ -460,7 +514,7 @@ export default function ProductFormModal({ open, product, loading, error, onClos
             </select>
           </div>
 
-          {form.b2bEnabled ? (
+          {listingType === 'b2b' && (
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -484,7 +538,9 @@ export default function ProductFormModal({ open, product, loading, error, onClos
                 </div>
               </div>
             </>
-          ) : (
+          )}
+
+          {listingType === 'spotlight' && (
             // Spotlight (B2C) sells a single unit to a single buyer — Unit/MOQ are bulk/wholesale
             // concepts that don't apply, so they're skipped entirely rather than left as empty gaps.
             <div className="grid grid-cols-2 gap-3">
@@ -498,6 +554,113 @@ export default function ProductFormModal({ open, product, loading, error, onClos
               </div>
             </div>
           )}
+
+          {listingType === 'safahMart' && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Price (Rs)</label>
+                  <input type="text" inputMode="numeric" value={form.price} onChange={set('price')} placeholder="670" className={fieldClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Stock</label>
+                  <input type="text" inputMode="numeric" value={form.stock} onChange={set('stock')} placeholder="2400" className={fieldClass} />
+                </div>
+              </div>
+
+              <div className="rounded-xl p-3.5 flex flex-col gap-3" style={{ background: 'rgba(108,99,255,0.06)' }}>
+                <p className="text-[12.5px] font-bold" style={{ color: SAFAH_ACCENT }}>Delivery for this product</p>
+
+                {safahMartLocationError && <p className="text-[12px] text-orange-text">{safahMartLocationError}</p>}
+
+                <div>
+                  <label className={labelClass}>Shop location for this product</label>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="text-[12.5px] text-ink-soft">
+                      {form.safahMartLat != null && form.safahMartLng != null
+                        ? `${form.safahMartLat.toFixed(5)}, ${form.safahMartLng.toFixed(5)}`
+                        : 'Not set yet'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={useCurrentLocationForSafahMart}
+                      disabled={locatingSafahMart}
+                      className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 bg-surface border border-border hover:border-border-strong text-ink-soft font-semibold text-[11.5px] py-1.5 px-3 rounded-full transition-colors"
+                    >
+                      {locatingSafahMart ? 'Locating…' : 'Use my current location'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Delivery radius (km)</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={form.safahMartDeliveryRadiusKm}
+                      onChange={(e) => setForm((f) => ({ ...f, safahMartDeliveryRadiusKm: Number(e.target.value) || 0 }))}
+                      className={fieldClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Prep time (minutes)</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={form.safahMartPrepTimeMinutes}
+                      onChange={(e) => setForm((f) => ({ ...f, safahMartPrepTimeMinutes: Number(e.target.value) || 0 }))}
+                      className={fieldClass}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Opens at</label>
+                    <input
+                      type="time"
+                      value={form.safahMartOpensAt}
+                      onChange={(e) => setForm((f) => ({ ...f, safahMartOpensAt: e.target.value }))}
+                      className={fieldClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Closes at</label>
+                    <input
+                      type="time"
+                      value={form.safahMartClosesAt}
+                      onChange={(e) => setForm((f) => ({ ...f, safahMartClosesAt: e.target.value }))}
+                      className={fieldClass}
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2.5 text-[13px] font-medium text-ink cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.safahMartSameDayDelivery}
+                    onChange={() => setForm((f) => ({ ...f, safahMartSameDayDelivery: !f.safahMartSameDayDelivery }))}
+                    className="w-4 h-4 cursor-pointer"
+                    style={{ accentColor: SAFAH_ACCENT }}
+                  />
+                  Same-day delivery available
+                </label>
+              </div>
+            </>
+          )}
+
+          <div>
+            <label className={labelClass}>Special price (Rs, optional)</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={form.specialPrice}
+              onChange={set('specialPrice')}
+              placeholder="e.g. 549 — shown as a discount off the price above"
+              className={fieldClass}
+            />
+          </div>
 
           <div>
             <label className={labelClass}>SKU (optional)</label>
@@ -858,38 +1021,6 @@ export default function ProductFormModal({ open, product, loading, error, onClos
                 ))}
               </select>
             </div>
-          </Section>
-
-          <Section title="Safah Mart" open={openSections.safahMart} onToggle={() => toggleSection('safahMart')}>
-            <label className="flex items-center gap-2.5 text-[13.5px] font-medium text-ink cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.safahMartEnabled}
-                onChange={toggle('safahMartEnabled')}
-                className="w-4 h-4 accent-green cursor-pointer"
-              />
-              List in Safah Mart (local, fast delivery marketplace)
-            </label>
-            <p className="text-[12px] text-text-muted -mt-1 pl-6">
-              Shown to nearby buyers based on your shop's delivery radius and hours — set those up
-              in Store Profile first, or this product won't appear until you do.
-            </p>
-            {form.safahMartEnabled && (
-              <div className="pl-6">
-                <label className={labelClass}>Safah Mart category</label>
-                <select
-                  value={form.safahMartCategory}
-                  onChange={(e) => setForm((f) => ({ ...f, safahMartCategory: e.target.value }))}
-                  className={fieldClass}
-                >
-                  {SAFAH_MART_CATEGORIES.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </Section>
 
           {form.b2bEnabled && (
