@@ -67,7 +67,12 @@ const productSchema = new mongoose.Schema(
     // other products in the same category (see seed/data.js), never from an unrelated category,
     // so the gallery can never show e.g. clothing photos on a sports-goods listing.
     images: { type: [String], default: [] },
+    // Computed at sync time (see publicCatalogSync.js) from the seller's regular price vs their
+    // optional specialPrice — never set directly. originalPrice is the struck-through regular
+    // price shown on cards; null when no special price is active. `price`/`priceValue` above
+    // already hold the effective (already-discounted) price, same as before this existed.
     discountPercent: Number,
+    originalPrice: { type: Number, default: null },
     variants: [variantSchema],
     trendingOrder: { type: Number, default: null }, // set for products in the "trending" rail
     description: String,
@@ -100,22 +105,19 @@ const productSchema = new mongoose.Schema(
     sellerVerified: { type: Boolean, default: false },
     sellerOfficialStore: { type: Boolean, default: false },
     // Explicit seller opt-in for the Safah Mart local-delivery marketplace — never inferred.
+    // Category reuses the shared `category` field above (no separate Safah Mart taxonomy) — a
+    // buyer filtering Safah Mart by category is filtering on the exact same field every other
+    // marketplace section already does.
     safahMartEnabled: { type: Boolean, default: false },
-    safahMartCategory: {
-      type: String,
-      enum: ['grocery', 'fastfood', 'restaurant', 'bakery', 'mall', 'shop'],
-      default: 'shop',
-    },
-    // Denormalized from Seller.safahMart at sync time (see publicCatalogSync.js), same pattern
-    // as sellerCountry/sellerVerified/sellerOfficialStore above — GET /api/marketplace/safah-mart
-    // filters and computes distance/ETA straight off these plain fields, never populate()ing Seller.
-    sellerSafahLat: { type: Number, default: null },
-    sellerSafahLng: { type: Number, default: null },
-    sellerDeliveryRadiusKm: { type: Number, default: null },
-    sellerPrepTimeMinutes: { type: Number, default: null },
-    sellerOpensAt: { type: String, default: null },
-    sellerClosesAt: { type: String, default: null },
-    sellerSameDayDelivery: { type: Boolean, default: true },
+    // Per-product location + delivery config, copied straight from SellerProduct at sync time
+    // (see publicCatalogSync.js) — no Seller-level lookup involved, each product is independent.
+    safahMartLat: { type: Number, default: null },
+    safahMartLng: { type: Number, default: null },
+    safahMartDeliveryRadiusKm: { type: Number, default: 5 },
+    safahMartPrepTimeMinutes: { type: Number, default: 30 },
+    safahMartOpensAt: { type: String, default: '09:00' },
+    safahMartClosesAt: { type: String, default: '21:00' },
+    safahMartSameDayDelivery: { type: Boolean, default: true },
     // Numeric twins of `price` ("Rs 670") and `moq` ("500m") for range filtering/sorting —
     // the display strings are unchanged and still the source of truth for rendering.
     priceValue: { type: Number, default: null },

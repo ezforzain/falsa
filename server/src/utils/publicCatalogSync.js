@@ -45,6 +45,14 @@ export async function syncSellerProductToCatalog(sellerProduct, ownerUser) {
     await sellerDoc.save();
   }
 
+  // A special price only takes effect when it's a real positive number strictly below the
+  // regular price — anything else (blank, 0, >= price) is treated as "no discount" rather than
+  // silently charging more or the same.
+  const regularPrice = Number(sellerProduct.price);
+  const specialPrice = Number(sellerProduct.specialPrice);
+  const hasSpecialPrice = Number.isFinite(specialPrice) && specialPrice > 0 && specialPrice < regularPrice;
+  const effectivePrice = hasSpecialPrice ? specialPrice : regularPrice;
+
   await Product.findByIdAndUpdate(
     id,
     {
@@ -55,8 +63,10 @@ export async function syncSellerProductToCatalog(sellerProduct, ownerUser) {
       seller: ownerUser.companyName,
       location: ownerUser.address || ownerUser.country || null,
       category: sellerProduct.category,
-      price: `Rs ${Number(sellerProduct.price).toLocaleString('en-US')}`,
-      priceValue: Number(sellerProduct.price),
+      price: `Rs ${effectivePrice.toLocaleString('en-US')}`,
+      priceValue: effectivePrice,
+      originalPrice: hasSpecialPrice ? regularPrice : null,
+      discountPercent: hasSpecialPrice ? Math.round((1 - effectivePrice / regularPrice) * 100) : 0,
       moq: sellerProduct.moq,
       moqValue: parseMoqNumber(sellerProduct.moq),
       unit: sellerProduct.unit,
@@ -71,14 +81,13 @@ export async function syncSellerProductToCatalog(sellerProduct, ownerUser) {
       sellerVerified: sellerDoc?.verified || false,
       sellerOfficialStore: sellerDoc?.officialStore || false,
       safahMartEnabled: Boolean(sellerProduct.safahMartEnabled),
-      safahMartCategory: sellerProduct.safahMartCategory || 'shop',
-      sellerSafahLat: sellerDoc?.safahMart?.lat ?? null,
-      sellerSafahLng: sellerDoc?.safahMart?.lng ?? null,
-      sellerDeliveryRadiusKm: sellerDoc?.safahMart?.deliveryRadiusKm ?? null,
-      sellerPrepTimeMinutes: sellerDoc?.safahMart?.prepTimeMinutes ?? null,
-      sellerOpensAt: sellerDoc?.safahMart?.opensAt ?? null,
-      sellerClosesAt: sellerDoc?.safahMart?.closesAt ?? null,
-      sellerSameDayDelivery: sellerDoc?.safahMart?.sameDayDelivery !== false,
+      safahMartLat: sellerProduct.safahMartLat ?? null,
+      safahMartLng: sellerProduct.safahMartLng ?? null,
+      safahMartDeliveryRadiusKm: sellerProduct.safahMartDeliveryRadiusKm ?? 5,
+      safahMartPrepTimeMinutes: sellerProduct.safahMartPrepTimeMinutes ?? 30,
+      safahMartOpensAt: sellerProduct.safahMartOpensAt || '09:00',
+      safahMartClosesAt: sellerProduct.safahMartClosesAt || '21:00',
+      safahMartSameDayDelivery: sellerProduct.safahMartSameDayDelivery !== false,
       tags: Array.isArray(sellerProduct.tags) ? sellerProduct.tags : [],
       storeOrder: sellerProduct.storeOrder ?? null,
       specifications: Array.isArray(sellerProduct.specifications) ? sellerProduct.specifications : [],

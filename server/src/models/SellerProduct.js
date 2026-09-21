@@ -10,6 +10,10 @@ const sellerProductSchema = new mongoose.Schema(
     description: { type: String, default: '' },
     sku: { type: String, required: true },
     price: { type: Number, required: true },
+    // Optional sale price — when set (and lower than price), the public catalog shows this as the
+    // current/charged price with `price` struck through as the original (see publicCatalogSync.js
+    // and Product.originalPrice). null means no discount is active.
+    specialPrice: { type: Number, default: null },
     // Only meaningful for B2B (bulk/wholesale) listings — a Spotlight (B2C) listing sells a
     // single unit to a single buyer, so these are left blank rather than required.
     unit: { type: String, default: '' },
@@ -26,12 +30,18 @@ const sellerProductSchema = new mongoose.Schema(
     // Qualifies freeShipping: false = free shipping within the seller's own country only.
     worldwideFreeShipping: { type: Boolean, default: false },
     // Explicit opt-in for the Safah Mart local-delivery marketplace (see Product.safahMartEnabled).
+    // Category is the shared `category` field above — Safah Mart has no taxonomy of its own.
     safahMartEnabled: { type: Boolean, default: false },
-    safahMartCategory: {
-      type: String,
-      enum: ['grocery', 'fastfood', 'restaurant', 'bakery', 'mall', 'shop'],
-      default: 'shop',
-    },
+    // Per-product shop location + delivery config — each Safah Mart listing is independent (a
+    // seller with multiple locations/products can give each its own area/hours), set directly in
+    // the listing form (see ProductFormModal.jsx) rather than once at the shop level.
+    safahMartLat: { type: Number, default: null },
+    safahMartLng: { type: Number, default: null },
+    safahMartDeliveryRadiusKm: { type: Number, default: 5 },
+    safahMartPrepTimeMinutes: { type: Number, default: 30 },
+    safahMartOpensAt: { type: String, default: '09:00' },
+    safahMartClosesAt: { type: String, default: '21:00' },
+    safahMartSameDayDelivery: { type: Boolean, default: true },
     // #hashtags parsed live from the description in the seller form.
     tags: { type: [String], default: [] },
     // Seller-controlled position on their own public store page. Left null until the seller

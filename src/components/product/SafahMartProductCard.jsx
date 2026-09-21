@@ -12,7 +12,9 @@ const ACCENT = '#6C63FF';
 export default function SafahMartProductCard({ product }) {
   const currentPrice = parsePrice(product.price);
   const discountPercent = product.discountPercent || 0;
-  const originalPrice = discountPercent > 0 ? currentPrice / (1 - discountPercent / 100) : null;
+  // originalPrice is computed server-side from the seller's regular price vs their special price
+  // (see publicCatalogSync.js) — read directly rather than back-deriving it from discountPercent.
+  const originalPrice = product.originalPrice > currentPrice ? product.originalPrice : null;
   const reviewCount = product.reviews?.length || 0;
 
   return (

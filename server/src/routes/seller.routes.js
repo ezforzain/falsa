@@ -44,6 +44,18 @@ function generateSku(category) {
   return `${prefix}-${suffix}`;
 }
 
+// Shared by POST /products and PATCH /products/:id — a special price only makes sense as a real
+// positive discount off the regular price; `undefined` (field omitted) is fine (no special price
+// intended), anything else that doesn't discount is a validation error rather than silently
+// ignored.
+function validateSpecialPrice(specialPrice, price) {
+  if (specialPrice === undefined || specialPrice === null) return null;
+  if (!Number.isFinite(specialPrice) || specialPrice <= 0 || specialPrice >= price) {
+    return 'Special price must be a positive number less than the regular price.';
+  }
+  return null;
+}
+
 // `views` isn't a SellerProduct field — it only exists on the public catalog Product doc that
 // this listing syncs to (see publicCatalogSync.js, which shares the same _id), and only once the
 // listing is active and has actually synced. `views` defaults to 0 for anything not yet published
@@ -113,6 +125,7 @@ router.post(
       name,
       category,
       price,
+      specialPrice,
       unit,
       moq,
       stock,
@@ -124,7 +137,13 @@ router.post(
       freeShipping,
       worldwideFreeShipping,
       safahMartEnabled,
-      safahMartCategory,
+      safahMartLat,
+      safahMartLng,
+      safahMartDeliveryRadiusKm,
+      safahMartPrepTimeMinutes,
+      safahMartOpensAt,
+      safahMartClosesAt,
+      safahMartSameDayDelivery,
       tags,
       specifications,
       variantAxes,
@@ -142,6 +161,8 @@ router.post(
     if (!Number.isFinite(price) || price <= 0) {
       return res.status(400).json({ message: 'Price must be a positive number.' });
     }
+    const specialPriceError = validateSpecialPrice(specialPrice, price);
+    if (specialPriceError) return res.status(400).json({ message: specialPriceError });
     if (!Number.isInteger(stock) || stock < 0) {
       return res.status(400).json({ message: 'Stock must be zero or a positive whole number.' });
     }
@@ -171,6 +192,7 @@ router.post(
       description: description || '',
       sku: sku?.trim() || generateSku(category),
       price,
+      specialPrice: specialPrice ?? null,
       unit: unit || '',
       moq: moq || '',
       stock,
@@ -181,7 +203,13 @@ router.post(
       freeShipping: freeShipping !== false,
       worldwideFreeShipping: Boolean(worldwideFreeShipping),
       safahMartEnabled: Boolean(safahMartEnabled),
-      safahMartCategory: safahMartCategory || 'shop',
+      safahMartLat: safahMartLat ?? null,
+      safahMartLng: safahMartLng ?? null,
+      safahMartDeliveryRadiusKm: safahMartDeliveryRadiusKm ?? 5,
+      safahMartPrepTimeMinutes: safahMartPrepTimeMinutes ?? 30,
+      safahMartOpensAt: safahMartOpensAt || '09:00',
+      safahMartClosesAt: safahMartClosesAt || '21:00',
+      safahMartSameDayDelivery: safahMartSameDayDelivery !== false,
       // Normalized + de-duped server-side too (the chip input already does this
       // client-side) so the backend never trusts unnormalized/duplicate hashtags.
       tags: normalizeHashtagList(tags),
@@ -226,6 +254,12 @@ router.patch(
 
     const product = await SellerProduct.findOne({ _id: req.params.id, sellerId: req.user._id });
     if (!product) return res.status(404).json({ message: 'Listing not found.' });
+
+    if (body.specialPrice !== undefined) {
+      const effectivePrice = body.price !== undefined ? body.price : product.price;
+      const specialPriceError = validateSpecialPrice(body.specialPrice, effectivePrice);
+      if (specialPriceError) return res.status(400).json({ message: specialPriceError });
+    }
 
     const patch = { ...body };
     if (Array.isArray(patch.images)) {
@@ -626,46 +660,6 @@ router.patch(
       { new: true }
     );
     if (!store) return res.status(404).json({ message: 'No storefront found for this account.' });
-    res.json({ store: serializeStore(store) });
-  })
-);
-
-// ---------- Safah Mart shop location + local-delivery config ----------
-
-router.patch(
-  '/store/safah-mart',
-  asyncHandler(async (req, res) => {
-    const store = await loadOwnStore(req, res);
-    if (!store) return;
-    const { lat, lng, deliveryRadiusKm, prepTimeMinutes, opensAt, closesAt, sameDayDelivery } = req.body;
-    const numLat = Number(lat);
-    const numLng = Number(lng);
-    store.safahMart = {
-      enabled: Number.isFinite(numLat) && Number.isFinite(numLng),
-      lat: Number.isFinite(numLat) ? numLat : null,
-      lng: Number.isFinite(numLng) ? numLng : null,
-      deliveryRadiusKm: Number(deliveryRadiusKm) > 0 ? Number(deliveryRadiusKm) : 5,
-      prepTimeMinutes: Number(prepTimeMinutes) >= 0 ? Number(prepTimeMinutes) : 30,
-      opensAt: opensAt || '09:00',
-      closesAt: closesAt || '21:00',
-      sameDayDelivery: sameDayDelivery !== false,
-    };
-    await store.save();
-    // Re-push onto every already-enabled product — same denormalization-refresh pattern as
-    // admin.routes.js's Seller verified/officialStore -> Product.updateMany re-push — so a
-    // seller changing their delivery radius/hours doesn't require re-saving every product.
-    await Product.updateMany(
-      { sellerId: store._id, safahMartEnabled: true },
-      {
-        sellerSafahLat: store.safahMart.lat,
-        sellerSafahLng: store.safahMart.lng,
-        sellerDeliveryRadiusKm: store.safahMart.deliveryRadiusKm,
-        sellerPrepTimeMinutes: store.safahMart.prepTimeMinutes,
-        sellerOpensAt: store.safahMart.opensAt,
-        sellerClosesAt: store.safahMart.closesAt,
-        sellerSameDayDelivery: store.safahMart.sameDayDelivery,
-      }
-    );
     res.json({ store: serializeStore(store) });
   })
 );

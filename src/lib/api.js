@@ -100,12 +100,12 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
       console.error(`API ${method} ${path} returned a non-JSON ${res.status} response.`);
       throw new ApiError('Unable to connect. Please check your internet connection and try again.', res.status);
     }
-    // Our own route handlers respond with a deliberate, safe-to-display message on every 4xx
-    // they raise (validation errors, "out of stock", auth failures, etc.). Anything else — a
-    // 5xx, or an error with no message at all (e.g. a blocked CORS preflight, which never even
-    // reaches our routes) — is technical detail that should never reach the UI verbatim, so it's
-    // logged here for debugging and swapped for one generic, friendly message instead.
-    if (res.status >= 500 || !data?.message) {
+    // Our own route handlers respond with a deliberate, safe-to-display message on every error
+    // they raise — 4xx and 5xx alike (e.g. tcsErrorResponse() in seller.routes.js curates a safe
+    // message even for a 500 config error). Only a response with no message at all (a blocked CORS
+    // preflight, a non-JSON body that slipped past the check above) is genuinely unsafe/unknown
+    // technical detail, so that's the only case swapped for a generic, friendly message.
+    if (!data?.message) {
       // eslint-disable-next-line no-console
       console.error(`API ${method} ${path} failed (${res.status}):`, data?.message || res.statusText);
       throw new ApiError('Something went wrong. Please try again.', res.status);
@@ -220,14 +220,13 @@ export const marketplace = {
   spotlight: (opts) => request(`/api/marketplace/spotlight?${buildMarketplaceParams(opts)}`),
   worldwide: (opts) => request(`/api/marketplace/worldwide?${buildMarketplaceParams(opts)}`),
   freeShipping: (opts) => request(`/api/marketplace/free-shipping?${buildMarketplaceParams(opts)}`),
-  // Location-based Safah Mart discovery — lat/lng are required (the backend 400s without them),
-  // safahCategory is grocery/fastfood/restaurant/bakery/mall/shop (comma-joined for multiselect).
-  safahMart: ({ lat, lng, safahCategory, ...rest } = {}) => {
+  // Location-based Safah Mart discovery — lat/lng are required (the backend 400s without them).
+  // No category param: fetches every nearby result once, and the buyer page (SafahMartPage.jsx)
+  // filters by the shared `category` field client-side from that same result set.
+  safahMart: ({ lat, lng, ...rest } = {}) => {
     const params = buildMarketplaceParams(rest);
     params.set('lat', lat);
     params.set('lng', lng);
-    const categoryList = joinList(safahCategory);
-    if (categoryList) params.set('safahCategory', categoryList);
     return request(`/api/marketplace/safah-mart?${params}`);
   },
   // Server-side geocoding for the manual-address fallback when a buyer denies/lacks geolocation.
@@ -269,7 +268,6 @@ export const seller = {
   updateBankDetails: (payload) => request('/api/seller/bank-details', { method: 'PATCH', body: payload, auth: true }),
   getStoreProfile: () => request('/api/seller/store', { auth: true }),
   updateStoreProfile: (payload) => request('/api/seller/store', { method: 'PATCH', body: payload, auth: true }),
-  updateSafahMartSettings: (payload) => request('/api/seller/store/safah-mart', { method: 'PATCH', body: payload, auth: true }),
   addStoreBanner: (url) => request('/api/seller/store/banners', { method: 'POST', body: { url }, auth: true }),
   removeStoreBanner: (bannerId) => request(`/api/seller/store/banners/${encodeURIComponent(bannerId)}`, { method: 'DELETE', auth: true }),
   reorderStoreBanners: (order) => request('/api/seller/store/banners/order', { method: 'PATCH', body: { order }, auth: true }),

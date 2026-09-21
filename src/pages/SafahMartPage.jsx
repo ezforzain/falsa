@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { marketplace } from '../lib/api';
 import { useLanguage } from '../context/LanguageContext';
 import useIsMobile from '../hooks/useIsMobile';
@@ -8,16 +8,6 @@ import SafahMartProductCard from '../components/product/SafahMartProductCard';
 import { IconPin, IconSearch } from '../components/icons';
 
 const ACCENT = '#6C63FF';
-
-const CATEGORIES = [
-  { key: null, labelKey: 'safahMart.categoryAll' },
-  { key: 'grocery', labelKey: 'safahMart.categoryGrocery' },
-  { key: 'fastfood', labelKey: 'safahMart.categoryFastFood' },
-  { key: 'restaurant', labelKey: 'safahMart.categoryRestaurant' },
-  { key: 'bakery', labelKey: 'safahMart.categoryBakery' },
-  { key: 'mall', labelKey: 'safahMart.categoryMall' },
-  { key: 'shop', labelKey: 'safahMart.categoryShop' },
-];
 
 // Single page for both breakpoints (mobile chrome via MobileTopBar, desktop via MainLayout's own
 // Header/Footer) — same pattern as WishlistPage.jsx. Unlike Home's Mobile/Desktop split, the
@@ -30,7 +20,11 @@ export default function SafahMartPage() {
 
   const [category, setCategory] = useState(null);
   const [manualAddress, setManualAddress] = useState('');
-  const [products, setProducts] = useState([]);
+  // The full, unfiltered nearby list for this location — fetched once per resolved location.
+  // Category chips are derived from real values in this same list and filtered client-side
+  // (see `products` below), so switching chips is instant and never drops a category that
+  // actually has nearby results.
+  const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -39,10 +33,11 @@ export default function SafahMartPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setCategory(null);
     marketplace
-      .safahMart({ lat: coords.lat, lng: coords.lng, safahCategory: category || undefined })
+      .safahMart({ lat: coords.lat, lng: coords.lng })
       .then(({ products: fetched }) => {
-        if (!cancelled) setProducts(fetched);
+        if (!cancelled) setAllProducts(fetched);
       })
       .catch((err) => {
         if (!cancelled) setError(err.message || 'Could not load nearby shops right now.');
@@ -53,7 +48,16 @@ export default function SafahMartPage() {
     return () => {
       cancelled = true;
     };
-  }, [status, coords, category]);
+  }, [status, coords]);
+
+  const categories = useMemo(
+    () => [...new Set(allProducts.map((p) => p.category).filter(Boolean))].sort(),
+    [allProducts]
+  );
+  const products = useMemo(
+    () => (category ? allProducts.filter((p) => p.category === category) : allProducts),
+    [allProducts, category]
+  );
 
   const submitManualAddress = (e) => {
     e.preventDefault();
@@ -99,9 +103,9 @@ export default function SafahMartPage() {
     </div>
   );
 
-  const CategoryChips = (
+  const CategoryChips = categories.length > 0 && (
     <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-      {CATEGORIES.map((c) => {
+      {[{ key: null, label: t('safahMart.categoryAll') }, ...categories.map((c) => ({ key: c, label: c }))].map((c) => {
         const isActive = c.key === category;
         return (
           <button
@@ -113,7 +117,7 @@ export default function SafahMartPage() {
             }`}
             style={isActive ? { background: ACCENT } : undefined}
           >
-            {t(c.labelKey)}
+            {c.label}
           </button>
         );
       })}
